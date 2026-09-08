@@ -1,0 +1,7 @@
+# Credenciales locales (RNF8) — nunca se versionan
+.env
+
+# Artefactos del entorno local
+import/*.csv
+!import/.gitkeep
+.DS_Store
