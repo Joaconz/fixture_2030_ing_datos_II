@@ -1,0 +1,52 @@
+
+ config_partidos
+-----------------
+             112
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
+
+ comentarios_par_a_1
+---------------------
+                  24
+
+(1 rows)
+
+Warnings :
+Aggregation query used on multiple partition keys (IN restriction)
+
+
+ historial_demo
+----------------
+             20
+
+(1 rows)
+
+ config_partidos
+-----------------
+             112
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
+
+ comentarios_par_a_1
+---------------------
+                  24
+
+(1 rows)
+
+Warnings :
+Aggregation query used on multiple partition keys (IN restriction)
+
+
+ historial_demo
+----------------
+             20
+
+(1 rows)

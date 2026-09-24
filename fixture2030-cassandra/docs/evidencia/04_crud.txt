@@ -1,0 +1,45 @@
+Consistency level set to ONE.
+
+ comentario_id     | creado_en                       | usuario_id    | contenido                     | estado_moderacion | editado
+-------------------+---------------------------------+---------------+-------------------------------+-------------------+---------
+ PAR-A-1-DEMO-CRUD | 2030-06-09 14:31:05.000000+0000 | USR-DEMO-CRUD | Comentario de prueba del CRUD |         PUBLICADO |   False
+
+(1 rows)
+
+ comentario_id     | partido_id | ventana                         | bucket | contenido
+-------------------+------------+---------------------------------+--------+-------------------------------
+ PAR-A-1-DEMO-CRUD |    PAR-A-1 | 2030-06-09 14:30:00.000000+0000 |      0 | Comentario de prueba del CRUD
+
+(1 rows)
+
+ [applied]
+-----------
+      True
+
+ [applied]
+-----------
+     False
+
+ comentario_id     | me_gusta | respuestas | reportes
+-------------------+----------+------------+----------
+ PAR-A-1-DEMO-CRUD |        1 |          1 |        1
+
+(1 rows)
+
+ comentario_id     | estado_moderacion | contenido
+-------------------+-------------------+-----------
+ PAR-A-1-DEMO-CRUD |         ELIMINADO |      null
+
+(1 rows)
+
+ queda_en_partido
+------------------
+                0
+
+(1 rows)
+
+ queda_en_usuario
+------------------
+                0
+
+(1 rows)

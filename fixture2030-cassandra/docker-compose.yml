@@ -1,0 +1,91 @@
+# ============================================================
+#  Fixture 2030 — Hito 6 · Módulo de Comentarios
+#  Ambiente local de Apache Cassandra (Docker Compose)
+#  Ingeniería de Datos II — Pazos / Núñez / Frisoli
+# ------------------------------------------------------------
+#  RNF1: imagen oficial con etiqueta `latest` (la versión real
+#        se registra con SHOW VERSION, ver README §6).
+#  RNF2: persistencia con montaje local en ~/docker/data/cassandra.
+#  RNF8: sin credenciales: el nodo de laboratorio usa la
+#        autenticación por defecto (AllowAllAuthenticator). Es una
+#        configuración de DESARROLLO, no de producción.
+#  Nota: se omite la clave `version:` a propósito — está obsoleta
+#  en Docker Compose V2 y genera un warning.
+#
+#  NODO ÚNICO: esto es un laboratorio. No es una topología de alta
+#  disponibilidad ni multirregional (ver docs/modelo_tabular.md §1).
+# ============================================================
+
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: fixture2030-cassandra
+    restart: unless-stopped
+
+    ports:
+      - "${CASSANDRA_CQL_PORT:-9042}:9042"   # protocolo CQL (drivers y cqlsh)
+
+    environment:
+      CASSANDRA_CLUSTER_NAME: "Fixture2030-Lab"
+      # Snitch que lee DC/rack de las variables siguientes. El nombre del DC
+      # tiene que coincidir con el de NetworkTopologyStrategy en esquema.cql.
+      CASSANDRA_ENDPOINT_SNITCH: "GossipingPropertyFileSnitch"
+      CASSANDRA_DC: "datacenter1"
+      CASSANDRA_RACK: "rack1"
+      # Memoria acotada para una notebook (Cassandra por defecto toma 1/4 de la RAM)
+      MAX_HEAP_SIZE: "1G"
+      HEAP_NEWSIZE: "256M"
+
+    volumes:
+      # Persistencia exigida por RNF2: sobrevive a `docker compose down`.
+      - ~/docker/data/cassandra:/var/lib/cassandra
+      # Bind mounts de trabajo: los .cql del repo se ejecutan desde adentro
+      # del contenedor sin copiarlos.
+      - ./scripts:/scripts:ro
+      - ./docs/evidencia:/evidencia
+
+    healthcheck:
+      # "healthy" recién cuando CQL responde de verdad: evita correr el
+      # esquema mientras el nodo todavía está arrancando (~60-90 s).
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' > /dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+    networks:
+      - fixture2030-net
+
+  # ----------------------------------------------------------
+  #  Cargador masivo (RF11/RF12). Solo se levanta a pedido:
+  #      docker compose --profile carga run --rm cargador
+  #  Corre en Python 3.11 dentro de Docker para que nadie tenga
+  #  que instalar el driver de Cassandra en su notebook.
+  # ----------------------------------------------------------
+  cargador:
+    image: python:3.11-slim
+    profiles: ["carga"]
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    working_dir: /app
+    environment:
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_PORT: "9042"
+      EVIDENCIA_DIR: /app/evidencia
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./docs/evidencia:/app/evidencia
+    entrypoint:
+      - sh
+      - -c
+      - pip install --quiet --no-cache-dir cassandra-driver && python scripts/carga_masiva.py "$$@"
+      - cargador
+    networks:
+      - fixture2030-net
+
+networks:
+  fixture2030-net:
+    driver: bridge
+    name: fixture2030-cassandra-net

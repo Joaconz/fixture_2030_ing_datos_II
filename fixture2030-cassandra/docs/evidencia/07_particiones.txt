@@ -1,0 +1,68 @@
+fixture2030_comentarios/comentarios_por_partido histograms
+Percentile      Read Latency     Write Latency          SSTables    Partition Size        Cell Count
+                    (micros)          (micros)                             (bytes)                  
+50%                    86.00             10.00              0.00             35425              2299
+75%                   103.00             20.00              0.00             88148              5722
+95%                   179.00             60.00              0.00            315852             20501
+98%                   179.00            215.00              0.00            454826             29521
+99%                   179.00            446.00              0.00            785939             51012
+Min                    51.00              0.00              0.00              5723               373
+Max                   179.00         263210.00              0.00           2346799            152321
+
+Total number of tables: 1
+----------------
+Keyspace: fixture2030_comentarios
+	Read Count: 71
+	Read Latency: 0.3048169014084507 ms
+	Write Count: 2300780
+	Write Latency: 0.021211406566468763 ms
+	Pending Flushes: 0
+		Table: comentarios_por_partido
+		SSTable count: 4
+		Old SSTable count: 0
+		Max SSTable size: 62.835MiB
+		Space used (live): 74007277
+		Space used (total): 74007277
+		Space used by snapshots (total): 0
+		Off heap memory used (total): 67749
+		SSTable Compression Ratio: 0.33986
+		Number of partitions (estimate): 1725
+		Memtable cell count: 0
+		Memtable data size: 0
+		Memtable off heap memory used: 0
+		Memtable switch count: 26
+		Speculative retries: 0
+		Local read count: 62
+		Local read latency: 0.100 ms
+		Local write count: 1150165
+		Local write latency: 0.037 ms
+		Local read/write ratio: 0.00005
+		Pending flushes: 0
+		Percent repaired: 0.0
+		Bytes repaired: 0B
+		Bytes unrepaired: 126.708MiB
+		Bytes pending repair: 0B
+		Bloom filter false positives: 0
+		Bloom filter false ratio: 0.00000
+		Bloom filter space used: 2216
+		Bloom filter off heap memory used: 2184
+		Index summary off heap memory used: 661
+		Compression metadata off heap memory used: 64904
+		Compacted partition minimum bytes: 5723
+		Compacted partition maximum bytes: 2346799
+		Compacted partition mean bytes: 84246
+		Average live cells per slice (last five minutes): 1.6
+		Maximum live cells per slice (last five minutes): 3
+		Average tombstones per slice (last five minutes): 1.0
+		Maximum tombstones per slice (last five minutes): 1
+		Droppable tombstone ratio: 0.00000
+		SAI local query latency (mean): NaN ms
+		SAI post-filtering latency (mean): NaN ms
+		SAI space used (bytes): 28173509
+		SAI sstable indexes hit per query (mean): 0.0
+		SAI index segments hit per query (mean): 0.0
+		SAI rows filtered per query (mean): 0.0
+		SAI local query timeouts: 0
+		SAI queryable/total indexes: 1/1
+
+----------------

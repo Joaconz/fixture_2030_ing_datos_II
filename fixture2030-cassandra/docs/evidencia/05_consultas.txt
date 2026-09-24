@@ -1,0 +1,171 @@
+Consistency level set to ONE.
+
+ partido_id | audiencia | buckets | ventana_minutos | inicio
+------------+-----------+---------+-----------------+---------------------------------
+    PAR-A-1 |    NORMAL |       1 |              10 | 2030-06-09 13:00:00.000000+0000
+ PAR-D16-01 |    MAXIMA |       4 |              10 | 2030-06-29 16:00:00.000000+0000
+
+(2 rows)
+
+ creado_en                       | comentario_id    | alias_usuario | minuto_partido | contenido
+---------------------------------+------------------+---------------+----------------+--------------------------------
+ 2030-06-09 14:29:17.991000+0000 | PAR-A-1-C0003600 |  hincha_16464 |             89 | El VAR está mirando, esperemos
+ 2030-06-09 14:26:19.125000+0000 | PAR-A-1-C0003400 |  hincha_27864 |             86 |   Vamos selección! Hoy se gana
+ 2030-06-09 14:21:39.105000+0000 | PAR-A-1-C0003200 | hincha_210732 |             81 |   Increíble lo de este partido
+
+(3 rows)
+PAGING set to OFF
+
+ creado_en                       | bucket | comentario_id       | alias_usuario | minuto_partido | contenido
+---------------------------------+--------+---------------------+---------------+----------------+----------------------------------
+ 2030-06-29 17:38:48.617000+0000 |      0 | PAR-D16-01-C0264452 |     hincha_38 |             98 |        Qué atajada del arquero!!
+ 2030-06-29 17:38:14.616000+0000 |      1 | PAR-D16-01-C0264000 | hincha_246113 |             98 | Partidazo, se viene la remontada
+ 2030-06-29 17:36:38.477000+0000 |      2 | PAR-D16-01-C0256000 |  hincha_45237 |             96 |     Increíble lo de este partido
+ 2030-06-29 17:35:07.526000+0000 |      3 | PAR-D16-01-C0253699 |     hincha_38 |             95 |    Qué golazo, no lo puedo creer
+ 2030-06-29 17:34:08.595000+0000 |      1 | PAR-D16-01-C0248000 |  hincha_10273 |             94 |     Árbitro, era penal clarísimo
+ 2030-06-29 17:33:06.636000+0000 |      2 | PAR-D16-01-C0241943 |     hincha_38 |             93 |                  Allez les bleus
+ 2030-06-29 17:32:20.722000+0000 |      2 | PAR-D16-01-C0240000 | hincha_205418 |             92 |       Cambio ya, el 9 no la toca
+ 2030-06-29 17:31:43.967000+0000 |      1 | PAR-D16-01-C0224000 |  hincha_94298 |             91 |         Se nos escapa el partido
+ 2030-06-29 17:31:11.743000+0000 |      1 | PAR-D16-01-C0232000 | hincha_138153 |             91 |     Árbitro, era penal clarísimo
+ 2030-06-29 17:30:45.577000+0000 |      2 | PAR-D16-01-C0216000 |  hincha_58863 |             90 |            Joga bonito, que time
+ 2030-06-29 17:30:42.648000+0000 |      1 | PAR-D16-01-C0208000 |  hincha_63918 |             90 |        Vamos equipo! Hoy se gana
+ 2030-06-29 17:30:35.684000+0000 |      3 | PAR-D16-01-C0213781 |     hincha_38 |             90 |       Faltan 5 minutos, aguanten
+
+(12 rows)
+PAGING set to ON
+Page size: 100
+
+ creado_en                       | comentario_id    | alias_usuario | contenido
+---------------------------------+------------------+---------------+-----------------
+ 2030-06-09 14:12:56.900000+0000 | PAR-A-1-C0003000 | hincha_175028 | Allez les bleus
+
+(1 rows)
+
+ creado_en                       | comentario_id       | minuto_partido | contenido
+---------------------------------+---------------------+----------------+------------------------------
+ 2030-06-29 17:34:08.595000+0000 | PAR-D16-01-C0248000 |             94 | Árbitro, era penal clarísimo
+ 2030-06-29 17:31:43.967000+0000 | PAR-D16-01-C0224000 |             91 |     Se nos escapa el partido
+ 2030-06-29 17:31:11.743000+0000 | PAR-D16-01-C0232000 |             91 | Árbitro, era penal clarísimo
+ 2030-06-29 17:30:42.648000+0000 | PAR-D16-01-C0208000 |             90 |    Vamos equipo! Hoy se gana
+
+(4 rows)
+
+ creado_en                       | comentario_id       | contenido
+---------------------------------+---------------------+------------------------------
+ 2030-06-29 17:31:43.967000+0000 | PAR-D16-01-C0224000 |     Se nos escapa el partido
+ 2030-06-29 17:31:11.743000+0000 | PAR-D16-01-C0232000 | Árbitro, era penal clarísimo
+ 2030-06-29 17:30:42.648000+0000 | PAR-D16-01-C0208000 |    Vamos equipo! Hoy se gana
+
+(3 rows)
+
+ creado_en                       | comentario_id    | usuario_id  | contenido                 | estado_moderacion
+---------------------------------+------------------+-------------+---------------------------+-------------------
+ 2030-06-09 13:19:34.218000+0000 | PAR-A-1-C0000600 | USR-0237501 | Qué atajada del arquero!! |         PENDIENTE
+
+(1 rows)
+
+ creado_en                       | comentario_id       | usuario_id  | contenido                    | estado_moderacion
+---------------------------------+---------------------+-------------+------------------------------+-------------------
+ 2030-06-29 17:36:38.477000+0000 | PAR-D16-01-C0256000 | USR-0045237 | Increíble lo de este partido |         PENDIENTE
+
+(1 rows)
+
+ creado_en                       | partido_id | minuto_partido | contenido                            | estado_moderacion
+---------------------------------+------------+----------------+--------------------------------------+-------------------
+ 2030-06-29 18:04:45.946000+0000 | PAR-D16-01 |            124 |         Increíble lo de este partido |         PUBLICADO
+ 2030-06-29 17:57:11.610000+0000 | PAR-D16-01 |            117 |         Ese pase fue de otro planeta |         PUBLICADO
+ 2030-06-29 17:56:39.686000+0000 | PAR-D16-01 |            116 |       El VAR está mirando, esperemos |         PUBLICADO
+ 2030-06-29 17:38:48.617000+0000 | PAR-D16-01 |             98 |            Qué atajada del arquero!! |         PUBLICADO
+ 2030-06-29 17:35:07.526000+0000 | PAR-D16-01 |             95 |        Qué golazo, no lo puedo creer |         PUBLICADO
+ 2030-06-29 17:33:06.636000+0000 | PAR-D16-01 |             93 |                      Allez les bleus |         PUBLICADO
+ 2030-06-29 17:30:35.684000+0000 | PAR-D16-01 |             90 |           Faltan 5 minutos, aguanten |         PUBLICADO
+ 2030-06-29 17:29:22.285000+0000 | PAR-D16-01 |             89 |        Qué golazo, no lo puedo creer |         PUBLICADO
+ 2030-06-29 17:28:58.186000+0000 | PAR-D16-01 |             88 |           Faltan 5 minutos, aguanten |         PUBLICADO
+ 2030-06-29 17:28:37.058000+0000 | PAR-D16-01 |             88 |       El VAR está mirando, esperemos |         PUBLICADO
+ 2030-06-29 17:28:26.509000+0000 | PAR-D16-01 |             88 | Con esta hinchada no se puede perder |         PUBLICADO
+ 2030-06-29 17:24:29.498000+0000 | PAR-D16-01 |             84 |                         What a save! |         PUBLICADO
+ 2030-06-29 17:04:54.939000+0000 | PAR-D16-01 |             64 |             Se nos escapa el partido |         PUBLICADO
+ 2030-06-29 17:04:05.307000+0000 | PAR-D16-01 |             64 |                      Allez les bleus |         PUBLICADO
+ 2030-06-29 17:01:23.424000+0000 | PAR-D16-01 |             61 |         Árbitro, era penal clarísimo |         PUBLICADO
+ 2030-06-29 16:34:57.327000+0000 | PAR-D16-01 |             34 |     Partidazo, se viene la remontada |         PUBLICADO
+ 2030-06-29 16:32:45.775000+0000 | PAR-D16-01 |             32 |         Ese pase fue de otro planeta |         PUBLICADO
+ 2030-06-29 16:31:07.012000+0000 | PAR-D16-01 |             31 |         Increíble lo de este partido |         PUBLICADO
+ 2030-06-29 16:01:48.201000+0000 | PAR-D16-01 |              1 |            Qué atajada del arquero!! |         PENDIENTE
+ 2030-06-09 15:00:48.744000+0000 |    PAR-A-1 |            120 |                      Allez les bleus |         PUBLICADO
+
+(20 rows)
+
+ comentario_id       | creado_en                       | responde_a          | estado_moderacion | contenido
+---------------------+---------------------------------+---------------------+-------------------+-------------------------------
+ PAR-D16-01-C0203900 | 2030-06-29 17:29:22.285000+0000 | PAR-D16-01-C0203705 |         PUBLICADO | Qué golazo, no lo puedo creer
+
+(1 rows)
+
+ comentario_id     | me_gusta | respuestas | reportes
+-------------------+----------+------------+----------
+ PAR-A-1-DEMO-CRUD |        0 |          0 |        0
+
+(1 rows)
+PAGING set to OFF
+
+ partido_id | ventana                         | bucket | comentarios
+------------+---------------------------------+--------+-------------
+ PAR-D16-01 | 2030-06-29 17:30:00.000000+0000 |      0 |           1
+ PAR-D16-01 | 2030-06-29 17:30:00.000000+0000 |      1 |           5
+ PAR-D16-01 | 2030-06-29 17:30:00.000000+0000 |      2 |           4
+ PAR-D16-01 | 2030-06-29 17:30:00.000000+0000 |      3 |           2
+
+(4 rows)
+
+Warnings :
+Aggregation query used on multiple partition keys (IN restriction)
+
+
+ partido_id | ventana                         | bucket | comentarios
+------------+---------------------------------+--------+-------------
+    PAR-A-1 | 2030-06-09 13:00:00.000000+0000 |      0 |           1
+    PAR-A-1 | 2030-06-09 13:10:00.000000+0000 |      0 |           2
+    PAR-A-1 | 2030-06-09 13:20:00.000000+0000 |      0 |           2
+    PAR-A-1 | 2030-06-09 13:30:00.000000+0000 |      0 |           3
+    PAR-A-1 | 2030-06-09 13:40:00.000000+0000 |      0 |           3
+    PAR-A-1 | 2030-06-09 13:50:00.000000+0000 |      0 |           2
+    PAR-A-1 | 2030-06-09 14:00:00.000000+0000 |      0 |           1
+    PAR-A-1 | 2030-06-09 14:10:00.000000+0000 |      0 |           1
+    PAR-A-1 | 2030-06-09 14:20:00.000000+0000 |      0 |           3
+    PAR-A-1 | 2030-06-09 14:30:00.000000+0000 |      0 |           3
+    PAR-A-1 | 2030-06-09 14:40:00.000000+0000 |      0 |           1
+    PAR-A-1 | 2030-06-09 14:50:00.000000+0000 |      0 |           1
+    PAR-A-1 | 2030-06-09 15:00:00.000000+0000 |      0 |           1
+
+(13 rows)
+
+Warnings :
+Aggregation query used on multiple partition keys (IN restriction)
+
+PAGING set to ON
+Page size: 100
+TRACING set to ON
+
+ creado_en                       | comentario_id    | contenido
+---------------------------------+------------------+--------------------------------
+ 2030-06-09 14:29:17.991000+0000 | PAR-A-1-C0003600 | El VAR está mirando, esperemos
+ 2030-06-09 14:26:19.125000+0000 | PAR-A-1-C0003400 |   Vamos selección! Hoy se gana
+ 2030-06-09 14:21:39.105000+0000 | PAR-A-1-C0003200 |   Increíble lo de este partido
+
+(3 rows)
+
+Tracing session: 6f94b170-b856-11f1-a2de-21446462c9e0
+
+ activity                                                                                                                                                                                                            | timestamp                  | source     | source_elapsed | client
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------+------------+----------------+-----------
+                                                                                                                                                                                                  Execute CQL3 query | 2026-09-24 20:28:00.392000 | 172.20.0.2 |              0 | 127.0.0.1
+ Parsing SELECT creado_en, comentario_id, contenido\nFROM comentarios_por_partido\nWHERE partido_id = 'PAR-A-1' AND ventana = '2030-06-09 14:20:00.000+0000' AND bucket = 0\nLIMIT 50; [Native-Transport-Requests-1] | 2026-09-24 20:28:00.393000 | 172.20.0.2 |           1792 | 127.0.0.1
+                                                                                                                                                                   Preparing statement [Native-Transport-Requests-1] | 2026-09-24 20:28:00.394000 | 172.20.0.2 |           1986 | 127.0.0.1
+                                                                                                                                          Executing single-partition query on comentarios_por_partido [ReadStage-14] | 2026-09-24 20:28:00.394001 | 172.20.0.2 |           2450 | 127.0.0.1
+                                                                                                                                                                         Acquiring sstable references [ReadStage-14] | 2026-09-24 20:28:00.394002 | 172.20.0.2 |           2501 | 127.0.0.1
+                                                                                                                            Skipped 0/0 non-slice-intersecting sstables, included 0 due to tombstones [ReadStage-14] | 2026-09-24 20:28:00.394003 | 172.20.0.2 |           2574 | 127.0.0.1
+                                                                                                                                                            Merged data from memtables and 0 sstables [ReadStage-14] | 2026-09-24 20:28:00.394004 | 172.20.0.2 |           2686 | 127.0.0.1
+                                                                                                                                                               Read 3 live rows and 0 tombstone cells [ReadStage-14] | 2026-09-24 20:28:00.394005 | 172.20.0.2 |           2730 | 127.0.0.1
+                                                                                                                                                                                                    Request complete | 2026-09-24 20:28:00.395017 | 172.20.0.2 |           3017 | 127.0.0.1
+
+TRACING set to OFF

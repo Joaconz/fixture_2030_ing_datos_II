@@ -1,0 +1,97 @@
+{
+  "fecha_ejecucion": "2026-09-24T20:31:00+00:00",
+  "cassandra_release_version": "5.0.9",
+  "ambiente": {
+    "nodos": 1,
+    "replication_factor": 1,
+    "consistencia_escritura": "ONE",
+    "cpus_visibles": 8,
+    "memoria_total_gb": 3.8,
+    "python": "3.11.16",
+    "plataforma": "Linux-7.0.12-linuxkit-aarch64-with-glibc2.41",
+    "nota": "cliente y servidor en la misma notebook: compiten por CPU"
+  },
+  "parametros": {
+    "concurrencia": 128,
+    "lote": 10000,
+    "solo_principal": false,
+    "limite": null
+  },
+  "resultado": {
+    "comentarios": 1050000,
+    "escrituras_ok": 2100000,
+    "errores": 0,
+    "primer_error": null,
+    "segundos_escritura": 118.15,
+    "segundos_generacion": 12.24,
+    "segundos_totales": 130.61,
+    "escrituras_por_segundo": 17774.0,
+    "comentarios_por_segundo": 8887.0,
+    "tasa_por_lote": {
+      "min": 11606.3,
+      "mediana": 18339.7,
+      "max": 21957.7
+    },
+    "objetivo_10000_escrituras_s": true
+  },
+  "distribucion": {
+    "comentarios_por_particion": {
+      "particiones": 1725,
+      "min": 49,
+      "p50": 258,
+      "p90": 1051,
+      "p99": 5883,
+      "max": 16161
+    },
+    "top5_particiones": [
+      {
+        "particion": [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00+00:00",
+          0
+        ],
+        "filas": 16161
+      },
+      {
+        "particion": [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00+00:00",
+          1
+        ],
+        "filas": 16160
+      },
+      {
+        "particion": [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00+00:00",
+          2
+        ],
+        "filas": 16160
+      },
+      {
+        "particion": [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00+00:00",
+          3
+        ],
+        "filas": 16159
+      },
+      {
+        "particion": [
+          "PAR-D16-01",
+          "2030-06-29T17:20:00+00:00",
+          0
+        ],
+        "filas": 9993
+      }
+    ],
+    "filas_por_particion_usuario": {
+      "particiones": 360052,
+      "min": 1,
+      "p50": 2,
+      "p90": 6,
+      "p99": 11,
+      "max": 192
+    }
+  }
+}

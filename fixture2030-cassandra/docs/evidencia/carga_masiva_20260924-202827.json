@@ -1,0 +1,97 @@
+{
+  "fecha_ejecucion": "2026-09-24T20:28:27+00:00",
+  "cassandra_release_version": "5.0.9",
+  "ambiente": {
+    "nodos": 1,
+    "replication_factor": 1,
+    "consistencia_escritura": "ONE",
+    "cpus_visibles": 8,
+    "memoria_total_gb": 3.8,
+    "python": "3.11.16",
+    "plataforma": "Linux-7.0.12-linuxkit-aarch64-with-glibc2.41",
+    "nota": "cliente y servidor en la misma notebook: compiten por CPU"
+  },
+  "parametros": {
+    "concurrencia": 128,
+    "lote": 10000,
+    "solo_principal": false,
+    "limite": 100000
+  },
+  "resultado": {
+    "comentarios": 100000,
+    "escrituras_ok": 200000,
+    "errores": 0,
+    "primer_error": null,
+    "segundos_escritura": 10.91,
+    "segundos_generacion": 1.01,
+    "segundos_totales": 11.94,
+    "escrituras_por_segundo": 18336.3,
+    "comentarios_por_segundo": 9168.1,
+    "tasa_por_lote": {
+      "min": 13441.7,
+      "mediana": 19347.9,
+      "max": 21332.2
+    },
+    "objetivo_10000_escrituras_s": true
+  },
+  "distribucion": {
+    "comentarios_por_particion": {
+      "particiones": 321,
+      "min": 52,
+      "p50": 228,
+      "p90": 617,
+      "p99": 962,
+      "max": 1292
+    },
+    "top5_particiones": [
+      {
+        "particion": [
+          "PAR-A-4",
+          "2030-06-14T14:30:00+00:00",
+          0
+        ],
+        "filas": 1292
+      },
+      {
+        "particion": [
+          "PAR-C-5",
+          "2030-06-21T14:30:00+00:00",
+          0
+        ],
+        "filas": 1239
+      },
+      {
+        "particion": [
+          "PAR-A-5",
+          "2030-06-19T14:30:00+00:00",
+          0
+        ],
+        "filas": 1052
+      },
+      {
+        "particion": [
+          "PAR-A-6",
+          "2030-06-19T14:30:00+00:00",
+          0
+        ],
+        "filas": 1008
+      },
+      {
+        "particion": [
+          "PAR-C-2",
+          "2030-06-11T14:30:00+00:00",
+          0
+        ],
+        "filas": 962
+      }
+    ],
+    "filas_por_particion_usuario": {
+      "particiones": 79701,
+      "min": 1,
+      "p50": 1,
+      "p90": 2,
+      "p99": 3,
+      "max": 21
+    }
+  }
+}
