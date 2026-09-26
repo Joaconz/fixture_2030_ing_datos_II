@@ -1,0 +1,45 @@
+== B.0 Entorno (RNF10) ==
+fecha (UTC)      : 2026-09-25T23:58:27Z
+redis_version    : 8.10.2
+imagen           : redis:latest -> sha256:718f745deb7dfefeac6eed7041fc7ec9476b50e61b247932682457c41adafa0e
+host             : Apple M4, 10 CPUs, 24 GB RAM
+docker           : 10 CPUs, 8319504384 bytes de RAM para contenedores, Docker Desktop
+maxmemory-policy : volatile-lru | appendonly: yes | appendfsync: everysec
+parámetros       : 50 clientes, 100000 requests por prueba, sin pipeline
+
+== B.1 Línea base: SET / GET (una sola clave, valor de 3 bytes) ==
+"test","rps","avg_latency_ms","min_latency_ms","p50_latency_ms","p95_latency_ms","p99_latency_ms","max_latency_ms"
+"SET","323624.62","0.118","0.040","0.119","0.175","0.263","1.183"
+"GET","317460.31","0.082","0.024","0.087","0.095","0.111","0.375"
+
+== B.2 Operaciones del módulo (formato CSV: test,rps,avg,min,p50,p95,p99,max en ms) ==
+-- lectura de sesión (HGETALL, 9 campos) --
+"test","rps","avg_latency_ms","min_latency_ms","p50_latency_ms","p95_latency_ms","p99_latency_ms","max_latency_ms"
+"HGETALL f30:ses:demo-ses-0000001-1","181488.20","0.147","0.040","0.111","0.271","0.615","59.327"
+-- validar+renovar sesión (FCALL ses_tocar; 50 clientes sobre la MISMA clave: peor caso de contención) --
+"test","rps","avg_latency_ms","min_latency_ms","p50_latency_ms","p95_latency_ms","p99_latency_ms","max_latency_ms"
+"FCALL ses_tocar 1 f30:ses:demo-ses-0000002-1 1800","138888.89","0.330","0.104","0.319","0.431","0.879","4.231"
+-- registrar visita en ranking de tendencia (FCALL tendencia_registrar, misma clave) --
+"test","rps","avg_latency_ms","min_latency_ms","p50_latency_ms","p95_latency_ms","p99_latency_ms","max_latency_ms"
+"FCALL tendencia_registrar 1 f30:bench:tend PAR-D16-01 7200","121506.68","0.342","0.064","0.303","0.695","0.919","2.791"
+
+== B.3 Corrección bajo concurrencia (RF8): el resultado debe ser exacto ==
+-- (a) 100000 incrementos concurrentes: puntaje esperado EXACTO = 100000 --
+puntaje obtenido : 100000
+-- (b) 100000 votos del MISMO usuario desde 50 clientes: puntaje esperado = 1 --
+puntaje obtenido : 1
+-- (c) 100000 votos con usuarios al azar (rango 1000): votantes distintos == suma de puntajes --
+"test","rps","avg_latency_ms","min_latency_ms","p50_latency_ms","p95_latency_ms","p99_latency_ms","max_latency_ms"
+"FCALL voto_emitir 2 f30:bench:vB:votantes f30:bench:vB:ranking USR-__rand_int__ ARG-10","328947.38","0.093","0.024","0.087","0.151","0.255","0.551"
+votantes distintos (SCARD)  : 1000
+puntaje de ARG-10 (ZSCORE)  : 1000
+
+== B.4 Método de medición de cache hit ratio (sintético: valida el método, NO es un hit ratio de producción) ==
+Se vacían las estadísticas, se cargan 56 de 112 claves de caché y se piden 100000 claves al azar de las 112.
+Esperado por construcción: ~50 %.
+GET f30:cache:bench:__rand_int__: 319488.81 requests per second, p50=0.079 msec
+keyspace_hits=50174 keyspace_misses=49826 -> hit ratio observado = 50.2 %
+
+== B.5 Limpieza de claves de la medición (SCAN + UNLINK) ==
+Borrando claves con prefijo 'f30:bench:' (SCAN + UNLINK)...
+DBSIZE restante: 4253

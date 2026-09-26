@@ -1,0 +1,48 @@
+# Ejecutado: 2026-09-25T23:58:13Z
+== 2.1 Estado previo (DBSIZE es O(1), no recorre claves) ==
+4192
+== 2.2 Generación determinista ==
+2200
+112
+500
+== 2.3 Verificación de lo cargado ==
+4204
+2
+112
+500
+ARG-10
+99
+FRA-7
+99
+ARG-9
+100
+BRA-11
+101
+FRA-10
+101
+== 2.4 Una sesión cargada: atributos y TTL restante ==
+session_id
+demo-ses-0000001-1
+usuario_id
+USR-0000001
+rol
+HINCHA
+region
+EU
+dispositivo
+ios
+estado
+ACTIVA
+creada_en
+1790380626
+ultima_actividad
+1790380686
+expira_absoluta
+1790423826
+solicitudes
+13
+1793
+== 2.5 Sesión bloqueada de muestra (usuario 33) ==
+BLOQUEADA
+== 2.6 Caché fría a propósito: no existe copia de ningún partido todavía ==
+0

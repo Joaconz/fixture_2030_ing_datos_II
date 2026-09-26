@@ -1,0 +1,48 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · MÉTRICAS E INSPECCIÓN (RF13, RNF8)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/metricas.redis | redis-cli"
+#  RNF8: no se usa KEYS ni recorridos completos. Sólo INFO, DBSIZE (O(1)) y SCAN de UNA página
+#  (COUNT acotado). Para muestrear una clave puntual se usan comandos por clave.
+# ============================================================
+
+ECHO "== 7.1 Memoria: uso, límite y política =="
+INFO memory
+
+ECHO "== 7.2 Estadísticas: aciertos/fallos de clave, vencidas por TTL y desalojadas por presión =="
+ECHO "-- expired_keys = TTL (validez)   evicted_keys = presión de memoria (maxmemory)  --"
+INFO stats
+
+ECHO "== 7.3 Keyspace: claves totales y cuántas tienen TTL =="
+INFO keyspace
+
+ECHO "== 7.4 Clientes conectados =="
+INFO clients
+
+ECHO "== 7.5 Comandos ejecutados y tiempo por comando (commandstats) =="
+INFO commandstats
+
+ECHO "== 7.6 Inspección segura: UNA página de SCAN por prefijo (no bloquea, no es exhaustiva) =="
+SCAN 0 MATCH f30:ses:* COUNT 20
+SCAN 0 MATCH f30:rank:* COUNT 100
+
+ECHO "== 7.7 TTL y codificación de claves representativas =="
+TTL f30:ses:demo-ses-0000001-1
+OBJECT ENCODING f30:ses:demo-ses-0000001-1
+TTL f30:rank:tendencia:2030062916
+OBJECT ENCODING f30:rank:tendencia:2030062916
+ECHO "-- votación abierta: sin TTL (-1) a propósito --"
+TTL f30:voto:mvp:PAR-D16-01:ranking
+OBJECT ENCODING f30:voto:mvp:PAR-D16-01:votantes
+TTL f30:voto:mvp:PAR-D16-01:votantes
+
+ECHO "== 7.8 Costo en memoria por clave (bytes) =="
+MEMORY USAGE f30:ses:demo-ses-0000001-1
+MEMORY USAGE f30:rank:tendencia:2030062916
+MEMORY USAGE f30:voto:mvp:PAR-D16-01:votantes
+
+ECHO "== 7.9 SLOWLOG: comandos que superaron 10 ms (config: slowlog-log-slower-than) =="
+SLOWLOG LEN
+SLOWLOG GET 5
+
+ECHO "== 7.10 Latencia: eventos sobre el umbral (vacío = ninguno) =="
+LATENCY LATEST

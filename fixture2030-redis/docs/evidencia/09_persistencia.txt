@@ -1,0 +1,11 @@
+# Ejecutado: 2026-09-25T23:58:39Z
+== Tras 'docker compose restart redis' (AOF en ~/docker/data/redis) ==
+-- funciones cargadas --
+library_name
+f30
+library_name
+f30carga
+-- votación abierta (sin TTL) --
+500
+-- sesión de muestra --
+1

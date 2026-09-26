@@ -1,0 +1,52 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · OPERACIONES CONCURRENTES Y RANKING (RF8, RF9)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/concurrencia.redis | redis-cli"
+#  La prueba con clientes realmente simultáneos está en scripts/concurrencia_paralela.sh
+#
+#  OPERACIÓN 1 — VOTO MVP ÚNICO POR USUARIO (RF8)
+#    Riesgo sin atomicidad (check-then-act): dos requests del MISMO usuario ejecutan
+#    SISMEMBER (ambos ven "no votó"), ambos suman -> voto doble. O el proceso cae entre
+#    SADD y ZINCRBY -> votante registrado pero voto sin contar.
+#    Solución: FCALL voto_emitir. Redis ejecuta la función como unidad: SADD + ZINCRBY
+#    no se intercalan con ningún otro cliente. SADD devuelve 1 sólo al primero.
+#
+#  OPERACIÓN 2 — PARTIDOS EN TENDENCIA POR HORA (RF9)
+#    ZSET con bucket horario: ZINCRBY es atómico por sí mismo (un comando = una unidad)
+#    y el ranking sale ordenado sin ordenar en la app. EXPIRE NX fija el TTL sólo la
+#    primera vez: el bucket vence solo 2 h después.
+# ============================================================
+
+ECHO "== 5.0 Preparación (votación de demostración aparte de la muestra) =="
+DEL f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking
+
+ECHO "== 5.1 VOTO: USR-A vota a ARG-10 -> {1, puntaje} =="
+FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A ARG-10
+ECHO "== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout) -> {0,0}, el ranking no cambia =="
+FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A ARG-10
+FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A FRA-10
+ECHO "== 5.3 Otros votantes =="
+FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-B FRA-10
+FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-C ARG-10
+ECHO "== 5.4 Invariante: votos contados en el ranking == votantes distintos =="
+ZRANGE f30:voto:mvp:DEMO:ranking 0 -1 WITHSCORES
+SCARD f30:voto:mvp:DEMO:votantes
+DEL f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking
+
+ECHO "== 5.5 Ranking real de la votación de PAR-D16-01 (cargada en la muestra): top 3 =="
+ZREVRANGE f30:voto:mvp:PAR-D16-01:ranking 0 2 WITHSCORES
+
+ECHO "== 5.6 TENDENCIA (RF9): top 5 partidos más vistos en el bucket 2030-06-29 16h =="
+ZREVRANGE f30:rank:tendencia:2030062916 0 4 WITHSCORES
+ECHO "-- posición de PAR-D16-01 (0 = primero) y su puntaje --"
+ZREVRANK f30:rank:tendencia:2030062916 PAR-D16-01
+ZSCORE f30:rank:tendencia:2030062916 PAR-D16-01
+TTL f30:rank:tendencia:2030062916
+
+ECHO "== 5.7 Registrar visitas en un bucket nuevo: EXPIRE NX fija el TTL sólo en la primera visita =="
+DEL f30:rank:tendencia:demo
+FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-A-1 7200
+FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-A-1 7200
+FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-B-2 7200
+ZREVRANGE f30:rank:tendencia:demo 0 -1 WITHSCORES
+TTL f30:rank:tendencia:demo
+DEL f30:rank:tendencia:demo
