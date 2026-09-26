@@ -1,6 +1,7 @@
 # Claude Code artifacts (local, auto-generated)
 Claude outputs/
-.claude/
+.claude/*
+!.claude/skills/
 
 # Environment & credentials
 .env

@@ -5,6 +5,8 @@
 **Alumnos:** Santiago Pazos, Joaquín Núñez y Valentina Frisoli
 
 > Este documento transcribe el contenido del Hito 3 (arquitectura distribuida) y queda como contexto persistente del proyecto en el repositorio. Incluye la corrección pedida por la corrección del hito: los parámetros **N/R/W** se expresan de forma explícita únicamente donde la tecnología los expone como parámetro nativo por operación (**Cassandra**); en el resto de los modelos (InfluxDB, MongoDB, Redis) réplica y consistencia se describen conceptualmente.
+>
+> La entrega original tenía un error en la sección "N2 · Partidos" (decía que Partidos quedó en MongoDB; en realidad quedó en Objetos/IRIS según el Hito 2) que ya está corregido en este documento — ver "Historial de revisión" al final. La corrección real del profesor a este hito (sobre N/R/W en InfluxDB) está en [`correcciones-profesor.md`](./correcciones-profesor.md).
 
 ---
 
@@ -15,16 +17,16 @@ En el Hito 2 se asignó cada necesidad de datos a uno de los seis modelos NoSQL.
 | Necesidad (Hito 1/2) | Modelo elegido | Qué quedaba pendiente en Hito 3 |
 |---|---|---|
 | N1 Equipos y jugadores | Documental (MongoDB) | Topología de réplicas y alcance de la consistencia en escritura |
-| N2 Partidos | Documental (MongoDB) | Decisión frágil (margen 0,20). Validar con CAP, no solo con la matriz |
+| N2 Partidos | Objetos (IRIS) | Decisión frágil (margen 0,10). Validar con CAP, no solo con la matriz |
 | N3 Eventos | Grafo (Neo4j) | Consistencia de las relaciones frente a escrituras concurrentes |
-| N4 Usuarios | Documental (MongoDB) | Decisión frágil (margen 0,20). Validar con CAP y topología multi-región |
+| N4 Usuarios | Documental (MongoDB) | Decisión frágil (margen 0,10). Validar con CAP y topología multi-región |
 | N5 Sesiones | Clave-valor (Redis) | Alcance de la réplica por región y parámetros N, R, W |
 | N6 Comentarios | Columnar (Cassandra) | Criterio de partición y parámetros N, R, W para el pico |
 | N7 Estadísticas en vivo | Series temporales (InfluxDB) | Partición por período y estrategia de downsampling |
 | N8 Entidades complejas (tipos de evento) | Objetos (IRIS) | Alcance de la consistencia frente a Eventos (N3) |
 | N9 Auditoría e históricos | Columnar (Cassandra) | Contradicción a resolver: BASE vs. "no se puede perder" |
 
-**Sobre el margen de las decisiones frágiles.** El control de margen del Hito 2 fue correcto en señalar N2 y N4: un resultado que depende de 0,20 puntos sobre 5 no es una base sólida por sí sola. Lo que agrega este hito no es una nueva puntuación, sino un criterio de naturaleza distinta — qué exige el teorema CAP para cada necesidad — que puede confirmar la elección por una razón independiente del puntaje, o señalar que conviene revisarla (ver validaciones de N2 y N4 más abajo).
+**Sobre el margen de las decisiones frágiles.** El control de margen del Hito 2 fue correcto en señalar N2 y N4: un resultado que depende de 0,10 puntos sobre 5 no es una base sólida por sí sola. Lo que agrega este hito no es una nueva puntuación, sino un criterio de naturaleza distinta — qué exige el teorema CAP para cada necesidad — que puede confirmar la elección por una razón independiente del puntaje, o señalar que conviene revisarla (ver validaciones de N2 y N4 más abajo).
 
 **Sobre la contradicción de Auditoría.** En el Hito 2 conviven dos cosas que no encajan del todo: que un registro de auditoría perdido invalida el propósito del subsistema, y que se elige igual un modelo orientado a BASE. La herramienta para resolverlo sin cambiar de modelo son los parámetros N, R y W: permiten configurar, dentro de un motor que en general prioriza disponibilidad, un comportamiento de escritura con la garantía de durabilidad que este dato necesita (desarrollado más abajo).
 
@@ -55,11 +57,11 @@ Tres pares comparten el mismo patrón CAP y conviene explicarlo una sola vez:
 
 ### N2 · Partidos — validación independiente de la decisión frágil
 
-La matriz del Hito 2 mostró Documental (MongoDB) por 0,20 sobre Objetos (IRIS). El análisis CAP no vuelve a puntuar: pregunta qué necesita el requisito en sí. La propiedad que no se puede resignar es la consistencia — se prefiere que el cierre falle o quede en espera antes que mostrar dos resultados oficiales distintos. Ese requisito es el mismo para cualquiera de los dos modelos, así que no rompe el empate por sí solo. Lo que sí agrega una razón nueva es la **topología**: un partido no necesita escribirse desde más de una región a la vez —el cierre lo confirma un único árbitro digital, no una audiencia distribuida—, así que el diseño CP se resuelve con un único nodo autoritativo por partido y replicación síncrona hacia el resto, sin pagar el costo de un consenso multi-región en cada escritura. Esa topología es igual de viable en IRIS que en MongoDB. Se sostiene la decisión del Hito 2 no porque CAP la desempate, sino porque CAP confirma que el 0,20 de diferencia no compromete nada crítico.
+La matriz del Hito 2 mostró Objetos (IRIS) por 0,10 sobre Documental (MongoDB). El análisis CAP no vuelve a puntuar: pregunta qué necesita el requisito en sí. La propiedad que no se puede resignar es la consistencia — se prefiere que el cierre falle o quede en espera antes que mostrar dos resultados oficiales distintos. Ese requisito es el mismo para cualquiera de los dos modelos, así que no rompe el empate por sí solo. Lo que sí agrega una razón nueva es la **topología**: un partido no necesita escribirse desde más de una región a la vez —el cierre lo confirma un único árbitro digital, no una audiencia distribuida—, así que el diseño CP se resuelve con un único nodo autoritativo por partido y replicación síncrona hacia el resto, sin pagar el costo de coordinar entre regiones en cada escritura. Esa topología es igual de viable en IRIS que en MongoDB. Se sostiene la decisión del Hito 2 no porque CAP la desempate, sino porque CAP confirma que el 0,10 de diferencia no compromete nada crítico.
 
 ### N4 · Usuarios — validación independiente de la decisión frágil
 
-Acá el margen de 0,20 favoreció a Documental (MongoDB) sobre Columnar (Cassandra). El análisis CAP muestra que Usuarios es un caso AP: el perfil se lee en cada request desde seis países y tolera propagarse con demora, así que sacrificar disponibilidad para mantener consistencia inmediata sería resignar justamente lo que el escenario pide (100 ms para el 95% de las consultas). Los dos modelos pueden operar en modo AP con consistencia eventual, así que otra vez CAP no desempata por sí solo. La razón que sí agrega peso a Documental es de **topología, no de puntaje**: Equipos, Jugadores y Partidos ya requieren un núcleo con escritura coordinada en el mismo motor documental, y agregar Usuarios ahí evita un tercer sistema replicado de forma independiente, con su propio mecanismo de reconciliación. Se sostiene Documental, pero se identifica la condición que la haría caer: si el padrón de usuarios creciera muy por encima de lo estimado, la escalabilidad de escritura de un modelo columnar volvería a ser competitiva (pregunta abierta, ver más abajo).
+Acá el margen de 0,10 favoreció a Documental (MongoDB) sobre Columnar (Cassandra). El análisis CAP muestra que Usuarios es un caso AP: el perfil se lee en cada request desde seis países y tolera propagarse con demora, así que sacrificar disponibilidad para mantener consistencia inmediata sería resignar justamente lo que el escenario pide (100 ms para el 95% de las consultas). Los dos modelos pueden operar en modo AP con consistencia eventual, así que otra vez CAP no desempata por sí solo. La razón que sí agrega peso a Documental es de **topología, no de puntaje**: Equipos y Jugadores ya requieren un núcleo con escritura coordinada en el mismo motor documental, y agregar Usuarios ahí evita un segundo sistema replicado de forma independiente, con su propio mecanismo de reconciliación — a diferencia de Partidos que, por su propio requisito de consistencia (N2, más arriba), ya vive en un motor de objetos separado del documental. Se sostiene Documental, pero se identifica la condición que la haría caer: si el padrón de usuarios creciera muy por encima de lo estimado, la escalabilidad de escritura de un modelo columnar volvería a ser competitiva (pregunta abierta, ver más abajo).
 
 ### N9 · Auditoría — resolución de la contradicción
 
@@ -161,7 +163,7 @@ flowchart TB
 
     NUCLEO["**Núcleo autoritativo (single-writer por dato crítico)**"]
 
-    Partidos["Partidos (MongoDB)<br/>CP — escritura única, ACID"]
+    Partidos["Partidos (IRIS)<br/>CP — escritura única, ACID"]
     EquiposJug["Equipos / Jugadores (MongoDB)<br/>CP en escritura, AP en lectura"]
     Usuarios["Usuarios (MongoDB)<br/>AP — replicado multi-región"]
 
@@ -215,3 +217,20 @@ flowchart TB
 3. La condición que haría caer la decisión de N4 Usuarios (padrón muy por encima de lo estimado) ¿a partir de qué cifra concreta correspondería reevaluarla? ¿La réplica local de Usuarios en cada región alcanza para el objetivo de 100 ms, o hace falta un primario por región además de la réplica de lectura?
 4. ¿Qué pasa con una sesión activa cuando el usuario cambia de región durante un partido (por ejemplo, viajando)? El diseño actual no contempla ese caso y lo deja para el hito de implementación.
 5. ¿Los valores de N, R y W propuestos para Comentarios y Auditoría (Cassandra) siguen siendo razonables si dos partidos de alta audiencia se superponen en el calendario?
+
+---
+
+## Historial de revisión
+
+**26/09/2026 — corrección de N/R/W en InfluxDB (ver [`correcciones-profesor.md`](./correcciones-profesor.md)).** El profesor pidió expresar réplica y consistencia de Estadísticas en vivo de forma conceptual, reservando N/R/W explícito para Cassandra. Aplicado en la nota introductoria, en la sección "Sobre el uso de N/R/W en esta sección" y en la fila de Estadísticas en vivo de la tabla de replicación.
+
+**26/09/2026 — corrección de un error propio, no señalado por el profesor.** La entrega original de este documento invertía el resultado del Hito 2 para **N2 Partidos**: decía "la matriz del Hito 2 mostró Documental (MongoDB) por 0,20 sobre Objetos (IRIS)", cuando la matriz real ([`../hito-2-matriz-decision/hito-2-matriz-decision.md`](../hito-2-matriz-decision/hito-2-matriz-decision.md), Sección 3) muestra **Objetos (IRIS) con 4,25 por 0,10 sobre Documental (4,15)** — el ganador y el margen estaban los dos invertidos. Se corrigió en cuatro lugares de este documento:
+
+- La tabla "Resumen de decisiones previas" (N2: Documental → Objetos/IRIS).
+- El párrafo de validación de N2 (ganador y margen).
+- El diagrama de arquitectura (el nodo de Partidos pasó de "(MongoDB)" a "(IRIS)").
+- Un efecto de segundo orden en el párrafo de validación de **N4 Usuarios**, que citaba "Equipos, Jugadores y Partidos" como el núcleo ya coordinado en el motor documental para justificar sumar Usuarios ahí — con Partidos en IRIS, ese núcleo es solo Equipos y Jugadores. La conclusión de N4 (se sostiene Documental) no cambia: sigue siendo válido evitar un segundo sistema replicado por separado, ahora con dos entidades en el núcleo en lugar de tres.
+
+De paso, se corrigió también el margen citado para **N4 Usuarios**: el documento original decía "0,20" en dos lugares (tabla resumen y párrafo de validación) y en la nota "Sobre el margen de las decisiones frágiles"; el margen real, según la misma matriz del Hito 2 y confirmado por el texto de la corrección del profesor al Hito 2 ("márgenes son apenas 0,10"), es **0,10**. No cambia el modelo ganador (Documental/MongoDB se mantiene).
+
+El profesor no marcó el error de N2 en su corrección a este hito (ver [`correcciones-profesor.md`](./correcciones-profesor.md)) — el foco de esa revisión fue otro. Se corrige igual porque la matriz del Hito 2 es la fuente de esta decisión, y porque las referencias a Partidos en Objetos/IRIS ya se habían corregido en el módulo de Redis (Hito 7, commits `f94309e` y `73c7d9d`) antes de que este documento se pusiera al día.

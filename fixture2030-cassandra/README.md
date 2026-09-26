@@ -12,7 +12,7 @@ Módulo tabular de comentarios masivos del Mundial 2030: publicación y lectura 
 
 ```
 fixture2030-cassandra/
-├── docker-compose.yml              cassandra:latest + persistencia en ~/docker/data/cassandra + cargador
+├── docker-compose.yml              cassandra:latest + volumen nombrado respaldado por ~/docker/data/cassandra + cargador
 ├── scripts/
 │   ├── esquema.cql                 keyspace, 4 tablas, índice SAI (idempotente)
 │   ├── carga_muestra.cql           112 configs + 80 comentarios de 2 partidos (idempotente)
@@ -48,6 +48,7 @@ fixture2030-cassandra/
 
 ```bash
 cd fixture2030-cassandra
+mkdir -p ~/docker/data/cassandra          # carpeta de persistencia (RNF2)
 docker compose up -d
 
 # Esperar a que STATUS diga "healthy" (60-90 s la primera vez)
@@ -60,7 +61,7 @@ docker compose exec cassandra nodetool status
 docker compose exec cassandra cqlsh
 ```
 
-Los datos quedan en `~/docker/data/cassandra` (RNF2): sobreviven a `docker compose down`.
+**Cómo se guarda (RNF2):** los datos van a un **volumen nombrado** de Docker, `fixture2030_cassandra_data`, cuyo respaldo es la carpeta `~/docker/data/cassandra` del host. Sobreviven a `docker compose down` y a un reinicio del contenedor.
 
 ---
 
@@ -141,8 +142,10 @@ docker compose logs -f cassandra                    # logs (flushes, compactacio
 docker compose exec cassandra cqlsh                 # cliente interactivo
 docker compose exec cassandra nodetool status       # estado del nodo
 docker compose down                                 # detener, conservando los datos
-docker compose down && rm -rf ~/docker/data/cassandra   # BORRAR TODO y reproducir desde cero
+docker compose down -v && rm -rf ~/docker/data/cassandra && mkdir -p ~/docker/data/cassandra   # BORRAR TODO y reproducir desde cero
 ```
+
+**Empezar de cero (borra todo).** `down -v` borra el volumen nombrado pero **no** los archivos de la carpeta del host, por eso hacen falta los tres pasos de arriba (mismo patrón que Redis, Hito 7).
 
 ---
 
@@ -150,6 +153,7 @@ docker compose down && rm -rf ~/docker/data/cassandra   # BORRAR TODO y reproduc
 
 ```bash
 git clone <repo> && cd <repo>/fixture2030-cassandra
+mkdir -p ~/docker/data/cassandra
 docker compose up -d
 docker compose ps                                                   # esperar "healthy"
 docker compose exec cassandra cqlsh -e "SHOW VERSION"
