@@ -1,11 +1,22 @@
-# Ejecutado: 2026-09-25T23:58:39Z
-== Tras 'docker compose restart redis' (AOF en ~/docker/data/redis) ==
--- funciones cargadas --
-library_name
-f30
-library_name
-f30carga
--- votación abierta (sin TTL) --
-500
--- sesión de muestra --
-1
+# Ejecutado: 2026-09-26T00:41:58Z
+== P.1 Volumen nombrado respaldado por la carpeta del host (RNF2) ==
+volumen: fixture2030_redis_data | driver=local | tipo=none | opciones=bind | carpeta del host=/Users/joaquin/docker/data/redis
+montaje dentro del contenedor: volume "fixture2030_redis_data" -> /data
+-- contenido de /Users/joaquin/docker/data/redis (lo escribe Redis: AOF y RDB) --
+appendonlydir
+dump.rdb
+== P.2 Estado antes de reiniciar ==
+clave marcadora : creada-00:41:58 | TTL: 3600 s
+votación abierta: 500 votantes (sin TTL: -1)
+librerías       : f30carga f30 
+== P.3 docker compose restart redis ==
+clave marcadora : creada-00:41:58 | TTL: 3594 s   <- el TTL sigue corriendo, no se reinició
+votación abierta: 500 votantes
+librerías       : f30 f30carga 
+== P.4 docker compose down (sin -v) + up -d: el contenedor se destruye y se crea de nuevo ==
+-- con el contenedor destruido, el volumen y la carpeta siguen: --
+fixture2030_redis_data
+appendonlydir dump.rdb 
+clave marcadora : creada-00:41:58 | TTL: 3588 s
+votación abierta: 500 votantes
+librerías       : f30 f30carga 

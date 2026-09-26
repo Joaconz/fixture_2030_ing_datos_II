@@ -12,7 +12,7 @@ Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inacti
 
 ```
 fixture2030-redis/
-├── docker-compose.yml           redis:latest · 127.0.0.1:6379 · datos en ~/docker/data/redis
+├── docker-compose.yml           redis:latest · 127.0.0.1:6379 · volumen nombrado respaldado por ~/docker/data/redis
 ├── config/redis.conf            maxmemory 256mb · volatile-lru · AOF everysec
 ├── scripts/
 │   ├── funciones_f30.lua        librería `f30`: 8 funciones atómicas (sesión, caché, voto, tendencia)
@@ -27,6 +27,7 @@ fixture2030-redis/
 │   ├── benchmark.sh             redis-benchmark + corrección bajo concurrencia
 │   ├── memoria_prueba.sh        TTL vs evicción (baja maxmemory temporalmente y la restaura)
 │   ├── limpieza.redis / .sh     limpieza opcional (SCAN + UNLINK, nunca KEYS/FLUSHALL)
+│   ├── verificar_persistencia.sh  volumen nombrado, restart y down/up sin perder datos
 │   └── correr_todo.sh           todo lo anterior en orden, guardando la evidencia
 ├── docs/
 │   ├── patrones_de_acceso.md          problema de concurrencia y patrones P1–P11 (se escribió primero)
@@ -45,6 +46,7 @@ fixture2030-redis/
 - Docker Desktop (o Docker Engine) con Docker Compose V2.
 - ~300 MB de RAM libres (Redis está limitado a 256 MB por configuración).
 - Puerto `6379` libre en el host. Si está ocupado: `REDIS_PORT=16379 docker compose up -d`.
+- La carpeta `~/docker/data/redis` **debe existir antes** del primer `docker compose up` (`mkdir -p ~/docker/data/redis`, ya está en §3). Si falta, Docker falla con `no such file or directory`. Otra ubicación: `REDIS_DATA_DIR=/ruta docker compose up -d`. En Windows, usar WSL2 (la variable `HOME` debe existir) o definir `REDIS_DATA_DIR`.
 - **No** hace falta instalar `redis-cli`: se usa el del contenedor. Ni Python: los scripts son `.redis`, Lua y `sh`.
 
 ---
@@ -115,7 +117,7 @@ Cada `.redis` imprime marcadores `== N.M … ==` que dicen qué paso se está vi
 
 ## 5. Detener y reiniciar sin perder datos (RNF2)
 
-Los datos y el AOF están en `~/docker/data/redis`; sobreviven a `down`, a un reinicio del contenedor y a reiniciar Docker.
+**Cómo se guarda (RNF2):** los datos van a un **volumen nombrado** de Docker, `fixture2030_redis_data`, cuyo respaldo es la carpeta `~/docker/data/redis` del host (montaje que exige el enunciado). Redis escribe ahí el AOF y el RDB; sobreviven a `down`, a un reinicio del contenedor y a reiniciar Docker.
 
 ```bash
 docker compose down          # detener (conserva los datos)
@@ -126,12 +128,12 @@ docker compose up -d         # volver a levantar: sesiones, votación y funcione
 docker compose restart redis # reinicio rápido del servicio
 ```
 
-Comprobación: [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt). Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
+Comprobación (`sh scripts/verificar_persistencia.sh`): [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt) muestra el volumen y su carpeta, y que una clave con TTL, la votación y las funciones siguen tras `restart` y tras `down` + `up`. Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
 
-**Empezar de cero (borra todo):**
+**Empezar de cero (borra todo).** `down -v` borra el volumen pero **no** los archivos de la carpeta del host, por eso hacen falta los tres pasos:
 
 ```bash
-docker compose down && rm -rf ~/docker/data/redis
+docker compose down -v && rm -rf ~/docker/data/redis && mkdir -p ~/docker/data/redis
 ```
 
 **Limpieza parcial** sin bajar el servicio: `docker compose exec -T redis sh /scripts/limpieza.sh` (borra `f30:*` con `SCAN` + `UNLINK`; conserva las funciones).

@@ -12,6 +12,7 @@ run() { # run <archivo .redis> -> ejecuta filtrando comentarios (redis-cli no lo
   $RC sh -c "grep -v '^#' /scripts/$1 | redis-cli"
 }
 
+mkdir -p "${REDIS_DATA_DIR:-$HOME/docker/data/redis}"   # el volumen nombrado exige que la carpeta exista (RNF2)
 docker compose up -d --wait > /dev/null
 echo "Versión: $($RC redis-cli INFO server | grep '^redis_version:' | tr -d '\r') | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -31,14 +32,6 @@ sh scripts/benchmark.sh > $EV/06_benchmark.txt
 $RC redis-cli FCALL carga_muestra 0 2000 > /dev/null
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run metricas.redis; }        > $EV/08_metricas.txt
 
-# Persistencia: se reinicia el contenedor y se comprueba que funciones y votación siguen
-docker compose restart redis > /dev/null && sleep 1
-docker compose up -d --wait > /dev/null
-{
-  echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "== Tras 'docker compose restart redis' (AOF en ~/docker/data/redis) =="
-  echo "-- funciones cargadas --"; $RC redis-cli FUNCTION LIST | grep -A1 '^library_name' | grep -v '^--'
-  echo "-- votación abierta (sin TTL) --"; $RC redis-cli SCARD f30:voto:mvp:PAR-D16-01:votantes
-  echo "-- sesión de muestra --"; $RC redis-cli EXISTS f30:ses:demo-ses-0000001-1
-} > $EV/09_persistencia.txt
+# Persistencia: volumen nombrado + reinicio + down/up sin -v (ver verificar_persistencia.sh)
+sh scripts/verificar_persistencia.sh > $EV/09_persistencia.txt
 echo "Evidencia escrita en $EV/"
