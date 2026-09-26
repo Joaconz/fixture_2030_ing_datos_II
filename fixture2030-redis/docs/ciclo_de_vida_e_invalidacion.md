@@ -8,7 +8,7 @@ Decisión explícita de vida útil para **todo** dato temporal (RNF6). Salidas q
 |---|---|---|---|---|
 | Sesión `f30:ses:*` | 30 min sin actividad · tope absoluto 12 h | Cada request autenticado (`ses_tocar`) | Logout, cerrar todas, bloqueo | No se conserva |
 | Índice `f30:usr:*:sesiones` | 12 h | No | `ses_cerrar_todas` | No |
-| Copia de partido | 60 s | No (se repuebla en el miss) | **Sí: al cambiar Mongo** (`cache_invalidar`) | No |
+| Copia de partido | 60 s | No (se repuebla en el miss) | **Sí: al cambiar la fuente (IRIS)** (`cache_invalidar`) | No |
 | Versión `…:ver` | 24 h | Cada invalidación | — | No |
 | Copia de perfil | 900 s | No | **Sí: al cambiar Mongo** | No |
 | Votación MVP **abierta** | **No vence** | — | — | **Sí, hasta cerrar** (§5) |
@@ -69,12 +69,12 @@ Con `EXISTS` → `HSET` → `EXPIRE` separados, la clave puede vencer **entre** 
 
 | Pregunta del enunciado (§5.4) | Respuesta |
 |---|---|
-| **Fuente de verdad** | MongoDB, colección de Partidos (N2, CP en el cierre según Hito 3). **Aún no implementada** (el Hito 4 sólo tiene equipos y jugadores). Redis guarda una **copia** |
+| **Fuente de verdad** | El motor de objetos (IRIS): N2 Partidos según el Hito 2, CP en el cierre según el Hito 3. **Aún no implementada** (el Hito 4 sólo tiene equipos y jugadores en MongoDB). Redis guarda una **copia** |
 | **Cache hit** | `f30:cache:partido:{id}` existe → se sirve el JSON |
-| **Cache miss** | Ausente → leer Mongo → `cache_poner_si_version` con TTL 60 s → responder |
-| **Cuándo se actualiza/invalida** | En cuanto el servicio de partidos **confirma** el cambio en Mongo: `cache_invalidar` (DEL + INCR de `:ver`). No se espera al TTL |
-| **Permanencia máxima admisible** | 60 s **sólo** si la invalidación falla (servicio caído entre el commit de Mongo y el DEL). Con invalidación funcionando, la copia obsoleta dura ≈ 0 |
-| **Clave ausente o Redis caído** | Se lee de Mongo y se responde igual. Se pierde velocidad, no disponibilidad. **No se repuebla si Redis no responde** |
+| **Cache miss** | Ausente → leer la fuente → `cache_poner_si_version` con TTL 60 s → responder |
+| **Cuándo se actualiza/invalida** | En cuanto el servicio de partidos **confirma** el cambio en la fuente: `cache_invalidar` (DEL + INCR de `:ver`). No se espera al TTL |
+| **Permanencia máxima admisible** | 60 s **sólo** si la invalidación falla (servicio caído entre el commit en la fuente y el DEL). Con invalidación funcionando, la copia obsoleta dura ≈ 0 |
+| **Clave ausente o Redis caído** | Se lee de la fuente y se responde igual. Se pierde velocidad, no disponibilidad. **No se repuebla si Redis no responde** |
 
 ### 2.1 Estrategia de coherencia (por qué TTL no alcanza)
 
@@ -84,11 +84,11 @@ Un TTL de 60 s significa que tras un gol el marcador viejo podría servirse hast
 
 Invalidar con `DEL` a secas deja una ventana:
 
-1. Un lector L hace *miss* y lee Mongo (marcador 0-0). Es lento.
+1. Un lector L hace *miss* y lee la fuente (marcador 0-0). Es lento.
 2. El servicio confirma el gol (1-0) e invalida.
 3. L termina y hace `SET` con 0-0. **Copia obsoleta durante todo el TTL.**
 
-Solución: el lector anota `GET :ver` **antes** de leer Mongo y repuebla con `cache_poner_si_version(…, versión_leída)`; la función descarta la escritura si `:ver` actual > versión leída. `cache_invalidar` sube `:ver`. Demostrado en [`04_cache.txt`](./evidencia/04_cache.txt) §4.5: la escritura tardía devuelve `0` y la caché conserva 1-0.
+Solución: el lector anota `GET :ver` **antes** de leer la fuente y repuebla con `cache_poner_si_version(…, versión_leída)`; la función descarta la escritura si `:ver` actual > versión leída. `cache_invalidar` sube `:ver`. Demostrado en [`04_cache.txt`](./evidencia/04_cache.txt) §4.5: la escritura tardía devuelve `0` y la caché conserva 1-0.
 
 *Límite:* `:ver` vence a las 24 h; si venciera justo mientras un lector lento sigue en vuelo, la comparación se reinicia contra 0. Es una ventana de muy baja probabilidad (lector con >24 h de retraso) y el daño está acotado por el TTL de 60 s.
 
@@ -106,7 +106,7 @@ Es el único dato del módulo que **no** es reconstruible: si se pierde un voto,
 
 ## 5. Cierre de la votación (decisión pendiente, fuera de alcance)
 
-Al cerrarse, el resultado **debe** pasar a una fuente de verdad (Mongo) y recién después ponerse `EXPIRE 86400` sobre las claves. Este hito no integra Mongo (el enunciado lo excluye); queda documentado como deuda: **hasta que el cierre persista el resultado, la votación es un dato que sólo vive en Redis** y depende de AOF (`everysec`: se aceptaría perder ~1 s de votos ante una caída del proceso).
+Al cerrarse, el resultado **debe** pasar a una fuente de verdad (ninguna está asignada a las votaciones en los Hitos 2 y 3: hay que definirla) y recién después ponerse `EXPIRE 86400` sobre las claves. Este hito no integra ninguna fuente (el enunciado lo excluye); queda documentado como deuda: **hasta que el cierre persista el resultado, la votación es un dato que sólo vive en Redis** y depende de AOF (`everysec`: se aceptaría perder ~1 s de votos ante una caída del proceso).
 
 ## 6. Resumen de qué pasa ante una clave ausente
 

@@ -2,7 +2,7 @@
 
 **Ingeniería de Datos II · Grupo 2** — Santiago Pazos, Valentina Frisoli, Joaquín Núñez
 
-Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inactividad), **caché de consultas frecuentes** (ficha de partido, perfil) con invalidación, **votación MVP concurrente** y **ranking temporal de partidos en tendencia**. Redis guarda estado transitorio y copias; **la fuente de verdad sigue en los módulos anteriores** (MongoDB para usuarios y partidos).
+Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inactividad), **caché de consultas frecuentes** (ficha de partido, perfil) con invalidación, **votación MVP concurrente** y **ranking temporal de partidos en tendencia**. Redis guarda estado transitorio y copias; **la fuente de verdad sigue en los módulos anteriores** (MongoDB para Usuarios e IRIS para Partidos, según la matriz del Hito 2; ninguno está implementado todavía).
 
 > **Nodo único de laboratorio.** Sin réplicas, Sentinel ni Cluster: no es alta disponibilidad. Diferencias con un despliegue real en [`docs/memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §5.
 
@@ -12,7 +12,7 @@ Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inacti
 
 ```
 fixture2030-redis/
-├── docker-compose.yml           redis:latest · 127.0.0.1:6379 · datos en ~/docker/data/redis
+├── docker-compose.yml           redis:latest · 127.0.0.1:6379 · volumen nombrado respaldado por ~/docker/data/redis
 ├── config/redis.conf            maxmemory 256mb · volatile-lru · AOF everysec
 ├── scripts/
 │   ├── funciones_f30.lua        librería `f30`: 8 funciones atómicas (sesión, caché, voto, tendencia)
@@ -27,6 +27,7 @@ fixture2030-redis/
 │   ├── benchmark.sh             redis-benchmark + corrección bajo concurrencia
 │   ├── memoria_prueba.sh        TTL vs evicción (baja maxmemory temporalmente y la restaura)
 │   ├── limpieza.redis / .sh     limpieza opcional (SCAN + UNLINK, nunca KEYS/FLUSHALL)
+│   ├── verificar_persistencia.sh  volumen nombrado, restart y down/up sin perder datos
 │   └── correr_todo.sh           todo lo anterior en orden, guardando la evidencia
 ├── docs/
 │   ├── patrones_de_acceso.md          problema de concurrencia y patrones P1–P11 (se escribió primero)
@@ -45,6 +46,7 @@ fixture2030-redis/
 - Docker Desktop (o Docker Engine) con Docker Compose V2.
 - ~300 MB de RAM libres (Redis está limitado a 256 MB por configuración).
 - Puerto `6379` libre en el host. Si está ocupado: `REDIS_PORT=16379 docker compose up -d`.
+- La carpeta `~/docker/data/redis` **debe existir antes** del primer `docker compose up` (`mkdir -p ~/docker/data/redis`, ya está en §3). Si falta, Docker falla con `no such file or directory`. Otra ubicación: `REDIS_DATA_DIR=/ruta docker compose up -d`. En Windows, usar WSL2 (la variable `HOME` debe existir) o definir `REDIS_DATA_DIR`.
 - **No** hace falta instalar `redis-cli`: se usa el del contenedor. Ni Python: los scripts son `.redis`, Lua y `sh`.
 
 ---
@@ -115,7 +117,7 @@ Cada `.redis` imprime marcadores `== N.M … ==` que dicen qué paso se está vi
 
 ## 5. Detener y reiniciar sin perder datos (RNF2)
 
-Los datos y el AOF están en `~/docker/data/redis`; sobreviven a `down`, a un reinicio del contenedor y a reiniciar Docker.
+**Cómo se guarda (RNF2):** los datos van a un **volumen nombrado** de Docker, `fixture2030_redis_data`, cuyo respaldo es la carpeta `~/docker/data/redis` del host (montaje que exige el enunciado). Redis escribe ahí el AOF y el RDB; sobreviven a `down`, a un reinicio del contenedor y a reiniciar Docker.
 
 ```bash
 docker compose down          # detener (conserva los datos)
@@ -126,12 +128,12 @@ docker compose up -d         # volver a levantar: sesiones, votación y funcione
 docker compose restart redis # reinicio rápido del servicio
 ```
 
-Comprobación: [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt). Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
+Comprobación (`sh scripts/verificar_persistencia.sh`): [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt) muestra el volumen y su carpeta, y que una clave con TTL, la votación y las funciones siguen tras `restart` y tras `down` + `up`. Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
 
-**Empezar de cero (borra todo):**
+**Empezar de cero (borra todo).** `down -v` borra el volumen pero **no** los archivos de la carpeta del host, por eso hacen falta los tres pasos:
 
 ```bash
-docker compose down && rm -rf ~/docker/data/redis
+docker compose down -v && rm -rf ~/docker/data/redis && mkdir -p ~/docker/data/redis
 ```
 
 **Limpieza parcial** sin bajar el servicio: `docker compose exec -T redis sh /scripts/limpieza.sh` (borra `f30:*` con `SCAN` + `UNLINK`; conserva las funciones).
@@ -158,7 +160,7 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 |---|---|---|
 | Sesión | HASH, **30 min de inactividad** renovables, **tope de 12 h**, vencimiento nativo (sin barridos) | [`ciclo_de_vida_e_invalidacion.md`](./docs/ciclo_de_vida_e_invalidacion.md) §1 |
 | Sesión inexistente | 401 → login; nada se crea implícitamente | ídem §1.6 |
-| Caché | cache-aside sobre MongoDB; TTL 60 s como **red de seguridad**, coherencia por **invalidación en escritura + versión** | ídem §2 |
+| Caché | cache-aside sobre la fuente de verdad (IRIS para Partidos, MongoDB para Usuarios); TTL 60 s como **red de seguridad**, coherencia por **invalidación en escritura + versión** | ídem §2 |
 | Atomicidad | Redis Functions (voto único, renovar sesión, repoblar con versión) | [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §2 |
 | Memoria | `maxmemory 256mb` + `volatile-lru`: se desaloja sólo lo reconstruible; la votación abierta no vence ni se desaloja | [`memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §2 |
 | Ranking | ZSET por hora con TTL de 2 h | [`modelo_clave_valor.md`](./docs/modelo_clave_valor.md) |
@@ -195,8 +197,8 @@ ls docs/evidencia                                             # 01_ … 09_
 
 ## 10. Relación con los hitos previos
 
-- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) y Partidos (N2) son la fuente de verdad de las copias (ambos en MongoDB según el Hito 3; aún sin implementar, ver Hito 4 abajo).
-- **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las colecciones de **Partidos (N2)** y **Usuarios (N4)**, que el Hito 3 ubica en MongoDB como fuente de verdad de las copias de este módulo, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
+- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) → MongoDB y Partidos (N2) → IRIS (matriz del Hito 2) son la fuente de verdad de las copias; ninguno está implementado todavía. **Discrepancia heredada:** el Hito 3 lista N2 como MongoDB; este módulo sigue el Hito 2 ([`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §5).
+- **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las fuentes de verdad de las copias de este módulo, **Partidos (N2, IRIS)** y **Usuarios (N4, MongoDB)**, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
 - **Hito 5/6** — mismos identificadores `PAR-…` y `USR-…`; el Hito 6 ya preveía cachear la configuración de partición de cada partido (Q0).
 - **Caso abierto heredado del Hito 3:** qué pasa con una sesión cuando el usuario cambia de región durante un partido. **No se resuelve en este hito.**
 

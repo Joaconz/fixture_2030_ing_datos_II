@@ -1,24 +1,24 @@
-# Ejecutado: 2026-09-25T23:58:23Z
+# Ejecutado: 2026-09-26T00:41:49Z
 == 4.0 Preparación ==
 0
 == 4.1 CACHE MISS: la app pregunta por PAR-D16-01 y no hay copia ==
 
 -- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --
 
--- (aquí la app leería la fuente de verdad de Partidos, prevista en MongoDB por el Hito 3 y aún no implementada) y repuebla con TTL 60 s --
+-- (aquí la app leería la fuente de verdad de Partidos, IRIS según el Hito 2, aún no implementada) y repuebla con TTL 60 s --
 1
-== 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar Mongo ==
+== 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar la fuente ==
 {"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"0-0","estado":"EN_VIVO","version":0}
 60
-== 4.3 CAMBIA LA FUENTE DE VERDAD: gol de ARG (Mongo pasa a 1-0). NO se espera al TTL ==
--- la app, tras confirmar el update en Mongo, INVALIDA: borra la copia y sube la versión, juntos --
+== 4.3 CAMBIA LA FUENTE DE VERDAD: gol de ARG (la fuente pasa a 1-0). NO se espera al TTL ==
+-- la app, tras confirmar el update en la fuente, INVALIDA: borra la copia y sube la versión, juntos --
 1
 
-== 4.4 SIGUIENTE LECTURA = MISS controlado: lee Mongo (1-0) y repuebla con la versión nueva ==
+== 4.4 SIGUIENTE LECTURA = MISS controlado: lee la fuente (1-0) y repuebla con la versión nueva ==
 1
 1
 {"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"1-0","estado":"EN_VIVO","version":1}
-== 4.5 CARRERA EVITADA: un lector LENTO leyó Mongo ANTES del gol (versión 0) y intenta escribir tarde ==
+== 4.5 CARRERA EVITADA: un lector LENTO leyó la fuente ANTES del gol (versión 0) y intenta escribir tarde ==
 -- devuelve 0: la copia vieja (0-0) se descarta, la caché conserva 1-0 --
 0
 {"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"1-0","estado":"EN_VIVO","version":1}

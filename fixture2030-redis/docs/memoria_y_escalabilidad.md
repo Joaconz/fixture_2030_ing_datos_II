@@ -11,7 +11,7 @@ Evidencia: [`07_memoria.txt`](./evidencia/07_memoria.txt), [`08_metricas.txt`](.
 | Es predecible | Sí: se sabe cuándo | No: depende de la carga del momento |
 | Contador que lo muestra | `expired_keys` | `evicted_keys` |
 | Efecto en sesiones | Usuario inactivo pierde la sesión a los 30 min (esperado) | Un usuario **activo** podría perder la sesión antes de tiempo → login inesperado |
-| Efecto en caché | Copia vieja sale a los 60 s / 900 s | Se pierde una copia útil → *miss* y recarga desde Mongo |
+| Efecto en caché | Copia vieja sale a los 60 s / 900 s | Se pierde una copia útil → *miss* y recarga desde la fuente de verdad |
 | Efecto en datos temporales sin TTL (votación) | Ninguno (no tienen) | **Con `volatile-lru` no se desalojan**: si hay presión, las escrituras fallan (OOM) |
 
 Una clave puede desaparecer **antes** de su TTL por presión de memoria. Ninguna parte del diseño debe asumir que "tiene TTL de 30 min, entonces existirá 30 min".

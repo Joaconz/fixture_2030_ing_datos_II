@@ -13,11 +13,13 @@ El escenario del Hito 1 exige sostener **2–3 millones de usuarios simultáneos
 | Tráfico | Por qué presiona |
 |---|---|
 | **Validación de sesión** | Todo request autenticado debe saber "¿quién es y sigue vigente?". Es una lectura + una renovación en **cada** request: la operación más frecuente del sistema. |
-| **Lecturas repetidas de lo mismo** | Miles de usuarios piden la misma ficha de partido o el mismo marcador en el mismo segundo; sin caché cada uno llega a MongoDB. |
+| **Lecturas repetidas de lo mismo** | Miles de usuarios piden la misma ficha de partido o el mismo marcador en el mismo segundo; sin caché cada uno llega a la fuente de verdad de Partidos (IRIS). |
 | **Ráfagas de escritura sobre un mismo dato** | Tras un gol, miles de usuarios votan al MVP o abren el mismo partido a la vez: muchas actualizaciones simultáneas sobre pocas claves. |
 | **Estado que debe desaparecer solo** | Sesiones inactivas, copias vencidas y rankings por hora: si el sistema tuviera que recorrerlas para borrarlas, el barrido competiría con el tráfico. |
 
-El Hito 3 ya fijó la naturaleza de este dato: **Sesiones (N5) es AP, consistencia eventual, vigencia por TTL, local por región, sin réplica entre regiones**; perder una sesión es tolerable ("en el peor caso se repite un login"). Usuarios (N4) y Partidos (N2) viven en MongoDB y son la **fuente de verdad** de lo que aquí se cachea.
+El Hito 3 ya fijó la naturaleza de este dato: **Sesiones (N5) es AP, consistencia eventual, vigencia por TTL, local por región, sin réplica entre regiones**; perder una sesión es tolerable ("en el peor caso se repite un login"). Según la matriz del Hito 2, Usuarios (N4) vive en MongoDB y Partidos (N2) en el motor de objetos (IRIS): son la **fuente de verdad** de lo que aquí se cachea. Ninguno de los dos está implementado todavía.
+
+> **Trazabilidad de N2.** El Hito 2 asigna Partidos a **Objetos (IRIS, 4,25)**, apenas 0,10 sobre Documental (4,15). El Hito 3 lo lista como MongoDB "por 0,20", lo que contradice al Hito 2. Este módulo sigue la matriz del Hito 2; el diseño de la caché no depende del motor de la fuente. Detalle en [`concurrencia_y_pruebas.md`](./concurrencia_y_pruebas.md) §5.
 
 ### Supuestos de carga (declarados, no medidos en producción)
 
@@ -41,8 +43,8 @@ Las frecuencias son **esperadas por diseño** (supuestos de arriba), no medidas.
 | **P2** | Validar y renovar sesión | Cualquier request autenticado | `session_id` | usuario, región, rol — o "no existe" | **Muy alta** (cada request) | Temporal | El mismo HASH + `EXPIRE` (TTL deslizante) dentro de una función atómica |
 | **P3** | Cerrar una sesión / cerrar todas las de un usuario | Usuario (logout), cambio de contraseña, moderación | `session_id` o `usuario_id` | confirmación | Baja | Temporal | **SET** `f30:usr:{u}:sesiones` como índice: "todas las sesiones de X" sin recorrer el keyspace |
 | **P4** | Bloquear una sesión | Moderador | `session_id` | rechazo en el siguiente request | Muy baja | Temporal | Campo `estado` del HASH: el bloqueo se aplica sin borrar (queda rastro hasta que venza) |
-| **P5** | Consultar la ficha/marcador de un partido | Cualquier usuario | `partido_id` | JSON de la ficha | **Muy alta** (miles/s por partido en vivo) | **Copia.** Fuente: MongoDB N2 Partidos | **STRING** JSON `f30:cache:partido:{id}`: se lee entero y se sirve tal cual; TTL 60 s |
-| **P6** | Actualizar/invalidar la copia cuando cambia el partido | Servicio de partidos, tras confirmar en Mongo | `partido_id` | copia borrada, versión nueva | Baja (unos pocos por partido) | Fuente: MongoDB | **STRING** contador `…:ver` (versión): evita que un lector lento repueble con un dato viejo |
+| **P5** | Consultar la ficha/marcador de un partido | Cualquier usuario | `partido_id` | JSON de la ficha | **Muy alta** (miles/s por partido en vivo) | **Copia.** Fuente: IRIS N2 Partidos | **STRING** JSON `f30:cache:partido:{id}`: se lee entero y se sirve tal cual; TTL 60 s |
+| **P6** | Actualizar/invalidar la copia cuando cambia el partido | Servicio de partidos, tras confirmar en la fuente (IRIS) | `partido_id` | copia borrada, versión nueva | Baja (unos pocos por partido) | Fuente: IRIS | **STRING** contador `…:ver` (versión): evita que un lector lento repueble con un dato viejo |
 | **P7** | Consultar el perfil de un usuario | Servicios de la app | `usuario_id` | perfil | Alta | **Copia.** Fuente: MongoDB N4 Usuarios | **HASH** `f30:cache:usuario:{id}:perfil`: campos leíbles por separado; TTL 900 s |
 | **P8** | Emitir un voto MVP (una vez por usuario) | Usuario | `partido_id`, `usuario_id`, candidato | contó / ya había votado | Ráfagas (miles en pocos minutos) | **Dato propio del módulo** mientras la votación está abierta (ver ciclo de vida §5) | **SET** de votantes (unicidad) + **ZSET** de candidatos (ranking) |
 | **P9** | Ver el ranking MVP | Cualquier usuario | `partido_id` | top-N con votos | Alta | Igual que P8 | **ZSET**: ya ordenado; `ZREVRANGE 0 N-1` es O(log n + N) |
@@ -56,10 +58,10 @@ Las frecuencias son **esperadas por diseño** (supuestos de arriba), no medidas.
 | Dato | Por qué no vive acá | Dónde vive |
 |---|---|---|
 | Credenciales y datos maestros del usuario | Redis no reemplaza a una base persistente (enunciado §7): perder la caché no puede perder cuentas | MongoDB N4 |
-| Ficha oficial y marcador de un partido | El marcador oficial debe ser CP (Hito 3, N2); Redis sólo guarda una copia de vida corta | MongoDB N2 |
+| Ficha oficial y marcador de un partido | El marcador oficial debe ser CP (Hito 3, N2); Redis sólo guarda una copia de vida corta | IRIS N2 |
 | Comentarios de un partido | Volumen y escritura intensiva: modelo columnar | Cassandra (Hito 6) |
 | Relaciones entre eventos y jugadores | Consulta de grafo | Neo4j (Hito 5) |
-| Resultado final de la votación MVP una vez cerrada | Si el negocio necesita conservarlo, debe pasar a la fuente de verdad al cerrar (ver ciclo de vida §5) | MongoDB (fuera del alcance de este hito) |
+| Resultado final de la votación MVP una vez cerrada | Si el negocio necesita conservarlo, debe pasar a la fuente de verdad al cerrar (ver ciclo de vida §5) | Sin módulo asignado en los Hitos 2 y 3 (a definir; fuera del alcance de este hito) |
 
 ## 4. Consultas que este módulo **no** resuelve
 

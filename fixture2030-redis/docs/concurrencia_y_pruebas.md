@@ -23,7 +23,7 @@ Generados por [`scripts/carga_muestra.lua`](../scripts/carga_muestra.lua) (funci
 
 El total tras la carga es `DBSIZE = 4203` ([`02_carga_muestra.txt`](./evidencia/02_carga_muestra.txt)): 2.200 sesiones + 2.000 índices de usuario + 1 ranking + 2 de votación.
 
-Los "documentos de Mongo" que alimentan la caché se escriben a mano en [`cache.redis`](../scripts/cache.redis): el enunciado excluye la integración física con los otros servicios.
+Los documentos de origen de la caché (la ficha de partido, que vendría de IRIS, y el perfil, de MongoDB) se escriben a mano en [`cache.redis`](../scripts/cache.redis): el enunciado excluye la integración física con los otros servicios.
 
 ---
 
@@ -136,7 +136,7 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 - `redis-benchmark` genera carga sintética con **una** clave caliente en varias pruebas (peor caso de contención, poco realista); los ids `__rand_int__` no coinciden con el formato de los ids de la muestra, por lo que las pruebas de sesión usan una clave fija.
 - Dataset chico (~4.200 claves, ~3 MB): todo cabe en la caché del procesador; no se prueba el comportamiento con 3 M de sesiones.
 - **No** se mide ni se simula el caso Redis caído (documentado en [`ciclo_de_vida_e_invalidacion.md`](./ciclo_de_vida_e_invalidacion.md) §2 como comportamiento esperado, no probado).
-- La integración con MongoDB no existe: el flujo miss/invalidación se demuestra con el documento de origen escrito a mano.
+- No hay integración con ninguna fuente de verdad (IRIS para Partidos, MongoDB para Usuarios): el flujo miss/invalidación se demuestra con el documento de origen escrito a mano.
 - Las estadísticas de `INFO` de [`08_metricas.txt`](./evidencia/08_metricas.txt) acumulan lo ocurrido desde el último `CONFIG RESETSTAT` (que `benchmark.sh` ejecuta en §B.4): `keyspace_hits/misses` reflejan el hit ratio sintético, no tráfico real.
 
 ---
@@ -148,7 +148,8 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 | **Hito 1 — escenario** (2–3 M usuarios simultáneos, >100.000 req/s, respuesta ≤ 100 ms) | La operación más frecuente (validar sesión) es una lectura+renovación en memoria de ~0,3 ms p50 en el laboratorio. No es una demostración de capacidad de producción (§4.5) |
 | **Hito 2 — modelo por necesidad** | Sesiones (N5) → clave/valor, como se decidió |
 | **Hito 3 — N5 AP, eventual, TTL, local por región** | Sesión local sin réplica cross-región; vigencia por TTL; pérdida = relogin. Se **mantiene** la exclusión de réplica entre regiones ([`memoria_y_escalabilidad.md`](./memoria_y_escalabilidad.md) §5). El caso abierto del Hito 3 ("¿qué pasa con la sesión si el usuario cambia de región?") **sigue sin resolverse**: no se aborda en este hito |
-| **Hito 3 — N4 Usuarios y N2 Partidos** | El Hito 3 los ubica en MongoDB (Documental) como fuente de verdad; acá sólo hay copias con invalidación. **Ninguna de las dos colecciones está implementada todavía** |
+| **Hito 2 — N2 Partidos y N4 Usuarios** | La matriz asigna **Partidos (N2) a Objetos (IRIS, 4,25)**, 0,10 sobre Documental (4,15), y **Usuarios (N4) a Documental (MongoDB, 4,10)**, 0,10 sobre Columnar (4,00). Ambas quedaron marcadas como decisiones frágiles (margen menor a 0,20). Son las fuentes de verdad de las copias de este módulo. **Ninguna está implementada todavía** |
+| **Hito 3 — N2 y N4** | Mantiene N4 en MongoDB, pero **lista N2 como Documental (MongoDB) "por 0,20 sobre IRIS"** y márgenes de 0,20, lo que **contradice la matriz del Hito 2** (IRIS por 0,10; N4 también por 0,10). Además el argumento de topología de N4 ("Equipos, Jugadores y Partidos ya requieren un núcleo con escritura coordinada en el mismo motor documental") parte de esa premisa. Este módulo sigue la matriz del Hito 2. La discrepancia es del Hito 3 y **no se corrigió acá**; el diseño de la caché no depende del motor de origen y no cambia si se resuelve en un sentido u otro |
 | **Hito 4 — MongoDB** | Implementa sólo `equipos` y `jugadores`; no hay colección de partidos ni de usuarios, así que la fuente de las copias es **prevista**, no existente. Los `PAR-…` de la muestra vienen del Hito 5 (Neo4j) y los `USR-…` del Hito 6 (Cassandra) |
-| **Hito 5 — Neo4j** | Mismos `partido_id` (`PAR-…`) para el ranking de tendencia. Sin integración por código |
+| **Hito 5 — Neo4j** | Mismos `partido_id` (`PAR-…`) para el ranking de tendencia: 112 partidos (fase de grupos y dieciseisavos; el Hito 2 estima 127 en todo el torneo). Sin integración por código |
 | **Hito 6 — Cassandra** | Mismos `partido_id` y `usuario_id` (`USR-…`). El **Hito 6 (Comentarios)** anticipaba "Q0: se cachea la configuración del partido"; queda como caso de uso futuro de esta caché, sin implementar |

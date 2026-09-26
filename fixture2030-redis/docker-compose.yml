@@ -5,7 +5,12 @@
 # ------------------------------------------------------------
 #  RNF1: imagen oficial con etiqueta `latest` (la versión real se
 #        registra con INFO server, ver README §6).
-#  RNF2: persistencia con montaje local en ~/docker/data/redis.
+#  RNF2: persistencia en un VOLUMEN NOMBRADO de Docker (`fixture2030_redis_data`)
+#        cuyo respaldo es la carpeta ~/docker/data/redis del host (montaje exigido
+#        por el enunciado del Hito 7). Cumple las dos lecturas: es un volumen
+#        nombrado y los datos quedan en esa carpeta. La carpeta debe existir ANTES
+#        de `docker compose up` (mkdir -p ~/docker/data/redis); si no, Docker falla
+#        con "no such file or directory". Otra ubicación: REDIS_DATA_DIR=/ruta.
 #  RNF7: sin credenciales: nodo de laboratorio publicado sólo en
 #        127.0.0.1 y sin contraseña. Es configuración de DESARROLLO.
 #
@@ -29,8 +34,10 @@ services:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
 
     volumes:
-      # Persistencia exigida por RNF2: sobrevive a `docker compose down`.
-      - ~/docker/data/redis:/data
+      # Persistencia exigida por RNF2: volumen nombrado (definido abajo);
+      # sobrevive a `docker compose down`. Con `down -v` se borra el volumen
+      # pero NO los archivos de la carpeta del host.
+      - redis_data:/data
       - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
       # Los scripts del repo se ejecutan desde adentro del contenedor.
       - ./scripts:/scripts:ro
@@ -42,3 +49,13 @@ services:
       timeout: 3s
       retries: 10
       start_period: 3s
+
+volumes:
+  redis_data:
+    name: fixture2030_redis_data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # Carpeta del host que respalda el volumen (convención de la materia).
+      device: ${REDIS_DATA_DIR:-${HOME}/docker/data/redis}
