@@ -2,7 +2,7 @@
 
 **Ingeniería de Datos II · Grupo 2** — Santiago Pazos, Valentina Frisoli, Joaquín Núñez
 
-Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inactividad), **caché de consultas frecuentes** (ficha de partido, perfil) con invalidación, **votación MVP concurrente** y **ranking temporal de partidos en tendencia**. Redis guarda estado transitorio y copias; **la fuente de verdad sigue en los módulos anteriores** (MongoDB para usuarios y partidos).
+Módulo clave/valor en memoria para **sesiones de usuario** (vigencia por inactividad), **caché de consultas frecuentes** (ficha de partido, perfil) con invalidación, **votación MVP concurrente** y **ranking temporal de partidos en tendencia**. Redis guarda estado transitorio y copias; **la fuente de verdad sigue en los módulos anteriores** (MongoDB para Usuarios e IRIS para Partidos, según la matriz del Hito 2; ninguno está implementado todavía).
 
 > **Nodo único de laboratorio.** Sin réplicas, Sentinel ni Cluster: no es alta disponibilidad. Diferencias con un despliegue real en [`docs/memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §5.
 
@@ -158,7 +158,7 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 |---|---|---|
 | Sesión | HASH, **30 min de inactividad** renovables, **tope de 12 h**, vencimiento nativo (sin barridos) | [`ciclo_de_vida_e_invalidacion.md`](./docs/ciclo_de_vida_e_invalidacion.md) §1 |
 | Sesión inexistente | 401 → login; nada se crea implícitamente | ídem §1.6 |
-| Caché | cache-aside sobre MongoDB; TTL 60 s como **red de seguridad**, coherencia por **invalidación en escritura + versión** | ídem §2 |
+| Caché | cache-aside sobre la fuente de verdad (IRIS para Partidos, MongoDB para Usuarios); TTL 60 s como **red de seguridad**, coherencia por **invalidación en escritura + versión** | ídem §2 |
 | Atomicidad | Redis Functions (voto único, renovar sesión, repoblar con versión) | [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §2 |
 | Memoria | `maxmemory 256mb` + `volatile-lru`: se desaloja sólo lo reconstruible; la votación abierta no vence ni se desaloja | [`memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §2 |
 | Ranking | ZSET por hora con TTL de 2 h | [`modelo_clave_valor.md`](./docs/modelo_clave_valor.md) |
@@ -195,8 +195,8 @@ ls docs/evidencia                                             # 01_ … 09_
 
 ## 10. Relación con los hitos previos
 
-- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) y Partidos (N2) son la fuente de verdad de las copias (ambos en MongoDB según el Hito 3; aún sin implementar, ver Hito 4 abajo).
-- **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las colecciones de **Partidos (N2)** y **Usuarios (N4)**, que el Hito 3 ubica en MongoDB como fuente de verdad de las copias de este módulo, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
+- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) → MongoDB y Partidos (N2) → IRIS (matriz del Hito 2) son la fuente de verdad de las copias; ninguno está implementado todavía. **Discrepancia heredada:** el Hito 3 lista N2 como MongoDB; este módulo sigue el Hito 2 ([`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §5).
+- **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las fuentes de verdad de las copias de este módulo, **Partidos (N2, IRIS)** y **Usuarios (N4, MongoDB)**, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
 - **Hito 5/6** — mismos identificadores `PAR-…` y `USR-…`; el Hito 6 ya preveía cachear la configuración de partición de cada partido (Q0).
 - **Caso abierto heredado del Hito 3:** qué pasa con una sesión cuando el usuario cambia de región durante un partido. **No se resuelve en este hito.**
 
