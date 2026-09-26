@@ -58,8 +58,8 @@ echo "== B.4 Método de medición de cache hit ratio (sintético: valida el mét
 echo "Se vacían las estadísticas, se cargan 56 de 112 claves de caché y se piden 100000 claves al azar de las 112."
 echo "Esperado por construcción: ~50 %."
 n CONFIG RESETSTAT > /dev/null
-n EVAL "for i=0,55 do redis.call('SET', string.format('f30:cache:bench:%012d', i), 'x', 'EX', 600) end" 0 > /dev/null
-docker compose exec -T redis redis-benchmark -h 127.0.0.1 -c 50 -n 100000 -r 112 -q GET "f30:cache:bench:__rand_int__" | tr '\r' '\n' | tail -1
+n EVAL "for i=0,55 do redis.call('SET', string.format('f30:bench:cache:%012d', i), 'x', 'EX', 600) end" 0 > /dev/null
+docker compose exec -T redis redis-benchmark -h 127.0.0.1 -c 50 -n 100000 -r 112 -q GET "f30:bench:cache:__rand_int__" | tr '\r' '\n' | tail -1
 H=$(n INFO stats | grep '^keyspace_hits:' | cut -d: -f2 | tr -d '\r')
 M=$(n INFO stats | grep '^keyspace_misses:' | cut -d: -f2 | tr -d '\r')
 echo "keyspace_hits=$H keyspace_misses=$M -> hit ratio observado = $(awk -v h=$H -v m=$M 'BEGIN{printf "%.1f %%", 100*h/(h+m)}')"
