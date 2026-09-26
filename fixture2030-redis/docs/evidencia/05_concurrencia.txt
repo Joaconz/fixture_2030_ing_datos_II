@@ -1,0 +1,60 @@
+# Ejecutado: 2026-09-25T23:58:27Z
+== 5.0 Preparación (votación de demostración aparte de la muestra) ==
+0
+== 5.1 VOTO: USR-A vota a ARG-10 -> {1, puntaje} ==
+1
+1
+== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout) -> {0,0}, el ranking no cambia ==
+0
+0
+0
+0
+== 5.3 Otros votantes ==
+1
+1
+1
+2
+== 5.4 Invariante: votos contados en el ranking == votantes distintos ==
+FRA-10
+1
+ARG-10
+2
+3
+2
+== 5.5 Ranking real de la votación de PAR-D16-01 (cargada en la muestra): top 3 ==
+FRA-10
+101
+BRA-11
+101
+ARG-9
+100
+== 5.6 TENDENCIA (RF9): top 5 partidos más vistos en el bucket 2030-06-29 16h ==
+PAR-D16-01
+250000
+PAR-A-1
+98076
+PAR-A-2
+92666
+PAR-A-3
+84755
+PAR-A-4
+75804
+-- posición de PAR-D16-01 (0 = primero) y su puntaje --
+0
+250000
+7187
+== 5.7 Registrar visitas en un bucket nuevo: EXPIRE NX fija el TTL sólo en la primera visita ==
+0
+1
+2
+1
+PAR-A-1
+2
+PAR-B-2
+1
+7200
+1
+== A) NO atómica: 20 clientes, mismo usuario ==
+puntaje de ARG-10 (correcto = 1): 20
+== B) Atómica (FCALL voto_emitir): 20 clientes, mismo usuario ==
+puntaje de ARG-10 (correcto = 1): 1

@@ -1,0 +1,32 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · CARGA DE MUESTRA (RF11)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/carga_muestra.redis | redis-cli"
+#  (redis-cli no admite comentarios: se filtran con grep)
+#  Idempotente: correrlo dos veces deja los mismos conteos.
+# ============================================================
+
+ECHO "== 2.1 Estado previo (DBSIZE es O(1), no recorre claves) =="
+DBSIZE
+
+# --- Carga: 2.000 usuarios (2.200 sesiones), tendencia de 112 partidos, 500 votos MVP.
+#     La librería f30carga se instala con:
+#       docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua
+ECHO "== 2.2 Generación determinista =="
+FCALL carga_muestra 0 2000
+
+ECHO "== 2.3 Verificación de lo cargado =="
+DBSIZE
+# Cardinalidades exactas de las estructuras (no hace falta recorrer claves)
+SCARD f30:usr:USR-0000010:sesiones
+ZCARD f30:rank:tendencia:2030062916
+SCARD f30:voto:mvp:PAR-D16-01:votantes
+ZRANGE f30:voto:mvp:PAR-D16-01:ranking 0 -1 WITHSCORES
+
+ECHO "== 2.4 Una sesión cargada: atributos y TTL restante =="
+HGETALL f30:ses:demo-ses-0000001-1
+TTL f30:ses:demo-ses-0000001-1
+ECHO "== 2.5 Sesión bloqueada de muestra (usuario 33) =="
+HGET f30:ses:demo-ses-0000033-1 estado
+
+ECHO "== 2.6 Caché fría a propósito: no existe copia de ningún partido todavía =="
+EXISTS f30:cache:partido:PAR-D16-01

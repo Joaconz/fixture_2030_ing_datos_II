@@ -1,0 +1,77 @@
+# Ejecutado: 2026-09-25T23:58:13Z
+== 3.0 Preparación: borrar restos de una corrida anterior ==
+0
+== 3.1 CREAR: login del usuario USR-DEMO1 (30 min inactividad, 12 h tope) ==
+demo-A
+== 3.2 RECUPERAR: todos los atributos (RF5) y TTL restante ==
+session_id
+demo-A
+usuario_id
+USR-DEMO1
+rol
+HINCHA
+region
+AM
+dispositivo
+web
+estado
+ACTIVA
+creada_en
+1790380693
+ultima_actividad
+1790380693
+expira_absoluta
+1790423893
+solicitudes
+0
+1800
+== 3.3 ACTUALIZAR: un request autenticado renueva (devuelve usuario, región, rol, n.º solicitudes, TTL) ==
+USR-DEMO1
+AM
+HINCHA
+1
+1800
+1
+1790380693
+== 3.4 SESIÓN INEXISTENTE: ses_tocar devuelve nil -> la app responde 401 y pide login (no se crea nada) ==
+
+0
+== 3.5 BLOQUEO: un moderador marca la sesión BLOQUEADA; el siguiente request es rechazado y NO renueva ==
+demo-B
+0
+ERR SESION_BLOQUEADA
+
+== 3.6 EXPIRACIÓN POR INACTIVIDAD (TTL de demostración: 3 s en vez de 1800 s) ==
+demo-C
+3
+-- se espera 4 s sin actividad (BLPOP sobre clave inexistente es una espera nativa, no un barrido) --
+
+-- comprobación: EXISTS 0, TTL -2 (clave ausente) y ses_tocar devuelve nil --
+0
+-2
+
+== 3.7 TOPE ABSOLUTO: el TTL nunca supera el tiempo que queda hasta expira_absoluta (demo: tope 5 s) ==
+demo-D
+5
+USR-DEMO2
+AF
+HINCHA
+1
+5
+-- pese a pedir 1800 s, el TTL queda acotado por el tope --
+5
+
+0
+== 3.8 FINALIZAR: logout explícito (borra sesión y la saca del índice del usuario) ==
+demo-A
+demo-B
+1
+0
+demo-B
+== 3.9 CERRAR TODAS: cambio de contraseña de USR-DEMO1 invalida todas sus sesiones ==
+demo-A
+2
+2
+0
+0
+1

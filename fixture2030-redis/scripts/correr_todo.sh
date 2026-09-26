@@ -1,0 +1,44 @@
+#!/bin/sh
+# ============================================================
+#  Fixture 2030 — Hito 7 · EJECUCIÓN COMPLETA Y REGISTRO DE EVIDENCIA (RF13)
+#  Uso (desde fixture2030-redis/):  sh scripts/correr_todo.sh
+#  Deja la salida de cada etapa en docs/evidencia/NN_*.txt. Repetible.
+# ============================================================
+set -e
+cd "$(dirname "$0")/.."
+EV=docs/evidencia
+RC="docker compose exec -T redis"
+run() { # run <archivo .redis> -> ejecuta filtrando comentarios (redis-cli no los admite)
+  $RC sh -c "grep -v '^#' /scripts/$1 | redis-cli"
+}
+
+docker compose up -d --wait > /dev/null
+echo "Versión: $($RC redis-cli INFO server | grep '^redis_version:' | tr -d '\r') | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Funciones (idempotente: REPLACE)
+$RC redis-cli -x FUNCTION LOAD REPLACE < scripts/funciones_f30.lua > /dev/null
+$RC redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua > /dev/null
+$RC redis-cli CONFIG RESETSTAT > /dev/null   # estadísticas limpias: la evidencia empieza de cero
+
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run inicializacion.redis; }  > $EV/01_inicializacion.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run carga_muestra.redis; }   > $EV/02_carga_muestra.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run sesiones.redis; }        > $EV/03_sesiones.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run cache.redis; }           > $EV/04_cache.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run concurrencia.redis; $RC sh /scripts/concurrencia_paralela.sh 20; } > $EV/05_concurrencia.txt
+sh scripts/benchmark.sh > $EV/06_benchmark.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; $RC sh /scripts/memoria_prueba.sh; } > $EV/07_memoria.txt
+# la prueba de memoria degrada la muestra: se recarga y se miden métricas sobre el estado sano
+$RC redis-cli FCALL carga_muestra 0 2000 > /dev/null
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run metricas.redis; }        > $EV/08_metricas.txt
+
+# Persistencia: se reinicia el contenedor y se comprueba que funciones y votación siguen
+docker compose restart redis > /dev/null && sleep 1
+docker compose up -d --wait > /dev/null
+{
+  echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "== Tras 'docker compose restart redis' (AOF en ~/docker/data/redis) =="
+  echo "-- funciones cargadas --"; $RC redis-cli FUNCTION LIST | grep -A1 '^library_name' | grep -v '^--'
+  echo "-- votación abierta (sin TTL) --"; $RC redis-cli SCARD f30:voto:mvp:PAR-D16-01:votantes
+  echo "-- sesión de muestra --"; $RC redis-cli EXISTS f30:ses:demo-ses-0000001-1
+} > $EV/09_persistencia.txt
+echo "Evidencia escrita en $EV/"

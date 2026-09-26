@@ -1,0 +1,76 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · SESIONES (RF3, RF4, RF5)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/sesiones.redis | redis-cli"
+#  Requiere: funciones_f30.lua cargado. Usa claves `demo-*` propias (no toca la muestra).
+#
+#  POLÍTICA (detalle y justificación: docs/ciclo_de_vida_e_invalidacion.md §1)
+#   - Inactividad: 1800 s (30 min), renovada por cada request autenticado.
+#   - Tope absoluto: 43200 s (12 h): una sesión no se renueva para siempre.
+#   - Vencida = la clave ya no existe: la app responde "sesión inexistente" -> login.
+#   - Sin barridos: el vencimiento lo hace Redis con EXPIRE.
+# ============================================================
+
+ECHO "== 3.0 Preparación: borrar restos de una corrida anterior =="
+DEL f30:ses:demo-A f30:ses:demo-B f30:ses:demo-C f30:ses:demo-D f30:usr:USR-DEMO1:sesiones f30:usr:USR-DEMO2:sesiones
+
+# ---------------- CREAR ----------------
+ECHO "== 3.1 CREAR: login del usuario USR-DEMO1 (30 min inactividad, 12 h tope) =="
+FCALL ses_crear 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA AM web 1800 43200
+
+# ---------------- RECUPERAR ----------------
+ECHO "== 3.2 RECUPERAR: todos los atributos (RF5) y TTL restante =="
+HGETALL f30:ses:demo-A
+TTL f30:ses:demo-A
+
+# ---------------- ACTUALIZAR / RENOVAR ----------------
+ECHO "== 3.3 ACTUALIZAR: un request autenticado renueva (devuelve usuario, región, rol, n.º solicitudes, TTL) =="
+FCALL ses_tocar 1 f30:ses:demo-A 1800
+HMGET f30:ses:demo-A solicitudes ultima_actividad
+
+# ---------------- SESIÓN INEXISTENTE ----------------
+ECHO "== 3.4 SESIÓN INEXISTENTE: ses_tocar devuelve nil -> la app responde 401 y pide login (no se crea nada) =="
+FCALL ses_tocar 1 f30:ses:no-existe 1800
+EXISTS f30:ses:no-existe
+
+# ---------------- BLOQUEO ADMINISTRATIVO ----------------
+ECHO "== 3.5 BLOQUEO: un moderador marca la sesión BLOQUEADA; el siguiente request es rechazado y NO renueva =="
+FCALL ses_crear 2 f30:ses:demo-B f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA EU android 1800 43200
+HSET f30:ses:demo-B estado BLOQUEADA
+FCALL ses_tocar 1 f30:ses:demo-B 1800
+
+# ---------------- VENCIMIENTO POR INACTIVIDAD ----------------
+ECHO "== 3.6 EXPIRACIÓN POR INACTIVIDAD (TTL de demostración: 3 s en vez de 1800 s) =="
+FCALL ses_crear 2 f30:ses:demo-C f30:usr:USR-DEMO2:sesiones USR-DEMO2 HINCHA AF ios 3 43200
+TTL f30:ses:demo-C
+ECHO "-- se espera 4 s sin actividad (BLPOP sobre clave inexistente es una espera nativa, no un barrido) --"
+BLPOP f30:demo:espera 4
+ECHO "-- comprobación: EXISTS 0, TTL -2 (clave ausente) y ses_tocar devuelve nil --"
+EXISTS f30:ses:demo-C
+TTL f30:ses:demo-C
+FCALL ses_tocar 1 f30:ses:demo-C 1800
+
+# ---------------- TOPE ABSOLUTO ----------------
+ECHO "== 3.7 TOPE ABSOLUTO: el TTL nunca supera el tiempo que queda hasta expira_absoluta (demo: tope 5 s) =="
+FCALL ses_crear 2 f30:ses:demo-D f30:usr:USR-DEMO2:sesiones USR-DEMO2 HINCHA AF web 1800 5
+TTL f30:ses:demo-D
+FCALL ses_tocar 1 f30:ses:demo-D 1800
+ECHO "-- pese a pedir 1800 s, el TTL queda acotado por el tope --"
+TTL f30:ses:demo-D
+BLPOP f30:demo:espera 6
+EXISTS f30:ses:demo-D
+
+# ---------------- FINALIZAR ----------------
+ECHO "== 3.8 FINALIZAR: logout explícito (borra sesión y la saca del índice del usuario) =="
+SMEMBERS f30:usr:USR-DEMO1:sesiones
+FCALL ses_cerrar 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones
+EXISTS f30:ses:demo-A
+SMEMBERS f30:usr:USR-DEMO1:sesiones
+
+ECHO "== 3.9 CERRAR TODAS: cambio de contraseña de USR-DEMO1 invalida todas sus sesiones =="
+FCALL ses_crear 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA AM web 1800 43200
+SCARD f30:usr:USR-DEMO1:sesiones
+FCALL ses_cerrar_todas 1 f30:usr:USR-DEMO1:sesiones f30:ses:
+EXISTS f30:ses:demo-A f30:ses:demo-B
+EXISTS f30:usr:USR-DEMO1:sesiones
+
+DEL f30:usr:USR-DEMO2:sesiones

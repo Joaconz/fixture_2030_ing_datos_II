@@ -1,0 +1,66 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · CACHÉ (RF6, RF7)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/cache.redis | redis-cli"
+#
+#  PATRÓN: cache-aside (la app manda; Redis nunca habla con la fuente).
+#  FUENTE DE VERDAD: MongoDB (N2 Partidos, N4 Usuarios, según el Hito 3; esas
+#  colecciones aún no están implementadas en el Hito 4). Redis guarda
+#  una COPIA reconstruible. Este hito no integra Mongo (fuera de alcance): el
+#  "documento de Mongo" se escribe a mano en cada paso para mostrar el flujo.
+#
+#  Claves:  f30:cache:partido:{id}       STRING JSON, TTL 60 s   (máx. staleness aceptada)
+#           f30:cache:partido:{id}:ver   STRING entero, TTL 24 h (versión anti-"stale set")
+#
+#  HIT   = la clave existe.
+#  MISS  = ausente (nunca cacheada, vencida por TTL, invalidada, desalojada por memoria
+#          o Redis reiniciado sin datos): la app lee Mongo y repuebla. Redis caído =
+#          el mismo camino sin repoblar: se degrada la latencia, no la disponibilidad.
+#  TTL reales (60 s) salvo el paso 4.6, que usa 2 s para poder observar el vencimiento.
+# ============================================================
+
+ECHO "== 4.0 Preparación =="
+DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver
+
+ECHO "== 4.1 CACHE MISS: la app pregunta por PAR-D16-01 y no hay copia =="
+GET f30:cache:partido:PAR-D16-01
+ECHO "-- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --"
+GET f30:cache:partido:PAR-D16-01:ver
+ECHO "-- (aquí la app leería la fuente de verdad de Partidos, prevista en MongoDB por el Hito 3 y aún no implementada) y repuebla con TTL 60 s --"
+FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"0-0\",\"estado\":\"EN_VIVO\",\"version\":0}" 60 0
+
+ECHO "== 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar Mongo =="
+GET f30:cache:partido:PAR-D16-01
+TTL f30:cache:partido:PAR-D16-01
+
+ECHO "== 4.3 CAMBIA LA FUENTE DE VERDAD: gol de ARG (Mongo pasa a 1-0). NO se espera al TTL =="
+ECHO "-- la app, tras confirmar el update en Mongo, INVALIDA: borra la copia y sube la versión, juntos --"
+FCALL cache_invalidar 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver
+GET f30:cache:partido:PAR-D16-01
+
+ECHO "== 4.4 SIGUIENTE LECTURA = MISS controlado: lee Mongo (1-0) y repuebla con la versión nueva =="
+GET f30:cache:partido:PAR-D16-01:ver
+FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"1-0\",\"estado\":\"EN_VIVO\",\"version\":1}" 60 1
+GET f30:cache:partido:PAR-D16-01
+
+ECHO "== 4.5 CARRERA EVITADA: un lector LENTO leyó Mongo ANTES del gol (versión 0) y intenta escribir tarde =="
+ECHO "-- devuelve 0: la copia vieja (0-0) se descarta, la caché conserva 1-0 --"
+FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"marcador\":\"0-0\",\"version\":0}" 60 0
+GET f30:cache:partido:PAR-D16-01
+
+ECHO "== 4.6 EXPIRACIÓN POR TTL (tope de permanencia, no estrategia de coherencia) =="
+ECHO "-- copia con TTL de demostración de 2 s --"
+FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-02 f30:cache:partido:PAR-D16-02:ver "{\"partido_id\":\"PAR-D16-02\",\"marcador\":\"0-0\"}" 2 0
+TTL f30:cache:partido:PAR-D16-02
+BLPOP f30:demo:espera 3
+GET f30:cache:partido:PAR-D16-02
+
+ECHO "== 4.7 SEGUNDO DATO EN CACHÉ: perfil de usuario (HASH, TTL 900 s, fuente: MongoDB N4) =="
+HSET f30:cache:usuario:USR-0000001:perfil nombre "Usuario Demo" idioma es region AM
+EXPIRE f30:cache:usuario:USR-0000001:perfil 900
+HGETALL f30:cache:usuario:USR-0000001:perfil
+ECHO "-- el usuario cambia su idioma en Mongo: se invalida la copia --"
+DEL f30:cache:usuario:USR-0000001:perfil
+EXISTS f30:cache:usuario:USR-0000001:perfil
+
+ECHO "== 4.8 Limpieza de la demo =="
+DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver f30:cache:partido:PAR-D16-02 f30:cache:partido:PAR-D16-02:ver

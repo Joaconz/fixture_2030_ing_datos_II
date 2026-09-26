@@ -1,0 +1,31 @@
+# ============================================================
+#  Fixture 2030 — Hito 7 · INICIO Y VERIFICACIÓN DEL AMBIENTE (RF1, RNF10)
+#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/inicializacion.redis | redis-cli"
+#  Antes (una vez, o tras editar el .lua):
+#    docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/funciones_f30.lua
+#    docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua
+# ============================================================
+
+ECHO "== 1.1 Disponibilidad =="
+PING
+
+ECHO "== 1.2 Versión observada (latest exige registrarla, RNF10) =="
+INFO server
+
+ECHO "== 1.3 Nodo único: rol master y cero réplicas conectadas =="
+ROLE
+INFO replication
+
+ECHO "== 1.4 Política de memoria y persistencia efectivas (vienen de config/redis.conf) =="
+CONFIG GET maxmemory
+CONFIG GET maxmemory-policy
+CONFIG GET maxmemory-samples
+CONFIG GET appendonly
+CONFIG GET appendfsync
+CONFIG GET dir
+
+ECHO "== 1.5 Librerías de funciones cargadas (f30 = módulo, f30carga = utilería de la muestra) =="
+FUNCTION LIST
+
+ECHO "== 1.6 Claves actuales (DBSIZE es O(1): no recorre el keyspace) =="
+DBSIZE
