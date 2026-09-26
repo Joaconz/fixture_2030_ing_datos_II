@@ -3,7 +3,8 @@
 #  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/cache.redis | redis-cli"
 #
 #  PATRÓN: cache-aside (la app manda; Redis nunca habla con la fuente).
-#  FUENTE DE VERDAD: MongoDB (N2 Partidos, N4 Usuarios; Hitos 3-4). Redis guarda
+#  FUENTE DE VERDAD: MongoDB (N2 Partidos, N4 Usuarios, según el Hito 3; esas
+#  colecciones aún no están implementadas en el Hito 4). Redis guarda
 #  una COPIA reconstruible. Este hito no integra Mongo (fuera de alcance): el
 #  "documento de Mongo" se escribe a mano en cada paso para mostrar el flujo.
 #
@@ -24,7 +25,7 @@ ECHO "== 4.1 CACHE MISS: la app pregunta por PAR-D16-01 y no hay copia =="
 GET f30:cache:partido:PAR-D16-01
 ECHO "-- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --"
 GET f30:cache:partido:PAR-D16-01:ver
-ECHO "-- (aquí la app hace: db.partidos.findOne({_id:'PAR-D16-01'}) en MongoDB) y repuebla con TTL 60 s --"
+ECHO "-- (aquí la app leería la fuente de verdad de Partidos, prevista en MongoDB por el Hito 3 y aún no implementada) y repuebla con TTL 60 s --"
 FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"0-0\",\"estado\":\"EN_VIVO\",\"version\":0}" 60 0
 
 ECHO "== 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar Mongo =="

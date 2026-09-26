@@ -195,8 +195,8 @@ ls docs/evidencia                                             # 01_ … 09_
 
 ## 10. Relación con los hitos previos
 
-- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) y Partidos (N2) son la fuente de verdad de las copias.
-- **Hito 4** — MongoDB: origen de lo que se cachea (integración sólo conceptual, fuera de alcance).
+- **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) y Partidos (N2) son la fuente de verdad de las copias (ambos en MongoDB según el Hito 3; aún sin implementar, ver Hito 4 abajo).
+- **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las colecciones de **Partidos (N2)** y **Usuarios (N4)**, que el Hito 3 ubica en MongoDB como fuente de verdad de las copias de este módulo, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
 - **Hito 5/6** — mismos identificadores `PAR-…` y `USR-…`; el Hito 6 ya preveía cachear la configuración de partición de cada partido (Q0).
 - **Caso abierto heredado del Hito 3:** qué pasa con una sesión cuando el usuario cambia de región durante un partido. **No se resuelve en este hito.**
 

@@ -5,7 +5,7 @@
 
 -- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --
 
--- (aquí la app hace: db.partidos.findOne({_id:'PAR-D16-01'}) en MongoDB) y repuebla con TTL 60 s --
+-- (aquí la app leería la fuente de verdad de Partidos, prevista en MongoDB por el Hito 3 y aún no implementada) y repuebla con TTL 60 s --
 1
 == 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar Mongo ==
 {"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"0-0","estado":"EN_VIVO","version":0}

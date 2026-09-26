@@ -148,7 +148,7 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 | **Hito 1 — escenario** (2–3 M usuarios simultáneos, >100.000 req/s, respuesta ≤ 100 ms) | La operación más frecuente (validar sesión) es una lectura+renovación en memoria de ~0,3 ms p50 en el laboratorio. No es una demostración de capacidad de producción (§4.5) |
 | **Hito 2 — modelo por necesidad** | Sesiones (N5) → clave/valor, como se decidió |
 | **Hito 3 — N5 AP, eventual, TTL, local por región** | Sesión local sin réplica cross-región; vigencia por TTL; pérdida = relogin. Se **mantiene** la exclusión de réplica entre regiones ([`memoria_y_escalabilidad.md`](./memoria_y_escalabilidad.md) §5). El caso abierto del Hito 3 ("¿qué pasa con la sesión si el usuario cambia de región?") **sigue sin resolverse**: no se aborda en este hito |
-| **Hito 3 — N4 Usuarios y N2 Partidos** | Son fuente de verdad (Mongo); acá sólo hay copias con invalidación |
-| **Hito 4 — MongoDB** | Fuente de las copias cacheadas; el `partido_id`/`USR-` de la caché son los ids naturales del resto |
+| **Hito 3 — N4 Usuarios y N2 Partidos** | El Hito 3 los ubica en MongoDB (Documental) como fuente de verdad; acá sólo hay copias con invalidación. **Ninguna de las dos colecciones está implementada todavía** |
+| **Hito 4 — MongoDB** | Implementa sólo `equipos` y `jugadores`; no hay colección de partidos ni de usuarios, así que la fuente de las copias es **prevista**, no existente. Los `PAR-…` de la muestra vienen del Hito 5 (Neo4j) y los `USR-…` del Hito 6 (Cassandra) |
 | **Hito 5 — Neo4j** | Mismos `partido_id` (`PAR-…`) para el ranking de tendencia. Sin integración por código |
 | **Hito 6 — Cassandra** | Mismos `partido_id` y `usuario_id` (`USR-…`). El **Hito 6 (Comentarios)** anticipaba "Q0: se cachea la configuración del partido"; queda como caso de uso futuro de esta caché, sin implementar |

@@ -69,7 +69,7 @@ Con `EXISTS` → `HSET` → `EXPIRE` separados, la clave puede vencer **entre** 
 
 | Pregunta del enunciado (§5.4) | Respuesta |
 |---|---|
-| **Fuente de verdad** | MongoDB, colección de Partidos (N2, CP en el cierre según Hito 3). Redis guarda una **copia** |
+| **Fuente de verdad** | MongoDB, colección de Partidos (N2, CP en el cierre según Hito 3). **Aún no implementada** (el Hito 4 sólo tiene equipos y jugadores). Redis guarda una **copia** |
 | **Cache hit** | `f30:cache:partido:{id}` existe → se sirve el JSON |
 | **Cache miss** | Ausente → leer Mongo → `cache_poner_si_version` con TTL 60 s → responder |
 | **Cuándo se actualiza/invalida** | En cuanto el servicio de partidos **confirma** el cambio en Mongo: `cache_invalidar` (DEL + INCR de `:ver`). No se espera al TTL |
