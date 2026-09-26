@@ -1,7 +1,14 @@
 const { MongoClient, Int32 } = require("mongodb");
 const { faker } = require("@faker-js/faker");
 
-// ── Configuración 
+// Semilla fija: nombre/apellido/fecha de nacimiento (los únicos campos que
+// siguen usando Faker) salen siempre iguales entre corridas. El dni y la
+// cantidad de jugadores por equipo NO dependen de Faker (ver generarDni y
+// TAMANO_PLANTEL más abajo) — corrección del Hito 4 (RF8): la carga no era
+// reproducible porque el dni salía al azar en cada ejecución.
+faker.seed(2030);
+
+// ── Configuración
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const DB_NAME   = "fixture2030";
 
@@ -83,6 +90,11 @@ const EQUIPOS_DATA = [
 // ── Grupos A-P (se asignan en orden: primeros 4 → A, siguientes 4 → B, …)
 const GRUPOS = "ABCDEFGHIJKLMNOP".split("");
 
+// ── Tamaño de plantel fijo (23, la convocatoria oficial de un Mundial).
+// Antes era al azar (15-26 por equipo), lo que además de no ser realista
+// hacía que ni la cantidad de jugadores fuera estable entre corridas.
+const TAMANO_PLANTEL = 23;
+
 // ── Entrenadores ficticios por equipo (para agregar color a los datos) ──
 const ENTRENADORES = [
   "Lionel Scaloni", "Dorival Júnior", "Marcelo Bielsa", "Néstor Lorenzo",
@@ -128,17 +140,16 @@ const COLORES_ALTERNATIVOS = [
 // ── Funciones auxiliares 
 
 /**
- * Genera un DNI de 8 dígitos como string, usando un Set para evitar colisiones.
+ * DNI sintético determinístico de 8 dígitos: 30000000 + equipoIndex*100 + dorsal.
+ * Con TAMANO_PLANTEL <= 99, cada equipo ocupa un bloque de 100 DNIs propio,
+ * así que no hace falta chequear colisiones — están garantizadas por
+ * construcción. Mismo equipo + mismo dorsal → mismo dni siempre, en
+ * cualquier corrida (corrige RF8: antes el dni salía al azar y el upsert
+ * nunca encontraba al jugador de la corrida anterior). El prefijo "3"
+ * es solo para asegurar 8 dígitos y no se cruza con un DNI real (RNF7).
  */
-const dnisGenerados = new Set();
-function generarDniUnico() {
-  let dni;
-  do {
-    // Generar número entre 10000000 y 99999999
-    dni = faker.number.int({ min: 10000000, max: 99999999 }).toString();
-  } while (dnisGenerados.has(dni));
-  dnisGenerados.add(dni);
-  return dni;
+function generarDni(equipoIndex, dorsal) {
+  return String(30000000 + equipoIndex * 100 + dorsal);
 }
 
 /**
@@ -208,12 +219,9 @@ async function main() {
 
     const jugadoresOps = [];
 
-    for (const [codigo] of EQUIPOS_DATA) {
-      // Entre 15 y 26 jugadores por equipo
-      const cantJugadores = faker.number.int({ min: 15, max: 26 });
-
-      for (let dorsal = 1; dorsal <= cantJugadores; dorsal++) {
-        const dni = generarDniUnico();
+    for (const [equipoIndex, [codigo]] of EQUIPOS_DATA.entries()) {
+      for (let dorsal = 1; dorsal <= TAMANO_PLANTEL; dorsal++) {
+        const dni = generarDni(equipoIndex, dorsal);
         const posicion = faker.helpers.arrayElement(POSICIONES);
 
         jugadoresOps.push({
