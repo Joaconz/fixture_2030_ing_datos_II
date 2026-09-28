@@ -1,0 +1,100 @@
+# ============================================================
+#  Fixture 2030 — Hito 8 · Series temporales de estadísticas en vivo
+#  Ambiente local de InfluxDB 2 (Docker Compose)
+#  Ingeniería de Datos II — Pazos / Núñez / Frisoli
+# ------------------------------------------------------------
+#  RNF1: imagen oficial `influxdb:latest`. Observada el 28/09/2026:
+#        InfluxDB v2.9.1. La versión de cada prueba se registra en
+#        docs/evidencia/01_inicializacion.txt.
+#  RNF2: datos en ~/docker/data/influxdb mediante VOLÚMENES NOMBRADOS
+#        respaldados por esa carpeta (mismo patrón que Redis y
+#        Cassandra, según la corrección del Hito 6):
+#          ~/docker/data/influxdb/data   -> /var/lib/influxdb2 (motor TSM, índice, metadatos)
+#          ~/docker/data/influxdb/config -> /etc/influxdb2     (configuración de la CLI)
+#  RNF7: sin credenciales en este archivo. El usuario, la organización
+#        y el token los crea scripts/autorizacion_local.sh (influx setup)
+#        y quedan en ./secrets (ignorado por git).
+#  §5.1: el servicio arranca con `docker compose up -d` sin pasos
+#        previos; la autorización se crea después, con el servidor arriba.
+#
+#  NODO ÚNICO: laboratorio. InfluxDB 2 OSS no tiene réplicas ni
+#  clúster (ver docs/cardinalidad_y_escalabilidad.md §6).
+# ============================================================
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: fixture2030-influxdb
+    restart: unless-stopped
+    environment:
+      # Sin telemetría hacia InfluxData desde el laboratorio
+      INFLUXD_REPORTING_DISABLED: "true"
+    ports:
+      # API, CLI remota e interfaz web. Solo en la notebook (127.0.0.1):
+      # hasta el `influx setup`, el servidor acepta el alta de un administrador.
+      - "127.0.0.1:${INFLUX_PORT:-8086}:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    healthcheck:
+      # RF1: disponibilidad verificada con la CLI incluida en el contenedor
+      test: ["CMD", "influx", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - fixture2030-net
+
+  # ----------------------------------------------------------
+  #  Herramientas del módulo (generación, carga, consultas,
+  #  agregaciones, validación). Python 3.12 SOLO con biblioteca
+  #  estándar: nadie tiene que instalar nada en la notebook.
+  #      docker compose run --rm herramientas scripts/<script>.py [args]
+  # ----------------------------------------------------------
+  herramientas:
+    image: python:3.12-slim
+    profiles: ["herramientas"]
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    working_dir: /app
+    environment:
+      INFLUX_URL: http://influxdb:8086
+      TOKEN_FILE: /app/secrets/admin-token.json
+      EVIDENCIA_DIR: /app/docs/evidencia
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./data:/app/data
+      - ./docs/evidencia:/app/docs/evidencia
+      - ./secrets:/app/secrets:ro
+    entrypoint: ["python"]
+    networks:
+      - fixture2030-net
+
+volumes:
+  # RNF2 — volúmenes NOMBRADOS respaldados por la carpeta de la convención de la
+  # materia. Las carpetas tienen que existir antes del primer `up` (las crea
+  # inicializacion.sh, o: mkdir -p ~/docker/data/influxdb/data ~/docker/data/influxdb/config).
+  # `docker compose down` conserva los datos; `down -v` borra los volúmenes de Docker
+  # pero NO los archivos de la carpeta del host.
+  influxdb_data:
+    name: fixture2030_influxdb_data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${INFLUX_DATA_DIR:-${HOME}/docker/data/influxdb}/data
+  influxdb_config:
+    name: fixture2030_influxdb_config
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${INFLUX_DATA_DIR:-${HOME}/docker/data/influxdb}/config
+
+networks:
+  fixture2030-net:
+    driver: bridge
+    name: fixture2030-influxdb-net

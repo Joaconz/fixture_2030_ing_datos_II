@@ -1,0 +1,26 @@
+{
+  "segundos": 5.0,
+  "conteo_historico": [
+    {
+      "puntos": 2320,
+      "measurement": "audiencia_partido_1m"
+    },
+    {
+      "puntos": 380,
+      "measurement": "estadisticas_equipo_1m"
+    },
+    {
+      "puntos": 480,
+      "measurement": "operacion_plataforma_5m"
+    },
+    {
+      "puntos": 3,
+      "measurement": "resumen_partido_audiencia"
+    },
+    {
+      "puntos": 4,
+      "measurement": "resumen_partido_equipo"
+    }
+  ],
+  "task": "actualizada (id 116659ba283b0000, cada 1 h, estado activo)"
+}

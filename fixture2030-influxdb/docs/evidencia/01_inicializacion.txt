@@ -1,0 +1,26 @@
+# Inicialización — 2026-09-28T19:03:43Z
+
+## Versión observada de influxdb:latest (RNF1)
+InfluxDB v2.9.1 (git: d4fa1941fd) build_date: 2026-05-11T20:48:40Z
+Influx CLI dev (git: 8cdf40161d7662e942582086853fca948fc1a842) build_date: 2026-04-22T19:02:46Z
+Imagen: influxdb@sha256:05d6fb735bc22449c401094d42846123a24e3325d3a6e092242a45bfd68fff21  creada 2026-09-19T00:49:00.346458807Z
+
+## Disponibilidad del servicio (RF1)
+OK
+NAME                   IMAGE             COMMAND                  SERVICE    CREATED         STATUS                   PORTS
+fixture2030-influxdb   influxdb:latest   "/entrypoint.sh infl…"   influxdb   9 seconds ago   Up 8 seconds (healthy)   127.0.0.1:8086->8086/tcp
+
+## Buckets, retención y duración de shard (RF10)
+ID			Name				Retention	Shard group duration	Organization ID		Schema Type
+5fec3f6d335fbda2	_monitoring			168h0m0s	24h0m0s			2821424707db471d	implicit
+93b18126d9ffd9e2	_tasks				72h0m0s		24h0m0s			2821424707db471d	implicit
+16ef3d0bbd757880	fixture2030_historico		infinite	168h0m0s		2821424707db471d	implicit
+9c46373b6d4b3c6c	fixture2030_prueba_retencion	1h0m0s		1h0m0s			2821424707db471d	implicit
+1baa4f225703e59a	fixture2030_vivo		1080h0m0s	24h0m0s			2821424707db471d	implicit
+
+## Persistencia (RNF2): volúmenes nombrados y carpetas que los respaldan
+fixture2030_influxdb_data -> /Users/valentinafrisoli/docker/data/influxdb/data
+fixture2030_influxdb_config -> /Users/valentinafrisoli/docker/data/influxdb/config
+
+## Recursos de Docker
+CPUs: 8  Memoria: 4106604544 bytes  SO: Docker Desktop

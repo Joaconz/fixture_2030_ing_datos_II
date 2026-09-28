@@ -1,0 +1,31 @@
+{
+  "perfil": "completo",
+  "servidor": "InfluxDB v2.9.1 (commit d4fa1941fd)",
+  "ambiente_cliente": {
+    "cpus_visibles": 8,
+    "memoria_gb_visible": 3.8,
+    "python": "3.12.14",
+    "plataforma": "Linux-7.0.12-linuxkit-aarch64-with-glibc2.41"
+  },
+  "parametros": {
+    "lote": 10000,
+    "hilos": 4,
+    "reintentos": 4,
+    "gzip": false,
+    "tabla": null,
+    "precision": "s"
+  },
+  "puntos_esperados": 10094400,
+  "puntos_confirmados": 10094400,
+  "lotes": 1127,
+  "lotes_con_reintento": 0,
+  "segundos_totales": 12.94,
+  "puntos_por_segundo": 780255.2,
+  "mb_enviados": 1429.7,
+  "latencia_post_s": {
+    "p50": 0.045,
+    "p95": 0.069,
+    "max": 0.172
+  },
+  "error": null
+}
