@@ -1,0 +1,9 @@
+# Autorización local de InfluxDB (token, usuario, contraseña): nunca se versiona
+secrets/*
+!secrets/README.md
+
+# Puntos generados (~1,4 GB): se regeneran con generacion_puntos.py
+data/lp/
+
+# Configuración local opcional
+.env
