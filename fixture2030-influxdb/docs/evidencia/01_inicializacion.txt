@@ -19,8 +19,8 @@ ID			Name				Retention	Shard group duration	Organization ID		Schema Type
 1baa4f225703e59a	fixture2030_vivo		1080h0m0s	24h0m0s			2821424707db471d	implicit
 
 ## Persistencia (RNF2): volúmenes nombrados y carpetas que los respaldan
-fixture2030_influxdb_data -> /Users/valentinafrisoli/docker/data/influxdb/data
-fixture2030_influxdb_config -> /Users/valentinafrisoli/docker/data/influxdb/config
+fixture2030_influxdb_data -> ~/docker/data/influxdb/data
+fixture2030_influxdb_config -> ~/docker/data/influxdb/config
 
 ## Recursos de Docker
 CPUs: 8  Memoria: 4106604544 bytes  SO: Docker Desktop

@@ -20,3 +20,29 @@ Ninguno de estos archivos contiene el token ni la contraseña.
 |---|---|---|---|---:|---:|---|
 | 28/09/2026 | InfluxDB v2.9.1 | 8 CPUs / 3,8 GB | muestra | 176.400 | 647.828 | todo ✅ |
 | 28/09/2026 | InfluxDB v2.9.1 | 8 CPUs / 3,8 GB | completo | 10.094.400 | 780.255 | todo ✅ |
+
+## Archivos de la entrega (corridas finales del 28/09/2026)
+
+Se conserva **una corrida por script y perfil**: la última, que es la que respaldan las cifras de `docs/` (por ejemplo, los tiempos de P1–P6 de `consultas_y_agregaciones.md` y los 378 s del backfill de `retencion_y_granularidad.md`). Las corridas intermedias equivalentes se borraron para que no haya que adivinar cuál vale.
+
+| Paso | Perfil muestra | Perfil completo |
+|---|---|---|
+| Ambiente y persistencia | `01_inicializacion.txt`, `02_persistencia.txt` | — |
+| Carga | `carga_muestra_20260928-190428` | `carga_completo_20260928-191438` |
+| Agregaciones | `agregaciones_muestra_20260928-191239` | `agregaciones_completo_20260928-192105` |
+| Validación (todo ✅) | `validacion_muestra_20260928-191241` | `validacion_completo_20260928-192535` |
+| Consultas P1–P6 (sobre el perfil completo) | — | `consultas_PAR-D16-01_20260928-192540` |
+
+Cada archivo existe en `.md` (legible) y `.json` (datos).
+
+### `hallazgos/` — corridas con fallas, conservadas a propósito
+
+Son la evidencia de los hallazgos de `docs/pruebas_y_rendimiento.md` §5. Las fallas son esperables: se corrigieron después y las corridas finales de arriba están en ✅.
+
+| Archivo | Qué muestra |
+|---|---|
+| `hallazgos/validacion_muestra_20260928-190430` | V2 en ❌: la primera versión esperaba "series × fields" (24 / 48 / 15) y `influxdb.cardinality()` cuenta series del índice (4 / 16 / 5). Se corrigió la expectativa, no los datos |
+| `hallazgos/validacion_muestra_20260928-190807` | V8 en ❌: una segunda corrida de los resúmenes después de reiniciar el servidor dejó un punto duplicado en el histórico (499.413 contra 300.766 comentarios). Se corrigió con el reemplazo explícito (`/api/v2/delete` + reescritura) |
+
+En `01_inicializacion.txt` y `02_persistencia.txt`, la carpeta del host se muestra como `~/docker/data/influxdb` (la salida original tenía la ruta absoluta del usuario de la notebook).
+

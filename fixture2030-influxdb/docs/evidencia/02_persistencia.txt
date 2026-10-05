@@ -33,5 +33,5 @@ Table: keys: [_start, _stop]
 2030-06-09T12:45:00.000000000Z  2030-06-09T15:10:00.000000000Z                       11400
 
 ## Volúmenes
-fixture2030_influxdb_data -> /Users/valentinafrisoli/docker/data/influxdb/data
-fixture2030_influxdb_config -> /Users/valentinafrisoli/docker/data/influxdb/config
+fixture2030_influxdb_data -> ~/docker/data/influxdb/data
+fixture2030_influxdb_config -> ~/docker/data/influxdb/config
