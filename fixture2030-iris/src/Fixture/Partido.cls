@@ -75,18 +75,6 @@ Method Finalizar() As %Status
 	quit $$$OK
 }
 
-/// RF8 y matriz de integridad: "un partido FINALIZADO no se modifica" tiene que valer
-/// también por SQL. %OnBeforeSave sólo se ejecuta en el acceso por objetos (%Save());
-/// un UPDATE por SQL no lo llama. Un trigger con Foreach = row/object se ejecuta en los
-/// DOS caminos: UPDATE por SQL y %Save() de un partido existente.
-Trigger FinalizadoInmutable [ Event = UPDATE, Foreach = row/object, Time = BEFORE ]
-{
-	if {Estado*O} = "FINALIZADO" {
-		set %ok = 0
-		set %msg = "El partido "_{Codigo*O}_" está FINALIZADO y no puede modificarse (también por SQL)"
-	}
-}
-
 /// Validación del objeto entero antes de guardarlo (§5.2): dos equipos distintos, y un
 /// partido ya FINALIZADO en la base no se modifica.
 Method %OnBeforeSave(insert As %Boolean) As %Status [ Private, ServerOnly = 1 ]
