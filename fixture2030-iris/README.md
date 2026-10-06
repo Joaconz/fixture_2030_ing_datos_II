@@ -7,6 +7,7 @@ Porción del dominio del Fixture 2030 como clases persistentes de IRIS: un **Par
 
 - Partido es el módulo N2 del TPO: en el Hito 2 se asignó a IRIS y en el Hito 3 se le exigió consistencia fuerte.
 - Los códigos de partido y de sede son los mismos de los Hitos 5 a 8. Los jugadores son los del Hito 4 (mismo dni y equipo), exportados de MongoDB a `data/jugadores.csv`.
+- **Limitación conocida (Hallazgo H1, [`../docs/ESTADO-CANONICO-NECESIDADES.md`](../docs/ESTADO-CANONICO-NECESIDADES.md)):** como los equipos salen del roster de MongoDB, los **equipos de cada partido no coinciden** con los del calendario del grafo (Hito 5), que es el que usan también Cassandra, Redis e InfluxDB. Por ejemplo, `PAR-A-1` es ARG–BRA acá y ARG–NED en los Hitos 5 a 8, y Uruguay es `URY` acá y `URU` allá. Coinciden el código, la fecha, la sede y la plantilla de goles; se va a unificar junto con la identidad de jugadores entre MongoDB y Neo4j.
 - Versión observada de `intersystems/iris-community:latest-cd`: IRIS 2026.2 (Build 221U), 06/10/2026.
 
 ---
