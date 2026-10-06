@@ -1,0 +1,56 @@
+# Demostración (Fixture.Demo.Todo)
+# Fecha (UTC): 2026-10-06T21:00:54Z
+# Imagen intersystems/iris-community:latest-cd → IRIS for UNIX (Ubuntu Server LTS for x86-64 Containers) 2026.2 (Build 221U) Fri Jun 26 2026 09:58:52 EDT
+
+=== 1. Padre e hijo guardados con un solo %Save() del padre (RF6) ===
+  OK · Padre: partido.Iniciar()
+  OK · Hijo: partido.RegistrarEvento(gol al 23')
+  Antes de guardar: ID partido = "" · ID evento = ""
+  OK · partido.%Save()  (única invocación)
+  Después: ID partido = 7 · ID evento = 7||17 (padre||hijo)
+  Releído de la base: PAR-DEMO-01 · EN_JUEGO · eventos: 1
+=== 2. Carga que falla por una propiedad requerida omitida (RF5) ===
+  RECHAZADO · Partido sin Sede: partido.%Save()
+    ERROR #5659: Property 'Fixture.Partido::Sede(8@Fixture.Partido,ID=)' required
+  ¿Se guardó PAR-DEMO-02? no
+=== 3. Navegación por referencias de objetos, sin SQL (RF7) ===
+  partido.Codigo → PAR-A-3 · ARG 2-0 URY · FINALIZADO
+  partido.Arbitro.NombreCompleto() → Youssef Benali
+  partido.Eventos (hijos):
+    13' GOL · evento.Jugador.NombreCompleto() → Estefania Mosciski (#9, ARG) · evento.Partido.Codigo → PAR-A-3
+    31' TARJETA_AMARILLA · evento.Jugador.NombreCompleto() → Savanna O'Keefe (#4, URY) · evento.Partido.Codigo → PAR-A-3
+    82' GOL · evento.Jugador.NombreCompleto() → Edgardo McCullough (#15, ARG) · evento.Partido.Codigo → PAR-A-3
+=== 4. Transición de estado ilegal (RF9) ===
+  PAR-A-1 está FINALIZADO con 2 eventos
+  RECHAZADO · partido.RegistrarEvento(gol en el minuto 0)
+    ERROR #5001: Transición ilegal: PAR-A-1 está FINALIZADO; sólo se registran eventos con el partido EN_JUEGO
+  PAR-A-1 sigue con 2 eventos
+  RECHAZADO · Cambiar el estado a mano y guardar (%OnBeforeSave)
+    ERROR #5001: El partido PAR-A-1 está FINALIZADO y no puede modificarse
+=== 5. Las mismas entidades por SQL (RF8) ===
+SQL> SELECT Codigo, EquipoLocal, GolesLocal, GolesVisitante, EquipoVisitante, Estado, Arbitro->Apellido AS Arbitro FROM Fixture.Partido ORDER BY Codigo
+Codigo	EquipoLocal	GolesLocal	GolesVisitante	EquipoVisitante	Estado	Arbitro
+PAR-A-1	ARG	1	0	BRA	FINALIZADO	Hastings
+PAR-A-2	URY	1	1	COL	FINALIZADO	Moreau
+PAR-A-3	ARG	2	0	URY	FINALIZADO	Benali
+PAR-A-4	BRA	1	0	COL	FINALIZADO	Sato
+PAR-A-5	ARG	1	1	COL	FINALIZADO	Hastings
+PAR-A-6	BRA	2	0	URY	FINALIZADO	Moreau
+PAR-DEMO-01	ARG			URY	EN_JUEGO	Hastings
+7 Rows(s) Affected
+SQL> SELECT Partido->Codigo AS Partido, Minuto, Tipo, Jugador->Documento AS Dni, Jugador->Apellido AS Jugador FROM Fixture.Evento WHERE Partido->Codigo = 'PAR-A-3' ORDER BY Minuto
+Partido	Minuto	Tipo	Dni	Jugador
+PAR-A-3	13	GOL	30000009	Mosciski
+PAR-A-3	31	TARJETA_AMARILLA	30000204	O'Keefe
+PAR-A-3	82	GOL	30000015	McCullough
+3 Rows(s) Affected
+SQL> SELECT $PIECE(%EXACT(x__classname), '~', 2) AS Clase, COUNT(*) AS Cantidad FROM Fixture.Persona GROUP BY x__classname
+Clase	Cantidad
+Fixture.Arbitro	4
+Fixture.Jugador	1472
+2 Rows(s) Affected
+SQL> UPDATE Fixture.Arbitro SET Categoria = 'FIFA_ELITE' WHERE Documento = 'ARB-03'
+  Filas: 1
+  Leído como objeto: ##class(Fixture.Arbitro).DocumentoIdxOpen("ARB-03").Categoria → FIFA_ELITE
+=== Limpieza: se borra PAR-DEMO-01 ===
+  ¿Existe todavía su evento 7||17? no (se borró con el partido)

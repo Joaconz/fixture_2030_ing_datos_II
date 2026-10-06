@@ -1,0 +1,61 @@
+# Inicialización — Hito 9
+# Fecha (UTC): 2026-10-06T21:00:44Z
+# Imagen intersystems/iris-community:latest-cd → IRIS for UNIX (Ubuntu Server LTS for x86-64 Containers) 2026.2 (Build 221U) Fri Jun 26 2026 09:58:52 EDT
+
+## Instancia (iris qlist)
+IRIS^/usr/irissys/^2026.2.0.221.0com^running, since Tue Oct  6 21:00:40 2026^iris.cpf^1972^52773^0^warn^IRIS^^^/durable/iris/^1972
+
+## Durable %SYS (RNF1): los datos viven fuera del contenedor
+ISC_DATA_DIRECTORY=/durable/iris
+csp
+dev
+dist
+httpd
+iris.cpf
+iris.cpf_20261006
+irisinfo.txt
+_LastGood_.cpf
+mgr
+Volumen fixture2030_iris_durable -> ~/docker/data/iris
+
+## Compilación de src/ (RNF2)
+Load of directory started on 10/06/2026 21:00:49
+Loading file /home/irisowner/fixture/src/Fixture/Demo.cls as cls
+Imported class: Fixture.Demo
+Loading file /home/irisowner/fixture/src/Fixture/Carga.cls as cls
+Imported class: Fixture.Carga
+Loading file /home/irisowner/fixture/src/Fixture/Arbitro.cls as cls
+Imported class: Fixture.Arbitro
+Loading file /home/irisowner/fixture/src/Fixture/Evento.cls as cls
+Imported class: Fixture.Evento
+Loading file /home/irisowner/fixture/src/Fixture/Partido.cls as cls
+Imported class: Fixture.Partido
+Loading file /home/irisowner/fixture/src/Fixture/Jugador.cls as cls
+Imported class: Fixture.Jugador
+Loading file /home/irisowner/fixture/src/Fixture/Persona.cls as cls
+Imported class: Fixture.Persona
+Compiling 7 classes
+Compiling class Fixture.Carga
+Compiling class Fixture.Demo
+Compiling class Fixture.Persona
+Compiling class Fixture.Partido
+Compiling class Fixture.Evento
+Compiling class Fixture.Arbitro
+Compiling class Fixture.Jugador
+Compiling table Fixture.Arbitro
+Compiling table Fixture.Persona
+Compiling table Fixture.Jugador
+Compiling table Fixture.Evento
+Compiling table Fixture.Partido
+Compiling routine Fixture.Demo.1
+Compiling routine Fixture.Carga.1
+Compiling routine Fixture.Persona.1
+Compiling routine Fixture.Partido.1
+Compiling routine Fixture.Arbitro.1
+Compiling routine Fixture.Jugador.1
+Compiling routine Fixture.Evento.1
+Load finished successfully.
+Clases cargadas y compiladas: OK
+
+## Recursos de Docker
+CPUs: 12  Memoria: 8251424768 bytes  SO: Docker Desktop

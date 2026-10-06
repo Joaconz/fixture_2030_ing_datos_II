@@ -1,0 +1,14 @@
+# Carga (Fixture.Carga.Ejecutar)
+# Fecha (UTC): 2026-10-06T21:00:51Z
+# Imagen intersystems/iris-community:latest-cd → IRIS for UNIX (Ubuntu Server LTS for x86-64 Containers) 2026.2 (Build 221U) Fri Jun 26 2026 09:58:52 EDT
+
+Jugadores (Hito 4) creados: 1472
+Árbitros creados: 4
+  PAR-A-1 ARG 1-0 BRA · 2 eventos guardados con un único %Save()
+  PAR-A-2 URY 1-1 COL · 3 eventos guardados con un único %Save()
+  PAR-A-3 ARG 2-0 URY · 3 eventos guardados con un único %Save()
+  PAR-A-4 BRA 1-0 COL · 2 eventos guardados con un único %Save()
+  PAR-A-5 ARG 1-1 COL · 3 eventos guardados con un único %Save()
+  PAR-A-6 BRA 2-0 URY · 3 eventos guardados con un único %Save()
+Partidos creados: 6
+✔ Carga completada
