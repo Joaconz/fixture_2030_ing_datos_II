@@ -1,0 +1,14 @@
+# Restricción "Repositorio" del Hito 9: sólo clases .cls, scripts y configuración.
+# Los datos de IRIS viven en ~/docker/data/iris (fuera del repo); por si alguien
+# apunta IRIS_DATA_DIR adentro del módulo, se excluyen igual sus archivos.
+durable/
+iris-data/
+*.DAT
+*.dat
+iris.cpf*
+iris.key
+*.log
+*.jrn
+
+# Configuración local (puertos, carpeta de datos)
+.env
