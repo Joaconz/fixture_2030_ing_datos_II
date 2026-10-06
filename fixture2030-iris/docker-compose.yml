@@ -1,0 +1,56 @@
+# ============================================================
+#  Fixture 2030 — Hito 9 · Entidades complejas
+#  Ambiente local de InterSystems IRIS Community (Docker Compose)
+#  Ingeniería de Datos II — Pazos / Núñez / Frisoli
+# ------------------------------------------------------------
+#  §5.1: imagen intersystems/iris-community:latest-cd (la que fija el
+#        enunciado). La versión real de cada prueba se registra en
+#        docs/evidencia/01_inicializacion.txt.
+#  RNF1 / Persistencia: Durable %SYS. ISC_DATA_DIRECTORY hace que IRIS
+#        guarde FUERA del contenedor todo lo que tiene que sobrevivir a un
+#        reinicio: bases de datos (IRIS.DAT de USER, donde viven las clases y
+#        los objetos), configuración (iris.cpf), journals y usuarios.
+#        Se monta en ~/docker/data/iris mediante un VOLUMEN NOMBRADO
+#        respaldado por esa carpeta (mismo patrón que Redis, Cassandra e
+#        InfluxDB, según la corrección del profesor al Hito 6).
+#        La carpeta tiene que existir antes del primer `up` (la crea
+#        scripts/inicializacion.sh). En Linux, además, tiene que poder
+#        escribirla el usuario irisowner del contenedor (uid 51773):
+#            sudo chown 51773:51773 ~/docker/data/iris
+#        En Docker Desktop (macOS / Windows) no hace falta.
+#        Otra ubicación: IRIS_DATA_DIR=/ruta docker compose up -d
+#  Código: src/ y data/ se montan de sólo lectura; las clases se cargan y
+#        compilan con scripts/inicializacion.sh.
+#  Puertos sólo en 127.0.0.1: superservidor (SQL por ODBC/JDBC) y Management Portal.
+# ============================================================
+
+services:
+  iris:
+    image: intersystems/iris-community:latest-cd
+    container_name: fixture2030-iris
+    restart: unless-stopped
+    environment:
+      ISC_DATA_DIRECTORY: /durable/iris
+    ports:
+      - "127.0.0.1:${IRIS_SUPERSERVER_PORT:-1972}:1972"   # SQL por ODBC/JDBC
+      - "127.0.0.1:${IRIS_PORTAL_PORT:-52773}:52773"      # Management Portal (http://localhost:52773/csp/sys/UtilHome.csp)
+    volumes:
+      - iris_durable:/durable
+      - ./src:/home/irisowner/fixture/src:ro
+      - ./data:/home/irisowner/fixture/data:ro
+    healthcheck:
+      # "healthy" recién cuando la instancia está corriendo de verdad
+      test: ["CMD-SHELL", "iris qlist IRIS | grep -q running"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  iris_durable:
+    name: fixture2030_iris_durable
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${IRIS_DATA_DIR:-${HOME}/docker/data/iris}
