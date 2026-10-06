@@ -46,6 +46,7 @@ Method Iniciar() As %Status
 /// devuelve el error y el partido queda igual.
 Method RegistrarEvento(evento As Fixture.Evento) As %Status
 {
+	if '$isobject(evento) || '$isobject(evento.Jugador) quit $$$ERROR($$$GeneralError, "RegistrarEvento: el evento necesita un jugador")
 	if ..Estado '= "EN_JUEGO" {
 		quit $$$ERROR($$$GeneralError, "Transición ilegal: "_..Codigo_" está "_..Estado_"; sólo se registran eventos con el partido EN_JUEGO")
 	}
