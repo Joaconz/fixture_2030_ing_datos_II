@@ -111,6 +111,19 @@ ClassMethod ProyeccionSQL()
 	write "  Filas: ",##class(%SQL.Statement).%ExecDirect(, "UPDATE Fixture.Arbitro SET Categoria = 'FIFA_ELITE' WHERE Documento = 'ARB-03'").%ROWCOUNT,!
 	write "  Leído como objeto: ##class(Fixture.Arbitro).DocumentoIdxOpen(""ARB-03"").Categoria → ",##class(Fixture.Arbitro).DocumentoIdxOpen("ARB-03").Categoria,!
 	do ##class(%SQL.Statement).%ExecDirect(, "UPDATE Fixture.Arbitro SET Categoria = 'FIFA' WHERE Documento = 'ARB-03'")
+
+	// La regla "un partido FINALIZADO no se modifica" también vale por SQL
+	// (trigger FinalizadoInmutable, Foreach = row/object).
+	set upd = "UPDATE Fixture.Partido SET Estado = 'EN_JUEGO' WHERE Codigo = 'PAR-A-1'"
+	write !,"SQL> ",upd,!
+	set rs = ##class(%SQL.Statement).%ExecDirect(, upd)
+	if rs.%SQLCODE < 0 {
+		write "  RECHAZADO · SQLCODE ",rs.%SQLCODE," · ",rs.%Message,!
+	} else {
+		write "  ✖ Se aplicó (filas: ",rs.%ROWCOUNT,"): la regla no se está cumpliendo por SQL",!
+		do ##class(%SQL.Statement).%ExecDirect(, "UPDATE Fixture.Partido SET Estado = 'FINALIZADO' WHERE Codigo = 'PAR-A-1'")
+	}
+	write "  Leído como objeto: PAR-A-1 → ",##class(Fixture.Partido).CodigoIdxOpen("PAR-A-1").Estado,!
 }
 
 /// Borra el partido de demostración: sus eventos se borran con él (relación padre-hijo).
