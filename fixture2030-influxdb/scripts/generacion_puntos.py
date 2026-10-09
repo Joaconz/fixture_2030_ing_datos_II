@@ -1,5 +1,5 @@
 """
-Fixture 2030 — Hito 8 · Series temporales (InfluxDB 2)
+Fixture 2030 — Hito 8 · Series temporales (InfluxDB 3 Core)
 ARCHIVO: scripts/generacion_puntos.py
 PROPÓSITO: GENERAR (no cargar) los puntos en line protocol, de forma determinista.
            La carga está en carga_lotes.py y la verificación en validacion.py (RF7).
@@ -13,14 +13,14 @@ PERFILES
   completo  los 112 partidos del Hito 5 + operación continua     ≈ 10,09 millones de puntos
   --limite-partidos N: los primeros N partidos por fecha (prueba intermedia)
 
-TABLAS GENERADAS (bucket fixture2030_vivo, precisión: SEGUNDOS)
+TABLAS GENERADAS (base fixture2030_vivo, precisión: SEGUNDOS)
   estadisticas_equipo    feed deportivo, 1 punto por equipo por segundo de juego
   audiencia_partido      plataforma, 1 punto por región por segundo, desde −15' hasta +130'
   operacion_plataforma   observabilidad, 1 punto por servicio cada 10 s, continuo
 
 DETERMINISMO: toda aleatoriedad sale de random.Random(<semilla por partido/serie>).
 Generar dos veces produce archivos idénticos, y cargar dos veces escribe los mismos
-puntos (misma serie + mismo timestamp): InfluxDB los deduplica, no duplica filas.
+puntos (misma serie + mismo timestamp): InfluxDB 3 los deduplica, no duplica filas.
 
 SALIDA: data/lp/<perfil>/<tabla>/<archivo>.lp.gz + data/lp/<perfil>/manifiesto.json
         (el manifiesto es la "verdad esperada" que después contrasta validacion.py).
@@ -296,7 +296,7 @@ def main() -> None:
         por_tabla[a["tabla"]] = por_tabla.get(a["tabla"], 0) + a["puntos"]
     manifiesto = {
         "perfil": nombre_perfil,
-        "bucket": "fixture2030_vivo",
+        "base": "fixture2030_vivo",
         "precision": PRECISION,
         "partidos": [{"partido_id": p.partido_id, "fase": p.fase, "local": p.local,
                       "visitante": p.visitante, "sede_id": p.sede_id, "inicio": p.inicio.isoformat(),

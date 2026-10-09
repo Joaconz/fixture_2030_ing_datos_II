@@ -1,0 +1,26 @@
+{
+  "segundos": 3.3,
+  "lineas_escritas": 3186,
+  "conteo_historico": [
+    {
+      "tabla": "estadisticas_equipo_1m",
+      "puntos": 380
+    },
+    {
+      "tabla": "audiencia_partido_1m",
+      "puntos": 2320
+    },
+    {
+      "tabla": "operacion_plataforma_5m",
+      "puntos": 480
+    },
+    {
+      "tabla": "resumen_partido_equipo",
+      "puntos": 4
+    },
+    {
+      "tabla": "resumen_partido_audiencia",
+      "puntos": 2
+    }
+  ]
+}

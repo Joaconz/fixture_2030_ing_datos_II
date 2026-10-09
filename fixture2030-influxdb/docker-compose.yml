@@ -1,44 +1,50 @@
 # ============================================================
 #  Fixture 2030 — Hito 8 · Series temporales de estadísticas en vivo
-#  Ambiente local de InfluxDB 2 (Docker Compose)
+#  Ambiente local de InfluxDB 3 Core (Docker Compose)
 #  Ingeniería de Datos II — Pazos / Núñez / Frisoli
 # ------------------------------------------------------------
-#  RNF1: imagen oficial `influxdb:latest`. Observada el 28/09/2026:
-#        InfluxDB v2.9.1. La versión de cada prueba se registra en
-#        docs/evidencia/01_inicializacion.txt.
-#  RNF2: datos en ~/docker/data/influxdb mediante VOLÚMENES NOMBRADOS
-#        respaldados por esa carpeta (mismo patrón que Redis y
-#        Cassandra, según la corrección del Hito 6):
-#          ~/docker/data/influxdb/data   -> /var/lib/influxdb2 (motor TSM, índice, metadatos)
-#          ~/docker/data/influxdb/config -> /etc/influxdb2     (configuración de la CLI)
-#  RNF7: sin credenciales en este archivo. El usuario, la organización
-#        y el token los crea scripts/autorizacion_local.sh (influx setup)
-#        y quedan en ./secrets (ignorado por git).
-#  §5.1: el servicio arranca con `docker compose up -d` sin pasos
-#        previos; la autorización se crea después, con el servidor arriba.
+#  RNF1: imagen oficial `influxdb:3-core` con `pull_policy: always`, como
+#        indica la Clase 9: el tag `influxdb:latest` apunta a InfluxDB 2.x
+#        y no trae el binario `influxdb3` (ver README §0). La versión de
+#        cada prueba se registra en docs/evidencia/01_inicializacion.txt.
+#  RNF2: datos en ~/docker/data/influxdb mediante un VOLUMEN NOMBRADO
+#        respaldado por esa carpeta (mismo patrón que Redis y Cassandra,
+#        según la corrección del Hito 6):
+#          ~/docker/data/influxdb -> /var/lib/influxdb3/data (catálogo, WAL y Parquet)
+#  RNF7: sin credenciales en este archivo. El token de administración lo
+#        crea scripts/autorizacion_local.sh (influxdb3 create token --admin)
+#        y queda en ./secrets (ignorado por git).
+#  §5.1: el servicio arranca con `docker compose up -d` sin pasos previos;
+#        la autorización se crea después, con el servidor arriba.
 #
-#  NODO ÚNICO: laboratorio. InfluxDB 2 OSS no tiene réplicas ni
-#  clúster (ver docs/cardinalidad_y_escalabilidad.md §6).
+#  NODO ÚNICO: laboratorio. InfluxDB 3 Core es un nodo único, sin
+#  réplicas ni clúster (ver docs/cardinalidad_y_escalabilidad.md §6).
 # ============================================================
 
 services:
   influxdb:
-    image: influxdb:latest
+    image: influxdb:3-core
+    pull_policy: always
     container_name: fixture2030-influxdb
     restart: unless-stopped
-    environment:
-      # Sin telemetría hacia InfluxData desde el laboratorio
-      INFLUXD_REPORTING_DISABLED: "true"
+    command:
+      - influxdb3
+      - serve
+      - --node-id=fixture2030-local
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --http-bind=0.0.0.0:8181
+      # /health y /ping sin token: los usa el healthcheck de Docker. No exponen
+      # datos (solo estado y versión); todo lo demás sigue exigiendo el token.
+      - --disable-authz=health,ping
     ports:
-      # API, CLI remota e interfaz web. Solo en la notebook (127.0.0.1):
-      # hasta el `influx setup`, el servidor acepta el alta de un administrador.
-      - "127.0.0.1:${INFLUX_PORT:-8086}:8086"
+      # API HTTP (escritura line protocol y consultas SQL). Solo en la notebook.
+      - "127.0.0.1:${INFLUX_PORT:-8181}:8181"
     volumes:
-      - influxdb_data:/var/lib/influxdb2
-      - influxdb_config:/etc/influxdb2
+      - influxdb_data:/var/lib/influxdb3/data
     healthcheck:
-      # RF1: disponibilidad verificada con la CLI incluida en el contenedor
-      test: ["CMD", "influx", "ping"]
+      # RF1: disponibilidad verificada con curl, incluido en la imagen
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8181/health"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -60,7 +66,7 @@ services:
         condition: service_healthy
     working_dir: /app
     environment:
-      INFLUX_URL: http://influxdb:8086
+      INFLUX_URL: http://influxdb:8181
       TOKEN_FILE: /app/secrets/admin-token.json
       EVIDENCIA_DIR: /app/docs/evidencia
       PYTHONUNBUFFERED: "1"
@@ -74,10 +80,10 @@ services:
       - fixture2030-net
 
 volumes:
-  # RNF2 — volúmenes NOMBRADOS respaldados por la carpeta de la convención de la
-  # materia. Las carpetas tienen que existir antes del primer `up` (las crea
-  # inicializacion.sh, o: mkdir -p ~/docker/data/influxdb/data ~/docker/data/influxdb/config).
-  # `docker compose down` conserva los datos; `down -v` borra los volúmenes de Docker
+  # RNF2 — volumen NOMBRADO respaldado por la carpeta de la convención de la
+  # materia. La carpeta tiene que existir antes del primer `up` (la crea
+  # inicializacion.sh, o: mkdir -p ~/docker/data/influxdb).
+  # `docker compose down` conserva los datos; `down -v` borra el volumen de Docker
   # pero NO los archivos de la carpeta del host.
   influxdb_data:
     name: fixture2030_influxdb_data
@@ -85,14 +91,7 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${INFLUX_DATA_DIR:-${HOME}/docker/data/influxdb}/data
-  influxdb_config:
-    name: fixture2030_influxdb_config
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${INFLUX_DATA_DIR:-${HOME}/docker/data/influxdb}/config
+      device: ${INFLUX_DATA_DIR:-${HOME}/docker/data/influxdb}
 
 networks:
   fixture2030-net:

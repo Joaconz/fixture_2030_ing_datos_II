@@ -4,54 +4,54 @@
     {
       "titulo": "P1 · Ventana reciente: últimos 2 minutos del feed de un partido en vivo",
       "filas": 10,
-      "ms_primera": 12.1,
-      "ms_p50": 5.6,
-      "ms_p95": 9.4,
+      "ms_primera": 9.6,
+      "ms_p50": 8.2,
+      "ms_p95": 9.7,
       "repeticiones": 10,
       "error": null
     },
     {
       "titulo": "P2 · Estado actual del partido: último valor de cada contador por equipo",
       "filas": 2,
-      "ms_primera": 5.1,
-      "ms_p50": 4.4,
-      "ms_p95": 4.6,
+      "ms_primera": 21.8,
+      "ms_p50": 20.3,
+      "ms_p95": 21.8,
       "repeticiones": 10,
       "error": null
     },
     {
       "titulo": "P3 · Filtro por dimensión: audiencia de dos regiones cada 5 minutos",
       "filas": 58,
-      "ms_primera": 194.8,
-      "ms_p50": 190.0,
-      "ms_p95": 212.5,
+      "ms_primera": 22.5,
+      "ms_p50": 22.1,
+      "ms_p95": 23.1,
       "repeticiones": 10,
       "error": null
     },
     {
       "titulo": "P4 · Comparación entre dimensiones: local contra visitante por cuarto de hora",
       "filas": 8,
-      "ms_primera": 230.9,
-      "ms_p50": 228.4,
-      "ms_p95": 241.9,
+      "ms_primera": 16.3,
+      "ms_p50": 16.2,
+      "ms_p95": 18.2,
       "repeticiones": 10,
       "error": null
     },
     {
       "titulo": "P5 · Comparación entre FUENTES: goles del feed deportivo contra comentarios de la audiencia",
       "filas": 16,
-      "ms_primera": 12.4,
-      "ms_p50": 11.0,
-      "ms_p95": 16.0,
+      "ms_primera": 18.5,
+      "ms_p50": 14.6,
+      "ms_p95": 15.3,
       "repeticiones": 10,
       "error": null
     },
     {
       "titulo": "P6 · Ausencia de puntos: el entretiempo",
       "filas": 21,
-      "ms_primera": 11.9,
-      "ms_p50": 12.7,
-      "ms_p95": 18.3,
+      "ms_primera": 15.1,
+      "ms_p50": 14.6,
+      "ms_p95": 17.1,
       "repeticiones": 10,
       "error": null
     }

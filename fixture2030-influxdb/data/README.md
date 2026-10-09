@@ -29,4 +29,4 @@ data/lp/<perfil>/
 | Audiencia | Pico por partido según el ranking de los equipos (normal ≈ 0,5–1,5 M; dieciseisavos ≈ 1,4–1,8 M; `PAR-D16-01` 2,5 M). Curva continua: previa, primer tiempo, baja en el entretiempo, segundo tiempo, salida. Reacción a goles distinta por región (+40 % si hizo el gol la selección del país anfitrión, −10 % si lo recibió, +10 % neutral) |
 | Regiones | 8: los 6 países anfitriones + resto de América + resto del mundo, con cuota ×3 cuando juega la selección local |
 | Operación | 5 servicios cada 10 s durante todo el torneo; solicitudes proporcionales a los usuarios en línea (0,04 req/s por usuario); latencia y errores crecen con la carga |
-| Timestamps | Segundos UTC (`precision=s`), calculados desde la fecha del partido |
+| Timestamps | Segundos UTC (`precision=second`), calculados desde la fecha del partido |
