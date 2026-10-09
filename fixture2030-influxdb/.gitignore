@@ -1,4 +1,4 @@
-# Autorización local de InfluxDB (token, usuario, contraseña): nunca se versiona
+# Autorización local de InfluxDB (token de administración): nunca se versiona
 secrets/*
 !secrets/README.md
 

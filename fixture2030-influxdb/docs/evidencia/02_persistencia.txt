@@ -1,37 +1,43 @@
-# Prueba de persistencia — 2026-09-28T19:07:02Z
+# Prueba de persistencia — 2026-10-09T22:40:53Z
 
 ## Antes (esperado: 11400 puntos de PAR-A-1)
-Result: _result
-Table: keys: [_start, _stop]
-                   _start:time                      _stop:time                  _value:int
-------------------------------  ------------------------------  --------------------------
-2030-06-09T12:45:00.000000000Z  2030-06-09T15:10:00.000000000Z                       11400
++--------+
+| puntos |
++--------+
+| 11400  |
++--------+
 
 ## docker compose down
- Container fixture2030-influxdb Stopping 
- Container fixture2030-influxdb Stopped 
- Container fixture2030-influxdb Removing 
- Container fixture2030-influxdb Removed 
- Network fixture2030-influxdb-net Removing 
- Network fixture2030-influxdb-net Removed 
+ Container fixture2030-influxdb  Stopping
+ Container fixture2030-influxdb  Stopped
+ Container fixture2030-influxdb  Removing
+ Container fixture2030-influxdb  Removed
+ Network fixture2030-influxdb-net  Removing
+ Network fixture2030-influxdb-net  Removed
 
 ## docker compose up -d
- Network fixture2030-influxdb-net Creating 
- Network fixture2030-influxdb-net Creating 
- Network fixture2030-influxdb-net Created 
- Network fixture2030-influxdb-net Created 
- Container fixture2030-influxdb Creating 
- Container fixture2030-influxdb Created 
- Container fixture2030-influxdb Starting 
- Container fixture2030-influxdb Started 
+ influxdb Pulling 
+ influxdb Pulled 
+ Network fixture2030-influxdb-net  Creating
+ Network fixture2030-influxdb-net  Created
+ Container fixture2030-influxdb  Creating
+ Container fixture2030-influxdb  Created
+ Container fixture2030-influxdb  Starting
+ Container fixture2030-influxdb  Started
+   healthy en 19 s (incluye volver a leer el WAL del disco)
 
-## Después del reinicio (mismo conteo, misma autorización)
-Result: _result
-Table: keys: [_start, _stop]
-                   _start:time                      _stop:time                  _value:int
-------------------------------  ------------------------------  --------------------------
-2030-06-09T12:45:00.000000000Z  2030-06-09T15:10:00.000000000Z                       11400
+## Después del reinicio (mismo conteo, mismo token)
++--------+
+| puntos |
++--------+
+| 11400  |
++--------+
 
-## Volúmenes
-fixture2030_influxdb_data -> ~/docker/data/influxdb/data
-fixture2030_influxdb_config -> ~/docker/data/influxdb/config
+## Volumen
+fixture2030_influxdb_data -> ~/docker/data/influxdb
+
+## Contenido de la carpeta del host (catálogo, WAL y Parquet del nodo)
+fixture2030-local
+catalog
+table-index-conversion-completed
+wal

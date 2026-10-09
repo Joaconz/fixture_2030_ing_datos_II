@@ -1,14 +1,14 @@
 """
-Fixture 2030 — Hito 8 · Series temporales (InfluxDB 2)
+Fixture 2030 — Hito 8 · Series temporales (InfluxDB 3 Core)
 ARCHIVO: scripts/comun.py
 PROPÓSITO: piezas compartidas por todos los scripts (solo biblioteca estándar):
-  1. conexión HTTP a InfluxDB 2 (escritura line protocol, consultas Flux, API de buckets);
+  1. conexión HTTP a InfluxDB 3 Core (escritura line protocol, consultas SQL);
   2. lectura de la autorización local (secrets/admin-token.json, fuera del repositorio);
   3. calendario CANÓNICO de los 112 partidos, idéntico al del Hito 5 (Neo4j);
   4. guardado de evidencia con fecha, versión y recursos del ambiente (RNF10).
 
-VERSIÓN: `influxdb:latest` = InfluxDB v2.9.1 (observado el 28/09/2026). Lenguaje de consulta:
-Flux. Organización de los datos: organización > bucket > measurement > series.
+VERSIÓN: `influxdb:3-core` = InfluxDB 3 Core 3.12.0 (observado el 09/10/2026). Lenguaje de
+consulta: SQL. Organización de los datos: base de datos > tabla > series (tabla + tags).
 
 COHERENCIA CON EL HITO 5 (Neo4j)
 --------------------------------
@@ -20,12 +20,9 @@ los mismos del Hito 6 y del Hito 7).
 """
 from __future__ import annotations
 
-import csv
-import io
 import json
 import os
 import platform
-import re
 import time
 import urllib.error
 import urllib.parse
@@ -39,36 +36,28 @@ UTC = timezone.utc
 # ---------------------------------------------------------------------------
 # Conexión
 # ---------------------------------------------------------------------------
-INFLUX_URL = os.getenv("INFLUX_URL", "http://localhost:8086")
+INFLUX_URL = os.getenv("INFLUX_URL", "http://localhost:8181")
 TOKEN_FILE = Path(os.getenv("TOKEN_FILE", "secrets/admin-token.json"))
 
-DB_VIVO = "fixture2030_vivo"               # bucket: detalle por segundo, retención 45 d
-DB_HISTORICO = "fixture2030_historico"     # bucket: resúmenes, sin vencimiento
-DB_PRUEBA_RETENCION = "fixture2030_prueba_retencion"  # bucket: retención 1 h (demostración)
+DB_VIVO = "fixture2030_vivo"               # base: detalle por segundo, retención 45 d
+DB_HISTORICO = "fixture2030_historico"     # base: resúmenes, sin vencimiento
+DB_PRUEBA_RETENCION = "fixture2030_prueba_retencion"  # base: retención 1 h (demostración)
 
-PRECISION = "s"  # precisión declarada de TODOS los timestamps del módulo: segundos (RNF6)
-
-
-def _credenciales() -> dict:
-    if not TOKEN_FILE.exists():
-        raise SystemExit(f"No existe {TOKEN_FILE}. Corré primero: sh scripts/inicializacion.sh")
-    return json.loads(TOKEN_FILE.read_text(encoding="utf-8"))
+PRECISION = "second"  # precisión declarada de TODOS los timestamps del módulo: segundos (RNF6)
 
 
 def token() -> str:
     """Token de laboratorio. Nunca se imprime ni se guarda en evidencia (RNF7)."""
-    return _credenciales()["token"]
-
-
-def org() -> str:
-    return _credenciales().get("org", "fixture2030")
+    if not TOKEN_FILE.exists():
+        raise SystemExit(f"No existe {TOKEN_FILE}. Corré primero: sh scripts/inicializacion.sh")
+    return json.loads(TOKEN_FILE.read_text(encoding="utf-8"))["token"]
 
 
 def _peticion(metodo: str, ruta: str, cuerpo: bytes | None = None,
               cabeceras: dict | None = None, timeout: int = 300, auth: bool = True) -> tuple[int, bytes]:
     req = urllib.request.Request(INFLUX_URL + ruta, data=cuerpo, method=metodo)
     if auth:
-        req.add_header("Authorization", f"Token {token()}")
+        req.add_header("Authorization", f"Bearer {token()}")
     for k, v in (cabeceras or {}).items():
         req.add_header(k, v)
     try:
@@ -78,92 +67,45 @@ def _peticion(metodo: str, ruta: str, cuerpo: bytes | None = None,
         return e.code, e.read()
 
 
-def escribir_lp(bucket: str, lineas: bytes, gzip_body: bool = False) -> tuple[int, bytes]:
-    """POST /api/v2/write con precisión en segundos. Si una línea es inválida, InfluxDB
-    rechaza el lote entero (HTTP 400): no hay escrituras parciales silenciosas."""
+def escribir_lp(base: str, lineas: bytes, gzip_body: bool = False) -> tuple[int, bytes]:
+    """POST /api/v3/write_lp con precisión en segundos y accept_partial=false: si una
+    línea es inválida, InfluxDB rechaza el lote ENTERO (HTTP 400). Sin ese parámetro,
+    InfluxDB 3 escribe las líneas válidas y descarta las otras (escritura parcial)."""
     cab = {"Content-Type": "text/plain; charset=utf-8"}
     cuerpo = lineas
     if gzip_body:
         import gzip
         cuerpo = gzip.compress(lineas, compresslevel=1)
         cab["Content-Encoding"] = "gzip"
-    q = urllib.parse.urlencode({"org": org(), "bucket": bucket, "precision": PRECISION})
-    return _peticion("POST", f"/api/v2/write?{q}", cuerpo, cab)
+    q = urllib.parse.urlencode({"db": base, "precision": PRECISION, "accept_partial": "false"})
+    return _peticion("POST", f"/api/v3/write_lp?{q}", cuerpo, cab)
 
 
-def _convertir(v: str):
-    if v == "":
-        return None
-    if re.fullmatch(r"-?\d+", v):
-        return int(v)
-    if re.fullmatch(r"-?\d+\.\d*(e[-+]?\d+)?|-?\d+e[-+]?\d+", v, re.IGNORECASE):
-        return float(v)
-    return v
-
-
-def consultar(flux: str, tipos: bool = False):
-    """POST /api/v2/query con Flux -> lista de filas (dict). Con tipos=True devuelve además
-    {columna: tipo} leído de la anotación #datatype del CSV (long, double, string, dateTime)."""
-    dialecto = {"header": True, "delimiter": ",", "annotations": ["datatype"] if tipos else []}
-    cuerpo = json.dumps({"query": flux, "type": "flux", "dialect": dialecto}).encode("utf-8")
-    q = urllib.parse.urlencode({"org": org()})
-    estado, resp = _peticion("POST", f"/api/v2/query?{q}", cuerpo,
-                             {"Content-Type": "application/json", "Accept": "application/csv"})
+def consultar(sql: str, base: str = DB_VIVO) -> list[dict]:
+    """POST /api/v3/query_sql -> lista de filas (dict), formato JSON.
+    Los timestamps vuelven como texto ISO en UTC (sin la 'Z')."""
+    cuerpo = json.dumps({"db": base, "q": sql, "format": "json"}).encode("utf-8")
+    estado, resp = _peticion("POST", "/api/v3/query_sql", cuerpo, {"Content-Type": "application/json"})
     if estado != 200:
         raise RuntimeError(f"HTTP {estado}: {resp.decode('utf-8', 'replace')[:600]}")
-    texto = resp.decode("utf-8").replace("\r\n", "\n")
-    filas, tipos_col = [], {}
-    for bloque in texto.split("\n\n"):
-        lineas = [ln for ln in bloque.split("\n") if ln.strip()]
-        if not lineas:
-            continue
-        dt = None
-        for ln in lineas:
-            if ln.startswith("#datatype"):
-                dt = next(csv.reader([ln]))
-        lineas = [ln for ln in lineas if not ln.startswith("#")]   # #datatype, #group, #default
-        if not lineas:
-            continue
-        lector = csv.reader(io.StringIO("\n".join(lineas)))
-        encabezado = next(lector, None)
-        if not encabezado:
-            continue
-        if "error" in encabezado and "reference" in encabezado:
-            fila = next(lector, [])
-            raise RuntimeError(f"Error de Flux: {dict(zip(encabezado, fila)).get('error')}")
-        if dt:
-            tipos_col.update({c: t for c, t in zip(encabezado, dt) if c not in ("", "result", "table")})
-        for fila in lector:
-            d = {c: _convertir(v) for c, v in zip(encabezado, fila) if c not in ("", "result", "table")}
-            filas.append(d)
-    return (filas, tipos_col) if tipos else filas
-
-
-def buckets() -> list[dict]:
-    q = urllib.parse.urlencode({"org": org(), "limit": 100})
-    estado, resp = _peticion("GET", f"/api/v2/buckets?{q}")
-    if estado != 200:
-        raise RuntimeError(f"HTTP {estado}: {resp[:300]!r}")
-    return json.loads(resp)["buckets"]
-
-
-def metricas() -> str:
-    """Endpoint /metrics (formato Prometheus) del servidor: tamaño de shards, archivos TSM, etc."""
-    estado, resp = _peticion("GET", "/metrics", auth=False)
-    return resp.decode("utf-8", "replace") if estado == 200 else ""
+    return json.loads(resp) if resp.strip() else []
 
 
 def version_servidor() -> str:
-    estado, resp = _peticion("GET", "/health", auth=False)
+    estado, resp = _peticion("GET", "/ping", auth=False)
     if estado == 200:
         d = json.loads(resp)
-        return f"InfluxDB {d.get('version', '?')} (commit {d.get('commit', '?')})"
+        return f"{d.get('product_name', 'InfluxDB 3')} {d.get('version', '?')} (revisión {d.get('revision', '?')})"
     return f"desconocida (HTTP {estado})"
 
 
-def rfc3339(dt: datetime) -> str:
-    """Literal de tiempo para Flux: 2030-06-29T16:00:00Z (sin comillas)."""
-    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+def ts(dt: datetime) -> str:
+    """Literal de tiempo para SQL: '2030-06-29T16:00:00Z' (con comillas)."""
+    return "'" + dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") + "'"
+
+
+def ts_epoch(segundos: int) -> str:
+    return ts(datetime.fromtimestamp(segundos, UTC))
 
 
 # ---------------------------------------------------------------------------

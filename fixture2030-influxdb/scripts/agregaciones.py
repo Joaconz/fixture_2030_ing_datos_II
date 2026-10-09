@@ -1,30 +1,29 @@
 """
-Fixture 2030 — Hito 8 · Series temporales (InfluxDB 2)
+Fixture 2030 — Hito 8 · Series temporales (InfluxDB 3 Core)
 ARCHIVO: scripts/agregaciones.py
 PROPÓSITO: (1) agregaciones justificadas por la semántica de cada medida (RF9);
            (2) MATERIALIZAR los resúmenes de la política de granularidad (RF10):
                fixture2030_vivo (1 s, 45 días) -> fixture2030_historico (1 min, 5 min
-               y por partido, sin vencimiento);
-           (3) registrar la TASK nativa de InfluxDB 2 que hace ese resumen en producción.
+               y por partido, sin vencimiento).
 
 USO:
     docker compose run --rm herramientas scripts/agregaciones.py --perfil muestra
     docker compose run --rm herramientas scripts/agregaciones.py --perfil completo
 
-DOS DISPARADORES, UNA MISMA LÓGICA
-  · En producción: la task `fixture2030_resumen_1m` corre cada hora sobre la última
-    hora (range(start: -task.every)) y escribe con to() en el bucket histórico.
-  · En el laboratorio: el torneo está fechado en 2030, así que una task basada en
-    "la última hora real" no encuentra datos. Este script ejecuta los MISMOS pasos
-    Flux, acotados a cada partido, y escribe con to(). Es la carga histórica
-    (backfill) de los resúmenes.
+CÓMO SE MATERIALIZA EL RESUMEN EN INFLUXDB 3
+  El SQL de InfluxDB 3 es de solo lectura (no hay INSERT … SELECT). El resumen se hace
+  en dos pasos: (a) una consulta SQL con date_bin() + GROUP BY calcula cada ventana con
+  la función que corresponde a la semántica de la medida; (b) el resultado se vuelve a
+  escribir como line protocol en la base histórica (POST /api/v3/write_lp).
+  En el laboratorio se ejecuta una vez después de la carga, acotado a cada partido
+  (los datos están fechados en 2030). En operación real, el mismo paso correría al
+  cierre de cada partido; en InfluxDB 3 Core eso se programa con un disparador del
+  Processing Engine, que queda fuera del alcance del hito.
 
-IDEMPOTENCIA POR REEMPLAZO EXPLÍCITO: antes de escribir los resúmenes de un partido
-(o de un día de operación) se BORRA ese tramo en el bucket histórico con la API
-/api/v2/delete, y recién después se escribe con to(). Así el resultado no depende
-de que InfluxDB unifique dos escrituras del mismo punto: en la prueba real, una
-segunda corrida después de reiniciar el servidor dejó un resumen duplicado
-(detectado por validacion.py V8). Correr este script 1 o 10 veces deja lo mismo.
+IDEMPOTENCIA: cada resumen tiene la misma serie (tabla + tags) y el mismo timestamp en
+cada corrida. InfluxDB 3 deduplica por serie + timestamp: la segunda escritura
+reemplaza a la primera. Correr este script 1 o 10 veces deja lo mismo (V8 lo verifica,
+también después de reiniciar el servidor).
 """
 from __future__ import annotations
 
@@ -35,241 +34,179 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from comun import (AUDIENCIA_DESDE, AUDIENCIA_HASTA, DB_HISTORICO, DB_VIVO, UTC,  # noqa: E402
-                   _peticion, calendario, consultar, cronometro, encabezado,
-                   guardar_evidencia, org, rfc3339, tabla_md)
-
-NOMBRE_TASK = "fixture2030_resumen_1m"
+from comun import (AUDIENCIA_DESDE, AUDIENCIA_HASTA, DB_HISTORICO, UTC,  # noqa: E402
+                   calendario, consultar, cronometro, encabezado, escribir_lp,
+                   guardar_evidencia, tabla_md, ts, ts_epoch)
 
 
-def rango(p) -> tuple[str, str]:
-    return (rfc3339(p.inicio + timedelta(seconds=AUDIENCIA_DESDE)),
-            rfc3339(p.inicio + timedelta(seconds=AUDIENCIA_HASTA)))
-
-
-def base(meas: str, a: str, b: str, extra: str = "") -> str:
-    return (f'from(bucket: "{DB_VIVO}")\n  |> range(start: {a}, stop: {b})\n'
-            f'  |> filter(fn: (r) => r._measurement == "{meas}"{extra})')
+def filtro_partido(p) -> str:
+    return (f"partido_id = '{p.partido_id}' AND time >= {ts(p.inicio + timedelta(seconds=AUDIENCIA_DESDE))} "
+            f"AND time < {ts(p.inicio + timedelta(seconds=AUDIENCIA_HASTA))}")
 
 
 # ---------------------------------------------------------------------------
 # 1) Agregaciones de análisis (no escriben nada)
 # ---------------------------------------------------------------------------
 def analisis(p) -> list[tuple[str, str, str]]:
-    a, b = rango(p)
-    pid = f' and r.partido_id == "{p.partido_id}"'
-    est, aud = base("estadisticas_equipo", a, b, pid), base("audiencia_partido", a, b, pid)
+    f = filtro_partido(p)
     return [
         ("A1 · Posesión: último valor contra promedio (medida: porcentaje ACUMULADO)",
-         "posesion_pct ya es el acumulado desde el inicio. El valor correcto al cierre es last(); "
-         "mean() mezcla los valores volátiles de los primeros minutos y da otro número.",
-         f'''datos = {est}
-  |> filter(fn: (r) => r._field == "posesion_pct")
-correcto = datos |> last() |> set(key: "_field", value: "posesion_final_correcta")
-incorrecto = datos |> mean() |> set(key: "_field", value: "promedio_de_acumulados_incorrecto")
-union(tables: [correcto, incorrecto])
-  |> keep(columns: ["equipo_id", "_field", "_value"])
-  |> group(columns: ["equipo_id"])
-  |> pivot(rowKey: ["equipo_id"], columnKey: ["_field"], valueColumn: "_value")
-  |> group()
-  |> sort(columns: ["equipo_id"])'''),
+         "posesion_pct ya es el acumulado desde el inicio. El valor correcto al cierre es "
+         "last_value(); avg() mezcla los valores volátiles de los primeros minutos y da otro número.",
+         f"""SELECT equipo_id,
+       last_value(posesion_pct ORDER BY time) AS posesion_final_correcta,
+       round(avg(posesion_pct), 1)            AS promedio_de_acumulados_incorrecto
+FROM estadisticas_equipo
+WHERE {f}
+GROUP BY equipo_id
+ORDER BY equipo_id"""),
 
         ("A2 · Pases: contador acumulado -> total y ritmo",
-         "Un contador acumulado se resume con max() (total) o spread() (lo ocurrido en el tramo). "
+         "Un contador acumulado se resume con max() (total) o max − min (lo ocurrido en el tramo). "
          "sum() contaría miles de veces los mismos pases.",
-         f'''datos = {est}
-  |> filter(fn: (r) => r._field == "pases_acum")
-correcto = datos |> max() |> toFloat() |> set(key: "_field", value: "pases_totales_correcto")
-incorrecto = datos |> sum() |> toFloat() |> set(key: "_field", value: "suma_del_acumulado_incorrecta")
-ritmo = datos |> spread() |> toFloat() |> map(fn: (r) => ({{r with _value: r._value / 95.0}}))
-  |> set(key: "_field", value: "pases_por_minuto_jugado")
-union(tables: [correcto, incorrecto, ritmo])
-  |> keep(columns: ["equipo_id", "_field", "_value"])
-  |> group(columns: ["equipo_id"])
-  |> pivot(rowKey: ["equipo_id"], columnKey: ["_field"], valueColumn: "_value")
-  |> group()
-  |> sort(columns: ["equipo_id"])'''),
+         f"""SELECT equipo_id,
+       max(pases_acum)                          AS pases_totales_correcto,
+       sum(pases_acum)                          AS suma_del_acumulado_incorrecta,
+       round((max(pases_acum) - min(pases_acum)) / 95.0, 2) AS pases_por_minuto_jugado
+FROM estadisticas_equipo
+WHERE {f}
+GROUP BY equipo_id
+ORDER BY equipo_id"""),
 
         ("A3 · Recuperaciones: evento por segundo -> suma por tramo",
          "recuperaciones vale 1 en el segundo en que ocurre y 0 en el resto: acá SÍ corresponde sumar.",
-         f'''{est}
-  |> filter(fn: (r) => r._field == "recuperaciones")
-  |> aggregateWindow(every: 15m, fn: sum, timeSrc: "_start", createEmpty: false)
-  |> group()
-  |> keep(columns: ["_time", "equipo_id", "_value"])
-  |> rename(columns: {{_value: "recuperaciones"}})
-  |> sort(columns: ["_time", "equipo_id"])'''),
+         f"""SELECT date_bin(INTERVAL '15 minutes', time) AS tramo, equipo_id,
+       sum(recuperaciones) AS recuperaciones
+FROM estadisticas_equipo
+WHERE {f}
+GROUP BY tramo, equipo_id
+ORDER BY tramo, equipo_id"""),
 
         ("A4 · Pico de audiencia: sumar regiones por segundo y DESPUÉS tomar el máximo",
          "El pico real es el máximo del total simultáneo. Sumar los máximos de cada región da un número "
          "más alto que nunca existió, porque cada región tiene su pico en un segundo distinto.",
-         f'''datos = {aud}
-  |> filter(fn: (r) => r._field == "usuarios_conectados")
-correcto = datos
-  |> group(columns: ["_time"]) |> sum() |> group() |> max()
-  |> map(fn: (r) => ({{partido: "{p.partido_id}", _field: "pico_simultaneo_correcto", _value: r._value}}))
-incorrecto = datos
-  |> max() |> group() |> sum()
-  |> map(fn: (r) => ({{partido: "{p.partido_id}", _field: "suma_de_picos_incorrecta", _value: r._value}}))
-union(tables: [correcto, incorrecto])
-  |> group()
-  |> pivot(rowKey: ["partido"], columnKey: ["_field"], valueColumn: "_value")'''),
+         f"""WITH por_segundo AS (
+  SELECT time, sum(usuarios_conectados) AS total FROM audiencia_partido WHERE {f} GROUP BY time
+), por_region AS (
+  SELECT region, max(usuarios_conectados) AS pico FROM audiencia_partido WHERE {f} GROUP BY region
+), correcto AS (SELECT max(total) AS pico_simultaneo_correcto FROM por_segundo),
+   incorrecto AS (SELECT sum(pico) AS suma_de_picos_incorrecta FROM por_region)
+SELECT '{p.partido_id}' AS partido, pico_simultaneo_correcto, suma_de_picos_incorrecta
+FROM correcto CROSS JOIN incorrecto"""),
 
         ("A5 · Latencia p95: no se promedian percentiles",
          "latencia_p95_ms ya es un percentil calculado por el servicio. Para el tramo se informa el "
          "peor valor (max); el promedio escondería los minutos malos. solicitudes es un evento: se suma.",
-         f'''datos = {base("operacion_plataforma", a, b, ' and (r.servicio == "api" or r.servicio == "sesiones")')}
-peor = datos |> filter(fn: (r) => r._field == "latencia_p95_ms")
-  |> aggregateWindow(every: 15m, fn: max, timeSrc: "_start", createEmpty: false)
-  |> set(key: "_field", value: "p95_peor")
-prom = datos |> filter(fn: (r) => r._field == "latencia_p95_ms")
-  |> aggregateWindow(every: 15m, fn: mean, timeSrc: "_start", createEmpty: false)
-  |> set(key: "_field", value: "p95_promedio_enganoso")
-rps = datos |> filter(fn: (r) => r._field == "solicitudes")
-  |> aggregateWindow(every: 15m, fn: sum, timeSrc: "_start", createEmpty: false)
-  |> toFloat() |> map(fn: (r) => ({{r with _value: r._value / 900.0}}))
-  |> set(key: "_field", value: "solicitudes_por_segundo")
-union(tables: [peor, prom, rps])
-  |> keep(columns: ["_time", "servicio", "_field", "_value"])
-  |> group(columns: ["servicio"])
-  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> group()
-  |> sort(columns: ["_time", "servicio"])'''),
+         f"""SELECT date_bin(INTERVAL '15 minutes', time) AS tramo, servicio,
+       max(latencia_p95_ms)     AS p95_peor,
+       round(avg(latencia_p95_ms), 2)     AS p95_promedio_enganoso,
+       round(sum(solicitudes) / 900.0) AS solicitudes_por_segundo
+FROM operacion_plataforma
+WHERE servicio IN ('api', 'sesiones')
+  AND time >= {ts(p.inicio + timedelta(seconds=AUDIENCIA_DESDE))}
+  AND time < {ts(p.inicio + timedelta(seconds=AUDIENCIA_HASTA))}
+GROUP BY tramo, servicio
+ORDER BY tramo, servicio"""),
     ]
 
 
 # ---------------------------------------------------------------------------
-# 2) Pasos de resumen (Flux). Se usan igual en la task y en el backfill.
+# 2) Resúmenes: consulta SQL en el vivo -> line protocol en el histórico
 # ---------------------------------------------------------------------------
-def pasos_resumen_1m(a: str, b: str, filtro_partido: str = "") -> str:
-    """Resumen por minuto de feed y audiencia, escrito con to() en el bucket histórico.
-    Cada field se resume con la función que corresponde a su semántica."""
-    est = base("estadisticas_equipo", a, b, filtro_partido)
-    aud = base("audiencia_partido", a, b, filtro_partido)
-    def ventana(src: str, campo: str, fn: str, nuevo_meas: str, nuevo_campo: str | None = None) -> str:
-        return (f'{src}\n  |> filter(fn: (r) => r._field == "{campo}")\n'
-                f'  |> aggregateWindow(every: 1m, fn: {fn}, timeSrc: "_start", createEmpty: false)\n'
-                f'  |> set(key: "_measurement", value: "{nuevo_meas}")\n'
-                + (f'  |> set(key: "_field", value: "{nuevo_campo}")\n' if nuevo_campo else "")
-                + f'  |> to(bucket: "{DB_HISTORICO}", org: "{org()}")')
-    partes = [
-        ventana(est, "posesion_pct", "last", "estadisticas_equipo_1m"),
-        ventana(est, "pases_acum", "max", "estadisticas_equipo_1m"),
-        ventana(est, "tiros_acum", "max", "estadisticas_equipo_1m"),
-        ventana(est, "goles_acum", "max", "estadisticas_equipo_1m"),
-        ventana(est, "recuperaciones", "sum", "estadisticas_equipo_1m"),
-        ventana(est, "posesion_pct", "count", "estadisticas_equipo_1m", "puntos"),
-        ventana(aud, "usuarios_conectados", "max", "audiencia_partido_1m", "usuarios_max"),
-        ventana(aud, "usuarios_conectados", "mean", "audiencia_partido_1m", "usuarios_prom"),
-        ventana(aud, "comentarios", "sum", "audiencia_partido_1m"),
-        ventana(aud, "sesiones_nuevas", "sum", "audiencia_partido_1m"),
-    ]
-    # En Flux una asignación (x = ...) NO se ejecuta si nadie la usa: cada flujo que escribe
-    # con to() termina en su propio yield() para que se ejecute.
-    return "\n".join(f'{x}\n  |> yield(name: "r{i}")' for i, x in enumerate(partes))
+def epoch(iso: str) -> int:
+    return int(datetime.fromisoformat(iso).replace(tzinfo=UTC).timestamp())
 
 
-def flux_task() -> str:
-    return (f'option task = {{name: "{NOMBRE_TASK}", every: 1h, offset: 5m}}\n\n'
-            + pasos_resumen_1m("-task.every", "now()"))
+def linea(tabla: str, tags: dict, enteros: dict, reales: dict, t: int) -> str:
+    """Una línea de line protocol con tipos explícitos: entero con 'i', real con punto."""
+    etiquetas = ",".join(f"{k}={v}" for k, v in tags.items())
+    campos = [f"{k}={int(v)}i" for k, v in enteros.items() if v is not None]
+    campos += [f"{k}={float(v)!r}" for k, v in reales.items() if v is not None]
+    return f"{tabla},{etiquetas} {','.join(campos)} {t}\n"
 
 
-def registrar_task() -> str:
-    """Crea (o actualiza) la task nativa. Idempotente: busca por nombre."""
-    import urllib.parse
-    q = urllib.parse.urlencode({"org": org(), "name": NOMBRE_TASK})
-    estado, resp = _peticion("GET", f"/api/v2/tasks?{q}")
-    tareas = json.loads(resp).get("tasks", []) if estado == 200 else []
-    cuerpo = {"flux": flux_task(), "status": "active"}
-    if tareas:
-        estado, resp = _peticion("PATCH", f"/api/v2/tasks/{tareas[0]['id']}", json.dumps(cuerpo).encode(),
-                                 {"Content-Type": "application/json"})
-        accion = "actualizada"
-    else:
-        cuerpo["org"] = org()
-        estado, resp = _peticion("POST", "/api/v2/tasks", json.dumps(cuerpo).encode(),
-                                 {"Content-Type": "application/json"})
-        accion = "creada"
-    if estado not in (200, 201):
-        return f"no se pudo registrar (HTTP {estado}: {resp[:200]!r})"
-    return f"{accion} (id {json.loads(resp).get('id')}, cada 1 h, estado activo)"
+def escribir(lineas: list[str]) -> int:
+    for i in range(0, len(lineas), 10_000):
+        estado, cuerpo = escribir_lp(DB_HISTORICO, "".join(lineas[i:i + 10_000]).encode("utf-8"))
+        if estado not in (200, 204):
+            raise RuntimeError(f"Escritura en {DB_HISTORICO}: HTTP {estado} {cuerpo[:300]!r}")
+    return len(lineas)
 
 
-def borrar(a: str, b: str, predicado: str) -> None:
-    """POST /api/v2/delete: borra del bucket histórico los puntos del tramo [a, b) que
-    cumplen el predicado (solo admite igualdades unidas con AND)."""
-    import urllib.parse
-    q = urllib.parse.urlencode({"org": org(), "bucket": DB_HISTORICO})
-    cuerpo = json.dumps({"start": a, "stop": b, "predicate": predicado}).encode()
-    estado, resp = _peticion("POST", f"/api/v2/delete?{q}", cuerpo, {"Content-Type": "application/json"})
-    if estado not in (200, 204):
-        raise RuntimeError(f"No se pudo borrar {predicado} (HTTP {estado}: {resp[:200]!r})")
+def materializar_partido(p) -> int:
+    f = filtro_partido(p)
+    t0 = p.inicio_epoch
+    lineas = []
+    # Por minuto y equipo. Cada field con la función de su semántica (retencion_y_granularidad.md §3)
+    for r in consultar(f"""SELECT date_bin(INTERVAL '1 minute', time) AS minuto, equipo_id, condicion, fase,
+       last_value(posesion_pct ORDER BY time) AS posesion_pct,
+       max(pases_acum) AS pases_acum, max(tiros_acum) AS tiros_acum, max(goles_acum) AS goles_acum,
+       sum(recuperaciones) AS recuperaciones, count(posesion_pct) AS puntos
+FROM estadisticas_equipo WHERE {f}
+GROUP BY minuto, equipo_id, condicion, fase"""):
+        lineas.append(linea("estadisticas_equipo_1m",
+                            {"partido_id": p.partido_id, "equipo_id": r["equipo_id"],
+                             "condicion": r["condicion"], "fase": r["fase"]},
+                            {k: r[k] for k in ("pases_acum", "tiros_acum", "goles_acum", "recuperaciones", "puntos")},
+                            {"posesion_pct": r["posesion_pct"]}, epoch(r["minuto"])))
+    # Por minuto y región
+    for r in consultar(f"""SELECT date_bin(INTERVAL '1 minute', time) AS minuto, region, fase,
+       max(usuarios_conectados) AS usuarios_max, avg(usuarios_conectados) AS usuarios_prom,
+       sum(comentarios) AS comentarios, sum(sesiones_nuevas) AS sesiones_nuevas
+FROM audiencia_partido WHERE {f}
+GROUP BY minuto, region, fase"""):
+        lineas.append(linea("audiencia_partido_1m",
+                            {"partido_id": p.partido_id, "region": r["region"], "fase": r["fase"]},
+                            {k: r[k] for k in ("usuarios_max", "comentarios", "sesiones_nuevas")},
+                            {"usuarios_prom": r["usuarios_prom"]}, epoch(r["minuto"])))
+    # Un punto por partido y equipo, fechado al inicio del partido
+    for r in consultar(f"""SELECT equipo_id, condicion,
+       last_value(posesion_pct ORDER BY time) AS posesion_final,
+       max(pases_acum) AS pases, max(tiros_acum) AS tiros, max(goles_acum) AS goles,
+       sum(recuperaciones) AS recuperaciones
+FROM estadisticas_equipo WHERE {f}
+GROUP BY equipo_id, condicion"""):
+        lineas.append(linea("resumen_partido_equipo",
+                            {"partido_id": p.partido_id, "equipo_id": r["equipo_id"], "condicion": r["condicion"],
+                             "fase": p.fase, "sede_id": p.sede_id},
+                            {k: r[k] for k in ("pases", "tiros", "goles", "recuperaciones")},
+                            {"posesion_final": r["posesion_final"]}, t0))
+    # Un punto de audiencia por partido: pico = suma entre regiones por segundo, después max
+    for r in consultar(f"""WITH por_segundo AS (
+  SELECT time, sum(usuarios_conectados) AS total, sum(comentarios) AS comentarios,
+         sum(sesiones_nuevas) AS sesiones_nuevas
+  FROM audiencia_partido WHERE {f} GROUP BY time
+)
+SELECT max(total) AS pico_usuarios, sum(comentarios) AS comentarios, sum(sesiones_nuevas) AS sesiones_nuevas
+FROM por_segundo"""):
+        lineas.append(linea("resumen_partido_audiencia",
+                            {"partido_id": p.partido_id, "fase": p.fase, "sede_id": p.sede_id},
+                            {k: r[k] for k in ("pico_usuarios", "comentarios", "sesiones_nuevas")}, {}, t0))
+    return escribir(lineas)
 
 
-def materializar_partido(p) -> None:
-    a, b = rango(p)
-    for meas in ("estadisticas_equipo_1m", "audiencia_partido_1m",
-                 "resumen_partido_equipo", "resumen_partido_audiencia"):
-        borrar(a, b, f'_measurement="{meas}" AND partido_id="{p.partido_id}"')
-    pid = f' and r.partido_id == "{p.partido_id}"'
-    consultar(pasos_resumen_1m(a, b, pid))
-    # Resumen por partido: un punto por equipo y uno de audiencia, fechados al inicio del partido
-    t0 = rfc3339(p.inicio)
-    est = base("estadisticas_equipo", a, b, pid)
-    aud = base("audiencia_partido", a, b, pid)
-    fijar = (f'  |> map(fn: (r) => ({{r with _time: {t0}, _measurement: "resumen_partido_equipo"}}))\n'
-             f'  |> set(key: "sede_id", value: "{p.sede_id}")\n'
-             f'  |> to(bucket: "{DB_HISTORICO}", org: "{org()}", tagColumns: ["partido_id", "equipo_id", "condicion", "fase", "sede_id"])')
-    flux = "\n".join(f'{x}\n  |> yield(name: "f{i}")' for i, x in enumerate([
-        f'{est}\n  |> filter(fn: (r) => r._field == "posesion_pct") |> last() |> set(key: "_field", value: "posesion_final")\n{fijar}',
-        f'{est}\n  |> filter(fn: (r) => r._field == "pases_acum") |> max() |> set(key: "_field", value: "pases")\n{fijar}',
-        f'{est}\n  |> filter(fn: (r) => r._field == "tiros_acum") |> max() |> set(key: "_field", value: "tiros")\n{fijar}',
-        f'{est}\n  |> filter(fn: (r) => r._field == "goles_acum") |> max() |> set(key: "_field", value: "goles")\n{fijar}',
-        f'{est}\n  |> filter(fn: (r) => r._field == "recuperaciones") |> sum() |> set(key: "_field", value: "recuperaciones")\n{fijar}',
-    ]))
-    consultar(flux)
-    fijar_aud = (f'  |> map(fn: (r) => ({{_time: {t0}, _measurement: "resumen_partido_audiencia", _field: r._field, '
-                 f'_value: r._value, partido_id: "{p.partido_id}", fase: "{p.fase}", sede_id: "{p.sede_id}"}}))\n'
-                 f'  |> to(bucket: "{DB_HISTORICO}", org: "{org()}", tagColumns: ["partido_id", "fase", "sede_id"])')
-    flux_aud = "\n".join(f'{x}\n  |> yield(name: "a{i}")' for i, x in enumerate([
-        f'{aud}\n  |> filter(fn: (r) => r._field == "usuarios_conectados")\n'
-        f'  |> group(columns: ["_time"]) |> sum() |> group() |> max() |> set(key: "_field", value: "pico_usuarios")\n{fijar_aud}',
-        f'{aud}\n  |> filter(fn: (r) => r._field == "comentarios") |> group() |> sum() |> set(key: "_field", value: "comentarios")\n{fijar_aud}',
-        f'{aud}\n  |> filter(fn: (r) => r._field == "sesiones_nuevas") |> group() |> sum() |> set(key: "_field", value: "sesiones_nuevas")\n{fijar_aud}',
-    ]))
-    consultar(flux_aud)
-
-
-def materializar_operacion(archivo: dict) -> None:
+def materializar_operacion(archivo: dict) -> int:
     """operacion_plataforma (10 s) -> operacion_plataforma_5m, un día por vez."""
-    a = rfc3339(datetime.fromtimestamp(archivo["t_min"], UTC))
-    b = rfc3339(datetime.fromtimestamp(archivo["t_max"] + 1, UTC))
-    borrar(a, b, '_measurement="operacion_plataforma_5m"')
-    src = base("operacion_plataforma", a, b)
-    def v(campo, fn, nuevo):
-        return (f'{src}\n  |> filter(fn: (r) => r._field == "{campo}")\n'
-                f'  |> aggregateWindow(every: 5m, fn: {fn}, timeSrc: "_start", createEmpty: false)\n'
-                f'  |> set(key: "_measurement", value: "operacion_plataforma_5m")\n'
-                f'  |> set(key: "_field", value: "{nuevo}")\n'
-                f'  |> to(bucket: "{DB_HISTORICO}", org: "{org()}")')
-    consultar("\n".join([v('latencia_p95_ms', 'max', 'latencia_p95_max') + '\n  |> yield(name: "o0")',
-                         v('solicitudes', 'sum', 'solicitudes') + '\n  |> yield(name: "o1")',
-                         v('errores', 'sum', 'errores') + '\n  |> yield(name: "o2")']))
+    lineas = [linea("operacion_plataforma_5m", {"servicio": r["servicio"]},
+                    {"solicitudes": r["solicitudes"], "errores": r["errores"]},
+                    {"latencia_p95_max": r["latencia_p95_max"]}, epoch(r["tramo"]))
+              for r in consultar(f"""SELECT date_bin(INTERVAL '5 minutes', time) AS tramo, servicio,
+       max(latencia_p95_ms) AS latencia_p95_max, sum(solicitudes) AS solicitudes, sum(errores) AS errores
+FROM operacion_plataforma
+WHERE time >= {ts_epoch(archivo['t_min'])} AND time < {ts_epoch(archivo['t_max'] + 1)}
+GROUP BY tramo, servicio""")]
+    return escribir(lineas)
 
 
-def contar_historico(desde: str, hasta: str) -> list[dict]:
-    """Puntos (filas) escritos por measurement del histórico: se cuenta un field por measurement."""
-    return consultar(f'''from(bucket: "{DB_HISTORICO}")
-  |> range(start: {desde}, stop: {hasta})
-  |> filter(fn: (r) => (r._measurement == "estadisticas_equipo_1m" and r._field == "puntos")
-                       or (r._measurement == "audiencia_partido_1m" and r._field == "usuarios_max")
-                       or (r._measurement == "operacion_plataforma_5m" and r._field == "solicitudes")
-                       or (r._measurement == "resumen_partido_equipo" and r._field == "goles")
-                       or (r._measurement == "resumen_partido_audiencia" and r._field == "pico_usuarios"))
-  |> group(columns: ["_measurement"])
-  |> count()
-  |> keep(columns: ["_measurement", "_value"])
-  |> rename(columns: {{_measurement: "measurement", _value: "puntos"}})''')
+TABLAS_HISTORICO = ["estadisticas_equipo_1m", "audiencia_partido_1m", "operacion_plataforma_5m",
+                    "resumen_partido_equipo", "resumen_partido_audiencia"]
+
+
+def contar_historico(desde: int, hasta: int) -> list[dict]:
+    """Puntos (filas) de cada tabla del histórico en el rango del perfil."""
+    return [{"tabla": t, "puntos": consultar(
+        f"SELECT count(*) AS n FROM {t} WHERE time >= {ts_epoch(desde)} AND time < {ts_epoch(hasta)}",
+        DB_HISTORICO)[0]["n"]} for t in TABLAS_HISTORICO]
 
 
 def main() -> None:
@@ -287,69 +224,59 @@ def main() -> None:
     md = encabezado(f"Agregaciones y resúmenes — perfil {args.perfil}")
     md += ["## 1. Agregaciones según la semántica de cada medida", "",
            f"Partido analizado: {foco.partido_id} ({foco.local} vs {foco.visitante}).", ""]
-    for titulo, explicacion, flux in analisis(foco):
+    for titulo, explicacion, sql in analisis(foco):
         reloj = cronometro()
         try:
-            filas, error = consultar(flux), None
+            filas, error = consultar(sql), None
         except RuntimeError as e:
             filas, error = [], str(e)
         ms = round(reloj() * 1000, 1)
         print(f"\n== {titulo} ({ms} ms)\n" + (tabla_md(filas, max_filas=12) if not error else f"ERROR: {error}"))
-        md += [f"### {titulo}", "", explicacion, "", "```flux", flux, "```", "",
+        md += [f"### {titulo}", "", explicacion, "", "```sql", sql, "```", "",
                f"Tiempo de respuesta observado: {ms} ms", "",
                tabla_md(filas) if not error else f"**Error:** {error}", ""]
 
-    print("\n== Materialización de resúmenes en fixture2030_historico (backfill con to())")
+    print("\n== Materialización de resúmenes en fixture2030_historico (SQL -> line protocol)")
     reloj = cronometro()
+    escritas = 0
     for i, p in enumerate(partidos, start=1):
-        materializar_partido(p)
+        escritas += materializar_partido(p)
         print(f"   [{i:>3}/{len(partidos)}] {p.partido_id:<11} resumido · {reloj():6.1f} s")
     for a in manifiesto["archivos"]:
         if a["tabla"] == "operacion_plataforma":
-            materializar_operacion(a)
+            escritas += materializar_operacion(a)
     seg = round(reloj(), 1)
     desde = min(x["t_min"] for x in manifiesto["archivos"]) - 3600
     hasta = max(x["t_max"] for x in manifiesto["archivos"]) + 3600
-    conteo = contar_historico(rfc3339(datetime.fromtimestamp(desde, UTC)),
-                              rfc3339(datetime.fromtimestamp(hasta, UTC)))
-    print(f"   {len(partidos)} partidos en {seg} s\n" + tabla_md(conteo))
+    conteo = contar_historico(desde, hasta)
+    print(f"   {len(partidos)} partidos en {seg} s · {escritas:,} líneas escritas\n" + tabla_md(conteo))
 
-    estado_task = registrar_task()
-    print(f"\n== Task nativa {NOMBRE_TASK}: {estado_task}")
-
-    top_audiencia = consultar(f'''from(bucket: "{DB_HISTORICO}")
-  |> range(start: 2030-06-01T00:00:00Z, stop: 2030-08-01T00:00:00Z)
-  |> filter(fn: (r) => r._measurement == "resumen_partido_audiencia")
-  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> group()
-  |> keep(columns: ["partido_id", "fase", "pico_usuarios", "comentarios"])
-  |> sort(columns: ["pico_usuarios"], desc: true)
-  |> limit(n: 5)''')
-    top_posesion = consultar(f'''from(bucket: "{DB_HISTORICO}")
-  |> range(start: 2030-06-01T00:00:00Z, stop: 2030-08-01T00:00:00Z)
-  |> filter(fn: (r) => r._measurement == "resumen_partido_equipo" and r._field == "posesion_final")
-  |> group(columns: ["equipo_id"])
-  |> reduce(fn: (r, accumulator) => ({{partidos: accumulator.partidos + 1, suma: accumulator.suma + r._value}}),
-            identity: {{partidos: 0, suma: 0.0}})
-  |> map(fn: (r) => ({{equipo_id: r.equipo_id, partidos: r.partidos, posesion_media: r.suma / float(v: r.partidos)}}))
-  |> group()
-  |> sort(columns: ["posesion_media"], desc: true)
-  |> limit(n: 5)''')
+    rango_torneo = "time >= '2030-06-01T00:00:00Z' AND time < '2030-08-01T00:00:00Z'"
+    top_audiencia = consultar(f"""SELECT partido_id, fase, pico_usuarios, comentarios
+FROM resumen_partido_audiencia
+WHERE {rango_torneo}
+ORDER BY pico_usuarios DESC
+LIMIT 5""", DB_HISTORICO)
+    top_posesion = consultar(f"""SELECT equipo_id, count(*) AS partidos, round(avg(posesion_final), 2) AS posesion_media
+FROM resumen_partido_equipo
+WHERE {rango_torneo}
+GROUP BY equipo_id
+ORDER BY posesion_media DESC
+LIMIT 5""", DB_HISTORICO)
 
     md += ["## 2. Materialización de resúmenes (vivo -> histórico)", "",
-           f"Partidos resumidos: {len(partidos)} · tiempo: {seg} s. Cada tramo se borra con `/api/v2/delete` "
-           "y se reescribe con `to()` de Flux (reemplazo explícito: idempotente).", "",
+           f"Partidos resumidos: {len(partidos)} · tiempo: {seg} s · líneas escritas: {escritas:,}. "
+           "Cada resumen se calcula con SQL en `fixture2030_vivo` y se escribe como line protocol en "
+           "`fixture2030_historico` (misma serie y timestamp en cada corrida: idempotente).", "",
            tabla_md(conteo), "",
-           f"Task nativa `{NOMBRE_TASK}` (producción, cada 1 h sobre la última hora): {estado_task}", "",
-           "```flux", flux_task(), "```", "",
-           "## 3. Consultas de torneo sobre el bucket histórico", "",
+           "## 3. Consultas de torneo sobre la base histórica", "",
            "### Top 5 partidos por pico de audiencia simultánea", "", tabla_md(top_audiencia), "",
            "### Top 5 equipos por posesión media (promedio de la posesión FINAL de cada partido)", "",
            "Acá sí corresponde promediar: cada partido aporta su posesión final y pesa lo mismo.", "",
            tabla_md(top_posesion), ""]
     print("\nTop audiencia:\n" + tabla_md(top_audiencia) + "\n\nTop posesión:\n" + tabla_md(top_posesion))
     ruta = guardar_evidencia(f"agregaciones_{args.perfil}", "\n".join(md) + "\n",
-                             {"segundos": seg, "conteo_historico": conteo, "task": estado_task})
+                             {"segundos": seg, "lineas_escritas": escritas, "conteo_historico": conteo})
     print(f"\nEvidencia: {ruta}")
 
 

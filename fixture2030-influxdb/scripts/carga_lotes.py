@@ -1,24 +1,29 @@
 """
-Fixture 2030 — Hito 8 · Series temporales (InfluxDB 2)
+Fixture 2030 — Hito 8 · Series temporales (InfluxDB 3 Core)
 ARCHIVO: scripts/carga_lotes.py
 PROPÓSITO: CARGAR los archivos que produjo generacion_puntos.py, en lotes, con
            concurrencia, reintentos y medición (RF7, RF12, RF13).
 
 USO:
     docker compose run --rm herramientas scripts/carga_lotes.py --perfil muestra
-    docker compose run --rm herramientas scripts/carga_lotes.py --perfil completo --hilos 4 --lote 10000
+    docker compose run --rm herramientas scripts/carga_lotes.py --perfil completo --hilos 8 --lote 50000
 
 ESTRATEGIA (documentada en docs/cardinalidad_y_escalabilidad.md §4)
-  · Lote: N líneas por POST (por defecto 10.000 ≈ 1,4 MB). La documentación de
-    InfluxDB 2 recomienda lotes de ~5.000 a 10.000 líneas: menos viajes HTTP y
-    escrituras más grandes al WAL y al caché del motor TSM.
-  · Concurrencia: H hilos con POST en paralelo (por defecto 4). Como máximo 2·H
+  · Lote: N líneas por POST (por defecto 50.000 ≈ 7 MB, debajo de los 10 MB que
+    recomienda InfluxDB 3). Cada POST se confirma recién cuando el WAL se vuelca a
+    disco (cada 1 s): cada viaje cuesta ~1 s sea cual sea su tamaño, así que conviene
+    mandar más líneas por viaje. Medido en docs/evidencia/barrido/: 10.000 líneas y
+    4 hilos dan ~40.000 puntos/s; 50.000 líneas, ~100.000 puntos/s.
+  · Concurrencia: H hilos con POST en paralelo (por defecto 8). Como máximo 2·H
     lotes en vuelo: el generador no llena la memoria si el servidor va más lento.
   · Orden: dentro de cada archivo, cronológico (el orden monótono por partido del
     Hito 3). Entre archivos no importa: InfluxDB acepta puntos fuera de orden.
-  · Una línea inválida hace que InfluxDB rechace el lote entero (HTTP 400) y la
-    carga se DETIENE mostrando el error. Un 422 (puntos fuera de la retención)
-    también la detiene. Nada se pierde en silencio.
+  · Una línea inválida (sintaxis o tipo de field distinto al de la tabla) hace que
+    InfluxDB rechace el lote entero (HTTP 400, porque se envía accept_partial=false)
+    y la carga se DETIENE mostrando el error.
+  · OJO: un punto más viejo que la retención de la base NO da error: InfluxDB 3
+    responde 204 y lo descarta en silencio (validacion.py V5). Por eso la carga no
+    alcanza como prueba: validacion.py compara lo cargado contra el manifiesto (V1).
   · Reintentos: ante 429, 5xx o error de red se reintenta hasta 4 veces con espera
     exponencial (0,5 s, 1 s, 2 s, 4 s). Reintentar es seguro porque la carga es
     idempotente: el mismo punto (serie + timestamp) se sobrescribe, no se duplica.
@@ -83,11 +88,11 @@ def lotes_de(archivo: Path, tam: int):
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Carga por lotes a InfluxDB 2")
+    ap = argparse.ArgumentParser(description="Carga por lotes a InfluxDB 3 Core")
     ap.add_argument("--perfil", default="muestra")
     ap.add_argument("--entrada", default="data/lp")
-    ap.add_argument("--lote", type=int, default=10_000, help="líneas por POST")
-    ap.add_argument("--hilos", type=int, default=4, help="POST concurrentes")
+    ap.add_argument("--lote", type=int, default=50_000, help="líneas por POST")
+    ap.add_argument("--hilos", type=int, default=8, help="POST concurrentes")
     ap.add_argument("--reintentos", type=int, default=4)
     ap.add_argument("--gzip", action="store_true", help="comprimir el cuerpo de cada POST")
     ap.add_argument("--tabla", default=None, help="cargar solo esta tabla")
