@@ -22,7 +22,7 @@ echo "maxmemory original: $ORIGINAL bytes | used_memory: $USED bytes"
 echo "policy: $($R CONFIG GET maxmemory-policy | tail -1)"
 echo "DBSIZE: $($R DBSIZE) | votantes: $($R SCARD $VOTOS:votantes) | candidatos: $($R ZCARD $VOTOS:ranking)"
 echo "expired_keys: $(stat expired_keys) | evicted_keys: $(stat evicted_keys)"
-$R FCALL ses_tocar 1 f30:ses:demo-ses-0000001-1 1800 > /dev/null   # una sesión recién usada; se observa si sobrevive (LRU es aproximado)
+$R HGET f30:ses:demo-ses-0000001-1 estado > /dev/null   # una sesión recién leída (LRU): se observa si sobrevive (LRU es aproximado)
 
 LIMITE=$((USED + 8 * 1024 * 1024))
 echo "== M.1 CONFIG SET maxmemory $LIMITE (uso + 8 MB) =="

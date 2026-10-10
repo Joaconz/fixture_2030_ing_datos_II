@@ -43,14 +43,14 @@ maxmemory-samples 10
 
 Método, [`scripts/memoria_prueba.sh`](../scripts/memoria_prueba.sh): se baja `maxmemory` a uso + 8 MB y se escriben 20.000 claves de 1 KB con TTL (`redis-benchmark`); luego, fase 2, se baja a 100 KB (menos que el piso de un Redis vacío).
 
-Resultados observados (corrida del 2026-09-25, Redis 8.10.2; [`07_memoria.txt`](./evidencia/07_memoria.txt)):
+Resultados observados (corrida del 2026-10-10, Redis 8.10.2; [`07_memoria.txt`](./evidencia/07_memoria.txt)):
 
 | Fase | Observación |
 |---|---|
-| Fase 1 (tope ≈ 11 MB) | `used_memory` 10,1 MB (bajo el tope); `evicted_keys` = 15.851; `expired_keys` = 0 → **la pérdida fue por presión, no por tiempo** |
+| Fase 1 (tope ≈ 11 MB) | `used_memory` 10,1 MB (bajo el tope); `evicted_keys` = 15.652; `expired_keys` = 11 antes y después del relleno (sin cambios) → **la pérdida fue por presión, no por tiempo** |
 | Votación abierta tras la fase 1 | 500 votantes y 5 candidatos: intacta (sin TTL) |
-| Muestra de 10 sesiones | 0 sobrevivieron. Esto **no** contradice LRU: se desalojó cerca de dos tercios de las claves con TTL (DBSIZE pasó de 24.253 esperadas a 7.258) y las sesiones se habían cargado **antes** que los rellenos, o sea que eran las más antiguas para LRU. La prueba **no** pretende demostrar que una sesión reciente sobrevive |
-| Fase 2 (tope 100 KB) | Una escritura **sin TTL** fue rechazada con `OOM command not allowed when used memory > 'maxmemory'` (a la 2.ª escritura); `evicted_keys` 21.316 |
+| Muestra de 10 sesiones | 1 sobrevivió: `demo-ses-0000001-1`, la única que se leyó justo antes del relleno. Las otras 9 se habían usado por última vez en la carga, **antes** que los rellenos, o sea que eran las más antiguas para LRU. Se desalojaron cerca de dos tercios de las claves con TTL (DBSIZE pasó de 24.155 esperadas a 7.364). Es coherente con LRU, pero una sola corrida no prueba que una sesión reciente siempre sobreviva: LRU es aproximado (muestrea) |
+| Fase 2 (tope 100 KB) | Una escritura **sin TTL** fue rechazada con `OOM command not allowed when used memory > 'maxmemory'` (a la 2.ª escritura); `evicted_keys` 20.990 |
 | Votación tras la fase 2 | Sigue intacta y **legible** |
 
 **Lectura importante:** la evicción no fue instantánea: la primera escritura tras bajar el tope todavía fue aceptada; lo más probable es que Redis limite el tiempo de evicción por comando (las métricas muestran `total_eviction_exceeded_time` > 0), pero la causa exacta no se verificó. No se debe asumir que `maxmemory` es un techo duro al byte.
@@ -61,11 +61,11 @@ De [`08_metricas.txt`](./evidencia/08_metricas.txt) y [`02_carga_muestra.txt`](.
 
 | Elemento | Bytes (`MEMORY USAGE`) |
 |---|---|
-| Una sesión (HASH, 9 campos, `listpack`) | 255 |
+| Una sesión (HASH, 10 campos, `listpack`) | 255 |
 | ZSET de tendencia (112 partidos) | 1.501 |
 | SET de 500 votantes (`hashtable`) | 18.705 |
 
-Con **255 B por sesión** (dato medido; excluye el ítem del índice por usuario y la sobrecarga de la clave en el diccionario), 3 millones de sesiones darían ~0,7 GB **por extrapolación lineal**, un orden de magnitud a validar con una prueba de carga real, no una cifra comprometida. El `mem_fragmentation_ratio` (12,57) de la muestra **no** es representativo: con menos de 4 MB de datos, el RSS del proceso está dominado por el arranque, no por la fragmentación de los datos.
+Con **255 B por sesión** (dato medido; excluye el ítem del índice por usuario y la sobrecarga de la clave en el diccionario), 3 millones de sesiones darían ~0,7 GB **por extrapolación lineal**, un orden de magnitud a validar con una prueba de carga real, no una cifra comprometida. El `mem_fragmentation_ratio` (13,73) de la muestra **no** es representativo: con menos de 4 MB de datos, el RSS del proceso está dominado por el arranque, no por la fragmentación de los datos.
 
 ## 5. Límites del nodo local y pasos futuros de escala
 
@@ -78,7 +78,7 @@ Con **255 B por sesión** (dato medido; excluye el ítem del índice por usuario
 | Escala de lectura | No | Sí (leer de réplicas, con lag) | Sí |
 | Escala de memoria/escritura | Límite = RAM del contenedor | No (un solo primario escribe) | Sí: 16.384 *hash slots* repartidos |
 | Réplica asíncrona | — | Sí: una escritura confirmada puede perderse en un failover (coherente con "AP eventual" de N5) | Ídem |
-| Impacto en este diseño | — | Ninguno en el modelo | Las funciones que arman claves (`ses_cerrar_todas`) y las multi-clave (`voto_emitir`, `ses_crear`, `cache_*`) exigen que sus claves caigan en el **mismo slot**: hay que usar *hash tags* (`f30:{USR-1}:ses:…`, `f30:{PAR-D16-01}:cache:…`) |
+| Impacto en este diseño | — | Ninguno en el modelo | Cada `MULTI/EXEC` con varias claves (crear y cerrar sesión: la sesión y el índice del usuario; cerrar todas) exige que esas claves caigan en el **mismo slot**: hay que usar *hash tags* (`f30:{USR-1}:ses:…`, `f30:{USR-1}:sesiones`). El voto usa dos claves en comandos separados (`SADD`, `ZINCRBY`), así que no lo necesita |
 
 Pasos de escala coherentes con el Hito 3 (sesiones **locales por región, sin réplica cross-región**):
 

@@ -1,12 +1,9 @@
-# Ejecutado: 2026-09-25T23:58:13Z
+# Ejecutado: 2026-10-10T00:09:09Z
 == 2.1 Estado previo (DBSIZE es O(1), no recorre claves) ==
-4192
-== 2.2 Generación determinista ==
-2200
-112
-500
+0
+== 2.2 Generación determinista: 2000 usuarios, tendencia de 112 partidos, 500 votos MVP ==
 == 2.3 Verificación de lo cargado ==
-4204
+4203
 2
 112
 500
@@ -34,14 +31,14 @@ ios
 estado
 ACTIVA
 creada_en
-1790380626
+1908979133
 ultima_actividad
-1790380686
+1908979193
 expira_absoluta
-1790423826
+1909022333
 solicitudes
 13
-1793
+1791
 == 2.5 Sesión bloqueada de muestra (usuario 33) ==
 BLOQUEADA
 == 2.6 Caché fría a propósito: no existe copia de ningún partido todavía ==

@@ -2,6 +2,18 @@
 
 Auditoría posterior a la implementación, siguiendo el método de [`fixture2030-mongodb/docs/HITO4_AUDIT_SPEC.md`](../../fixture2030-mongodb/docs/HITO4_AUDIT_SPEC.md) generalizado por la skill `/auditar-hito`. Fecha: 2026-09-26.
 
+> **Actualización 2026-10-10 — corrección del profesor.** La devolución del Hito 7 pidió reducir la sobreimplementación: *"incorporan Redis Functions y Lua para resolver varias operaciones atómicas, cuando en esta etapa alcanzaba con los mecanismos vistos en clase (INCR, ZINCRBY, MULTI/EXEC)"*. Se aplicó así:
+> - Se eliminaron `funciones_f30.lua` y `carga_muestra.lua`.
+> - Las sesiones se crean, renuevan y cierran con `MULTI/EXEC`, y la validación es una lectura previa (`HMGET`).
+> - El voto único usa `SADD` como guarda atómica más `ZINCRBY`.
+> - La tendencia usa `MULTI` con `ZINCRBY` + `EXPIRE NX`.
+> - La caché es cache-aside con `SET … EX` y `DEL`, sin la clave de versión `:ver`.
+> - La muestra se genera con `carga_muestra.sh` (awk → `redis-cli`), con los mismos datos: `DBSIZE = 4203` y el mismo ranking.
+>
+> Toda la evidencia se regeneró en una sola corrida desde un ambiente vacío.
+>
+> Este informe describe la **versión anterior**: donde dice `FCALL …` o "función", hoy rige lo descrito en `modelo_clave_valor.md` §4 y `concurrencia_y_pruebas.md` §2. Las cifras citadas acá (por ejemplo `DBSIZE restante: 4077`) son de aquella corrida. La decisión 3 de §3 quedó reemplazada (ver abajo).
+
 ## Resumen ejecutivo
 
 Este es, de los módulos auditados hasta ahora, el que llegó en mejor estado: la documentación es internamente consistente, cada decisión de diseño está justificada (no solo afirmada), y — a diferencia de Hitos anteriores — el propio equipo ya había detectado y corregido antes de esta auditoría el error heredado de N2 (Partidos: IRIS, no MongoDB), incluso antes de que el documento del Hito 3 se corrigiera a sí mismo (ver `hito-3-arquitectura-distribuida.md`, línea 236).
@@ -123,7 +135,11 @@ El resto del módulo pasó la verificación en vivo sin necesidad de cambios: la
 
 1. **TTLs elegidos (30 min inactividad, 12 h tope, 60 s caché de partido, 900 s perfil, 7200 s bucket de tendencia).** Todos están rotulados honestamente como "supuesto del grupo", no como dato del enunciado (correcto: el enunciado explícitamente "no provee... la duración de sesión ni una política de memoria para copiar"). La justificación por escrito ya existe (§1.4 de `ciclo_de_vida_e_invalidacion.md`); alcanza para este hito, no hace falta tocarla.
 2. **Política `volatile-lru` sobre las alternativas descartadas** (`noeviction`, `allkeys-lru/lfu`, `volatile-ttl`, `volatile-lfu`). El razonamiento en `memoria_y_escalabilidad.md` §2.1 es comparativo, no solo afirmativo — satisface RF10 ("justificar documentalmente") tal como está. No se toca.
-3. **Redis Functions en vez de `MULTI/EXEC`.** Justificado por la necesidad de lógica condicional dentro de la transacción, que `MULTI/EXEC` no permite — es exactamente la distinción que pide la nota 7 del enunciado ("la atomicidad debe ser intencional"). Correcto, no se toca.
+3. ~~**Redis Functions en vez de `MULTI/EXEC`.**~~ **Reemplazada (2026-10-10)** por la corrección del profesor. La condición que motivaba las funciones se resuelve sin ellas:
+   - **Voto:** la decisión la toma un comando atómico, `SADD`.
+   - **Sesión:** la decide la app con una lectura previa. La ventana entre la lectura y el `MULTI` queda cubierta por la regla de validez y por el `EXPIRE` dentro de la misma transacción.
+
+   Las ventanas que quedan están documentadas en `concurrencia_y_pruebas.md` §2.2.
 4. **`ses_cerrar_todas` arma claves por concatenación de strings dentro del script.** El propio módulo ya documenta que esto es válido solo en nodo único y que Redis Cluster exigiría *hash tags*. Sigue siendo así: no se implementó Cluster en este hito (fuera de alcance declarado explícitamente por el enunciado — "no debe presentarse como... Redis Cluster"), por lo que no hay nada que corregir hoy, pero es una limitante real si el equipo llegara a escalar el diseño en otro hito.
 5. **Caso abierto heredado del Hito 3** ("¿qué pasa con una sesión cuando el usuario cambia de región?"): sigue sin resolverse, tal como el propio módulo lo admite. No es un olvido de esta auditoría: es una decisión de alcance ya explicitada.
 6. **Cierre de la votación MVP sin fuente de verdad asignada:** el propio módulo documenta esto como deuda pendiente de un hito de integración futuro (§5 de `ciclo_de_vida_e_invalidacion.md`). Correcto dejarlo así — no hay módulo asignado a esa necesidad en los Hitos 2/3, así que no es responsabilidad de este hito resolverlo.

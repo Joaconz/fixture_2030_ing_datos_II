@@ -6,10 +6,9 @@ Decisión explícita de vida útil para **todo** dato temporal (RNF6). Salidas q
 
 | Dato | Vence por | Renovación | Invalidación explícita | Conservación |
 |---|---|---|---|---|
-| Sesión `f30:ses:*` | 30 min sin actividad · tope absoluto 12 h | Cada request autenticado (`ses_tocar`) | Logout, cerrar todas, bloqueo | No se conserva |
-| Índice `f30:usr:*:sesiones` | 12 h | No | `ses_cerrar_todas` | No |
-| Copia de partido | 60 s | No (se repuebla en el miss) | **Sí: al cambiar la fuente (IRIS)** (`cache_invalidar`) | No |
-| Versión `…:ver` | 24 h | Cada invalidación | — | No |
+| Sesión `f30:ses:*` | 30 min sin actividad · tope absoluto 12 h | Cada request autenticado (`MULTI` con `HSET` + `HINCRBY` + `EXPIRE`) | Logout, cerrar todas, bloqueo | No se conserva |
+| Índice `f30:usr:*:sesiones` | 12 h (se reinicia en cada login) | No | Cerrar todas (`DEL`) | No |
+| Copia de partido | 60 s | No (se repuebla en el miss) | **Sí: al cambiar la fuente (IRIS)** (`DEL`) | No |
 | Copia de perfil | 900 s | No | **Sí: al cambiar Mongo** | No |
 | Votación MVP **abierta** | **No vence** | — | — | **Sí, hasta cerrar** (§5) |
 | Votación MVP cerrada | 24 h tras cerrar | — | — | Ver §5 |
@@ -19,17 +18,17 @@ Decisión explícita de vida útil para **todo** dato temporal (RNF6). Salidas q
 
 ### 1.1 Atributos temporales (RF5)
 
-`creada_en`, `ultima_actividad` y `expira_absoluta` (epoch en segundos, tomados con `TIME` **del servidor**, no del cliente: los relojes de los nodos de aplicación no son confiables entre sí). Además `estado` y `solicitudes` para auditar uso.
+`creada_en`, `ultima_actividad` y `expira_absoluta` (epoch en segundos). La aplicación toma la hora con el comando `TIME` de Redis, no con su propio reloj, porque los relojes de los nodos de aplicación no son confiables entre sí. En los scripts de demostración se usa un instante fijo (2030-06-29 16:00 UTC = `1908979200`) para que la salida sea reproducible. Además `estado` y `solicitudes` para auditar uso.
 
 ### 1.2 Regla de validez
 
-> Una sesión es válida **si y sólo si** la clave existe **y** su `estado` es `ACTIVA`.
+> Una sesión es válida **si y sólo si** la clave existe, tiene `usuario_id` **y** su `estado` es `ACTIVA`.
 
-La primera parte la decide Redis: cuando pasan 1800 s sin renovación la clave **deja de existir** (vencimiento nativo, lazy + activo). No hay campo "vencida" que la aplicación deba comparar con el reloj.
+La app lo comprueba con una sola lectura: `HMGET f30:ses:{id} usuario_id estado expira_absoluta`. La existencia la decide Redis: cuando pasan 1800 s sin renovación la clave **deja de existir** (vencimiento nativo, lazy + activo). No hay campo "vencida" que la aplicación deba comparar con el reloj.
 
 ### 1.3 Evento que renueva
 
-Cualquier request autenticado que pase por `ses_tocar`, incluido el *heartbeat* que la app manda mientras el usuario mira un partido en vivo. Un usuario que mira un partido sin tocar la pantalla **no** está inactivo para el sistema si el heartbeat sigue llegando. Consultas que no pasan por la validación **no** renuevan.
+Cualquier request autenticado que pase la validación, incluido el *heartbeat* que la app manda mientras el usuario mira un partido en vivo. Un usuario que mira un partido sin tocar la pantalla **no** está inactivo para el sistema si el heartbeat sigue llegando. Consultas que no pasan por la validación **no** renuevan.
 
 ### 1.4 Duración y justificación
 
@@ -39,28 +38,39 @@ Cualquier request autenticado que pase por `ses_tocar`, incluido el *heartbeat* 
 | Tope absoluto | **43200 s (12 h)** | Una jornada completa de partidos. Sin tope, un cliente con heartbeat mantendría la sesión para siempre (una credencial robada nunca caducaría). El TTL renovado se calcula como `min(1800, expira_absoluta − ahora)` |
 | Consecuencia de vencer | Sesión inexistente → **login** | Coincide con el Hito 3 (N5): perder una sesión es tolerable, "se repite un login". No hay reintento silencioso |
 
-### 1.4.1 Por qué `ses_tocar` es una función y no comandos sueltos
+### 1.4.1 Cómo se renueva sin dejar estados intermedios
 
-Con `EXISTS` → `HSET` → `EXPIRE` separados, la clave puede vencer **entre** el chequeo y el `HSET`: `HSET` la recrea como un hash parcial **sin TTL** (sesión zombie inmortal). Ejecutada como función es una unidad: o existe y se renueva, o no existe y no se toca nada. Ver [`concurrencia_y_pruebas.md`](./concurrencia_y_pruebas.md) §2.
+La renovación son dos pasos:
+
+1. **Validar** (lectura): `HMGET usuario_id estado expira_absoluta`. La app calcula `ttl = min(1800, expira_absoluta − ahora)`.
+2. **Renovar** (escritura): `MULTI` → `HSET ultima_actividad` + `HINCRBY solicitudes 1` + `EXPIRE ttl` → `EXEC`.
+
+Los tres comandos de la escritura se ejecutan juntos. Por eso nunca queda una actividad registrada sin su TTL renovado, ni un contador de solicitudes a medias.
+
+**El riesgo que queda, y por qué no hace daño.** Entre el paso 1 y el 2 la clave puede vencer. Entonces el `HSET` del `MULTI` crea un hash **parcial** (solo `ultima_actividad` y `solicitudes`). Hay dos cosas que lo vuelven inofensivo:
+- **No es una clave eterna**, porque el `EXPIRE` viaja en la misma transacción.
+- **No cuenta como sesión**, porque no tiene `usuario_id` ni `estado`: el siguiente request lo trata como inexistente y pide login.
+
+Está demostrado en [`03_sesiones.txt`](./evidencia/03_sesiones.txt) §3.4 bis. `MULTI/EXEC` no puede evitar la ventana porque no admite condiciones adentro. La regla de validez la cierra sin agregar otro mecanismo. Ver [`concurrencia_y_pruebas.md`](./concurrencia_y_pruebas.md) §2.
 
 ### 1.5 Cómo se comprueba que venció o fue eliminado
 
-`EXISTS clave` → `0`, `TTL clave` → `-2` (clave ausente; `-1` significaría "existe sin TTL"), y `ses_tocar` → `nil`. Demostrado con TTL de 3 s en [`03_sesiones.txt`](./evidencia/03_sesiones.txt) §3.6, esperando con `BLPOP` sobre una clave inexistente (una espera del servidor, no un barrido). **No hay ningún proceso que recorra sesiones** (§5.3 del enunciado).
+`EXISTS clave` → `0`, `TTL clave` → `-2` (clave ausente; `-1` significaría "existe sin TTL"), y `HMGET` → todos los campos vacíos. Demostrado con TTL de 3 s en [`03_sesiones.txt`](./evidencia/03_sesiones.txt) §3.6, esperando con `BLPOP` sobre una clave inexistente (una espera del servidor, no un barrido). **No hay ningún proceso que recorra sesiones** (§5.3 del enunciado).
 
 ### 1.6 Comportamiento ante una sesión inexistente
 
 | Situación | Respuesta de la app |
 |---|---|
-| `ses_tocar` devuelve `nil` (no existe / venció / cerrada) | 401 y pantalla de login. **No se crea nada implícitamente** |
-| `ses_tocar` devuelve `SESION_BLOQUEADA` | 403; no se renueva, la sesión vence sola |
+| `HMGET` sin `usuario_id` (no existe / venció / cerrada / hash parcial) | 401 y pantalla de login. **No se renueva ni se crea nada** |
+| `HMGET` con `estado = BLOQUEADA` | 403; no se renueva, la sesión vence sola |
 | Redis no responde | Fail-closed para operaciones autenticadas: sin poder validar no se debe asumir sesión válida. Lecturas públicas (fixture, resultados) siguen por la fuente de verdad |
 
 ### 1.7 Cierre y invalidación explícita
 
 | Evento | Operación |
 |---|---|
-| Logout | `ses_cerrar` (DEL + SREM) |
-| Cambio de contraseña / baja | `ses_cerrar_todas` (usa el índice por usuario) |
+| Logout | `MULTI` → `SREM` del índice + `DEL` → `EXEC` |
+| Cambio de contraseña / baja | `SMEMBERS` del índice y después `MULTI` → `DEL` de cada sesión + `DEL` del índice → `EXEC` |
 | Moderación | `HSET estado BLOQUEADA` |
 
 ## 2. Caché de la ficha de partido (RF6, RF7)
@@ -71,30 +81,33 @@ Con `EXISTS` → `HSET` → `EXPIRE` separados, la clave puede vencer **entre** 
 |---|---|
 | **Fuente de verdad** | El motor de objetos (IRIS): N2 Partidos según el Hito 2, CP en el cierre según el Hito 3. **Aún no implementada** (el Hito 4 sólo tiene equipos y jugadores en MongoDB). Redis guarda una **copia** |
 | **Cache hit** | `f30:cache:partido:{id}` existe → se sirve el JSON |
-| **Cache miss** | Ausente → leer la fuente → `cache_poner_si_version` con TTL 60 s → responder |
-| **Cuándo se actualiza/invalida** | En cuanto el servicio de partidos **confirma** el cambio en la fuente: `cache_invalidar` (DEL + INCR de `:ver`). No se espera al TTL |
-| **Permanencia máxima admisible** | 60 s **sólo** si la invalidación falla (servicio caído entre el commit en la fuente y el DEL). Con invalidación funcionando, la copia obsoleta dura ≈ 0 |
+| **Cache miss** | Ausente → leer la fuente → `SET f30:cache:partido:{id} <json> EX 60` → responder |
+| **Cuándo se actualiza/invalida** | En cuanto el servicio de partidos **confirma** el cambio en la fuente: `DEL f30:cache:partido:{id}`. No se espera al TTL |
+| **Permanencia máxima admisible** | **60 s** (el TTL). Con la invalidación funcionando, la copia obsoleta dura ≈ 0. Solo llega a 60 s si la invalidación falla (servicio caído entre el commit en la fuente y el `DEL`) o en la carrera del lector lento (§2.2) |
 | **Clave ausente o Redis caído** | Se lee de la fuente y se responde igual. Se pierde velocidad, no disponibilidad. **No se repuebla si Redis no responde** |
 
 ### 2.1 Estrategia de coherencia (por qué TTL no alcanza)
 
 Un TTL de 60 s significa que tras un gol el marcador viejo podría servirse hasta 60 s: inaceptable para un marcador en vivo. Por eso el TTL es sólo la **red de seguridad**; la coherencia la da la **invalidación en escritura**. Se invalida (borra) en vez de **reescribir** la copia, porque el servicio que cambia el dato no siempre conoce la forma cacheada, y borrar es idempotente.
 
-### 2.2 La carrera que cierra la versión (`:ver`)
+### 2.2 Límite conocido: el lector lento
 
-Invalidar con `DEL` a secas deja una ventana:
+Invalidar con `DEL` deja una ventana:
 
 1. Un lector L hace *miss* y lee la fuente (marcador 0-0). Es lento.
-2. El servicio confirma el gol (1-0) e invalida.
-3. L termina y hace `SET` con 0-0. **Copia obsoleta durante todo el TTL.**
+2. El servicio confirma el gol (1-0) e invalida con `DEL`.
+3. L termina y hace `SET` con 0-0. La copia queda obsoleta **hasta que vence su TTL**.
 
-Solución: el lector anota `GET :ver` **antes** de leer la fuente y repuebla con `cache_poner_si_version(…, versión_leída)`; la función descarta la escritura si `:ver` actual > versión leída. `cache_invalidar` sube `:ver`. Demostrado en [`04_cache.txt`](./evidencia/04_cache.txt) §4.5: la escritura tardía devuelve `0` y la caché conserva 1-0.
+Se acepta por tres razones:
+- **El daño está acotado por el TTL**: como máximo 60 s, la misma permanencia que se acepta si falla la invalidación.
+- **Hacen falta dos condiciones juntas**: un lector lento y una escritura en la fuente en ese mismo intervalo.
+- **Cerrar la ventana exige una escritura condicional** ("escribí solo si nadie invalidó"). Con lo visto en clase, eso no se resuelve con un solo comando ni con `MULTI/EXEC`, que no admite condiciones.
 
-*Límite:* `:ver` vence a las 24 h; si venciera justo mientras un lector lento sigue en vuelo, la comparación se reinicia contra 0. Es una ventana de muy baja probabilidad (lector con >24 h de retraso) y el daño está acotado por el TTL de 60 s.
+Si el negocio no tolerara esos 60 s, la opción es un TTL más corto para el marcador en vivo. Demostrado en [`04_cache.txt`](./evidencia/04_cache.txt) §4.5: la escritura tardía deja 0-0, con TTL de 60 s.
 
 ### 2.3 Perfil de usuario (P7)
 
-HASH con TTL de 900 s. El perfil cambia poco; 15 min de copia vieja no afectan la operación, pero un cambio explícito del usuario (idioma, nombre) **invalida** la copia (`DEL`) para que vea su propio cambio de inmediato: el Hito 3 exige consistencia de sesión para el propio usuario (N4).
+HASH con TTL de 900 s, cargado con `HSET` + `EXPIRE` en `MULTI/EXEC` (nunca queda un perfil sin TTL). El perfil cambia poco; 15 min de copia vieja no afectan la operación, pero un cambio explícito del usuario (idioma, nombre) **invalida** la copia (`DEL`) para que vea su propio cambio de inmediato: el Hito 3 exige consistencia de sesión para el propio usuario (N4).
 
 ## 3. Rankings temporales (RF9)
 

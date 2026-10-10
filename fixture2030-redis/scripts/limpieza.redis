@@ -5,7 +5,7 @@
 #  normal (RNF8). Este archivo sólo borra claves conocidas de las demos; el borrado por
 #  prefijo con SCAN vive en scripts/limpieza.sh.
 # ============================================================
-DEL f30:ses:demo-A f30:ses:demo-B f30:ses:demo-C f30:ses:demo-D
+DEL f30:ses:demo-A f30:ses:demo-B f30:ses:demo-C f30:ses:demo-D f30:ses:demo-E
 DEL f30:usr:USR-DEMO1:sesiones f30:usr:USR-DEMO2:sesiones
-DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver f30:cache:partido:PAR-D16-02
+DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-02 f30:cache:usuario:USR-0000001:perfil
 DEL f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking f30:rank:tendencia:demo

@@ -15,14 +15,13 @@ fixture2030-redis/
 ├── docker-compose.yml           redis:latest · 127.0.0.1:6379 · volumen nombrado respaldado por ~/docker/data/redis
 ├── config/redis.conf            maxmemory 256mb · volatile-lru · AOF everysec
 ├── scripts/
-│   ├── funciones_f30.lua        librería `f30`: 8 funciones atómicas (sesión, caché, voto, tendencia)
-│   ├── carga_muestra.lua        librería `f30carga`: generador determinista del dataset
 │   ├── inicializacion.redis     verificación del ambiente y versión
-│   ├── carga_muestra.redis      carga y verificación de la muestra
-│   ├── sesiones.redis           ciclo de vida completo de una sesión
-│   ├── cache.redis              cache-aside: miss, hit, invalidación, carrera evitada
-│   ├── concurrencia.redis       voto único, ranking MVP, tendencia por hora
-│   ├── concurrencia_paralela.sh 20 clientes simultáneos: no atómico vs atómico
+│   ├── carga_muestra.sh         genera la muestra determinista (awk -> redis-cli) y la verifica
+│   ├── carga_muestra.redis      verificación de la muestra cargada
+│   ├── sesiones.redis           ciclo de vida completo de una sesión (MULTI/EXEC)
+│   ├── cache.redis              cache-aside: miss, hit, invalidación con DEL, lector lento
+│   ├── concurrencia.redis       voto único (SADD como guarda), ranking MVP, tendencia por hora
+│   ├── concurrencia_paralela.sh 20 clientes simultáneos: no atómico vs SADD como guarda
 │   ├── metricas.redis           INFO, TTL, encoding, MEMORY USAGE, SLOWLOG (sin KEYS)
 │   ├── benchmark.sh             redis-benchmark + corrección bajo concurrencia
 │   ├── memoria_prueba.sh        TTL vs evicción (baja maxmemory temporalmente y la restaura)
@@ -31,11 +30,12 @@ fixture2030-redis/
 │   └── correr_todo.sh           todo lo anterior en orden, guardando la evidencia
 ├── docs/
 │   ├── patrones_de_acceso.md          problema de concurrencia y patrones P1–P11 (se escribió primero)
-│   ├── modelo_clave_valor.md          convención de claves, estructuras, funciones
+│   ├── modelo_clave_valor.md          convención de claves, estructuras, operaciones atómicas
 │   ├── ciclo_de_vida_e_invalidacion.md  sesiones, TTL, invalidación, clave ausente
 │   ├── memoria_y_escalabilidad.md     TTL vs evicción, política elegida, nodo único vs producción
 │   ├── concurrencia_y_pruebas.md      atomicidad, datos cargados, mediciones, coherencia con el TPO
 │   └── evidencia/                     salidas reales de cada etapa (01_ … 09_)
+├── .gitattributes                  los scripts siempre con finales de línea LF (también al clonar en Windows)
 └── README.md
 ```
 
@@ -47,7 +47,8 @@ fixture2030-redis/
 - ~300 MB de RAM libres (Redis está limitado a 256 MB por configuración).
 - Puerto `6379` libre en el host. Si está ocupado: `REDIS_PORT=16379 docker compose up -d`.
 - La carpeta `~/docker/data/redis` **debe existir antes** del primer `docker compose up` (`mkdir -p ~/docker/data/redis`, ya está en §3). Si falta, Docker falla con `no such file or directory`. Otra ubicación: `REDIS_DATA_DIR=/ruta docker compose up -d`. En Windows, usar WSL2 (la variable `HOME` debe existir) o definir `REDIS_DATA_DIR`.
-- **No** hace falta instalar `redis-cli`: se usa el del contenedor. Ni Python: los scripts son `.redis`, Lua y `sh`.
+- **No** hace falta instalar `redis-cli`: se usa el del contenedor. Ni Python: los scripts son `.redis` y `sh`.
+- **Windows con Git Bash:** antes de correr los `.sh`, `export MSYS_NO_PATHCONV=1`. Si no, Git Bash convierte las rutas Linux de los comandos `docker` (por ejemplo `/scripts/…`) en rutas de Windows.
 
 ---
 
@@ -79,25 +80,20 @@ docker compose exec redis redis-cli                      # cliente interactivo (
 
 ## 4. Ejecutar el módulo, paso a paso
 
-Las **funciones** se cargan una vez (y otra vez si se edita un `.lua`; `REPLACE` es idempotente):
-
-```bash
-docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/funciones_f30.lua
-docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua
-```
+El módulo usa solo comandos de Redis: comandos nativos atómicos (`INCR`/`HINCRBY`, `ZINCRBY`, `SADD`, `SET … EX`, `DEL`) y transacciones `MULTI/EXEC`. No hay nada que instalar en el servidor antes de empezar.
 
 Los `.redis` se ejecutan **filtrando comentarios** (`redis-cli` no los admite). Orden recomendado:
 
 ```bash
 docker compose exec -T redis sh -c "grep -v '^#' /scripts/inicializacion.redis | redis-cli"   # 1. inicio
-docker compose exec -T redis sh -c "grep -v '^#' /scripts/carga_muestra.redis  | redis-cli"   # 2. carga
+docker compose exec -T redis sh /scripts/carga_muestra.sh                                    # 2. carga
 docker compose exec -T redis sh -c "grep -v '^#' /scripts/sesiones.redis       | redis-cli"   # 3. sesiones (~10 s: espera vencimientos)
 docker compose exec -T redis sh -c "grep -v '^#' /scripts/cache.redis          | redis-cli"   # 4. caché
 docker compose exec -T redis sh -c "grep -v '^#' /scripts/concurrencia.redis   | redis-cli"   # 5. concurrencia
 docker compose exec -T redis sh /scripts/concurrencia_paralela.sh 20                          # 5b. clientes paralelos
 sh scripts/benchmark.sh                                                                        # 6. medición
 docker compose exec -T redis sh /scripts/memoria_prueba.sh                                     # 7. memoria (degrada la muestra)
-docker compose exec -T redis sh -c "grep -v '^#' /scripts/carga_muestra.redis  | redis-cli"   #    restaurar la muestra
+docker compose exec -T redis sh /scripts/carga_muestra.sh                                    #    restaurar la muestra
 docker compose exec -T redis sh -c "grep -v '^#' /scripts/metricas.redis       | redis-cli"   # 8. métricas
 ```
 
@@ -111,7 +107,7 @@ Cada `.redis` imprime marcadores `== N.M … ==` que dicen qué paso se está vi
 
 ### 4.1 Idempotencia
 
-`carga_muestra.redis` y `sesiones.redis` se pueden repetir: los conteos finales (`DBSIZE = 4203` tras la carga) no cambian. Sólo varían timestamps y TTL restantes.
+`carga_muestra.sh` y `sesiones.redis` se pueden repetir: los conteos finales (`DBSIZE = 4203` tras la carga) y los valores no cambian. Solo varían los TTL restantes.
 
 ---
 
@@ -121,14 +117,14 @@ Cada `.redis` imprime marcadores `== N.M … ==` que dicen qué paso se está vi
 
 ```bash
 docker compose down          # detener (conserva los datos)
-docker compose up -d         # volver a levantar: sesiones, votación y funciones siguen
+docker compose up -d         # volver a levantar: sesiones y votación siguen
 ```
 
 ```bash
 docker compose restart redis # reinicio rápido del servicio
 ```
 
-Comprobación (`sh scripts/verificar_persistencia.sh`): [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt) muestra el volumen y su carpeta, y que una clave con TTL, la votación y las funciones siguen tras `restart` y tras `down` + `up`. Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
+Comprobación (`sh scripts/verificar_persistencia.sh`): [`docs/evidencia/09_persistencia.txt`](./docs/evidencia/09_persistencia.txt) muestra el volumen y su carpeta, y que una clave con TTL y la votación siguen tras `restart` y tras `down` + `up`. Se acepta perder hasta ~1 s de escrituras (`appendfsync everysec`); las sesiones vencen por TTL igual que antes (el TTL restante se conserva en el AOF).
 
 **Empezar de cero (borra todo).** `down -v` borra el volumen pero **no** los archivos de la carpeta del host, por eso hacen falta los tres pasos:
 
@@ -136,7 +132,7 @@ Comprobación (`sh scripts/verificar_persistencia.sh`): [`docs/evidencia/09_pers
 docker compose down -v && rm -rf ~/docker/data/redis && mkdir -p ~/docker/data/redis
 ```
 
-**Limpieza parcial** sin bajar el servicio: `docker compose exec -T redis sh /scripts/limpieza.sh` (borra `f30:*` con `SCAN` + `UNLINK`; conserva las funciones).
+**Limpieza parcial** sin bajar el servicio: `docker compose exec -T redis sh /scripts/limpieza.sh` (borra `f30:*` con `SCAN` + `UNLINK`).
 
 ---
 
@@ -150,7 +146,8 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 
 | Fecha de prueba | Versión (`redis_version`) | Observaciones |
 |---|---|---|
-| 2026-09-25 | **8.10.2** · Linux aarch64 (Docker Desktop) | Las 9 etapas de `correr_todo.sh` corrieron sin errores. Las Redis Functions (`FUNCTION LOAD`) requieren Redis ≥ 7.0; `EXPIRE … NX/GT` requiere ≥ 7.0. Si `latest` resolviera a algo anterior, el módulo no carga |
+| 2026-09-25 | **8.10.2** · Linux aarch64 (Docker Desktop, Apple M4) | Primera versión del módulo, con Redis Functions |
+| 2026-10-10 | **8.10.2** · Linux x86_64 (Docker Desktop WSL2, Windows 11) | Versión corregida: solo comandos nativos y `MULTI/EXEC`. Las 9 etapas de `correr_todo.sh` corrieron sin errores desde un ambiente vacío. `EXPIRE … NX` requiere Redis ≥ 7.0 |
 
 ---
 
@@ -160,12 +157,12 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 |---|---|---|
 | Sesión | HASH, **30 min de inactividad** renovables, **tope de 12 h**, vencimiento nativo (sin barridos) | [`ciclo_de_vida_e_invalidacion.md`](./docs/ciclo_de_vida_e_invalidacion.md) §1 |
 | Sesión inexistente | 401 → login; nada se crea implícitamente | ídem §1.6 |
-| Caché | cache-aside sobre la fuente de verdad (IRIS para Partidos, MongoDB para Usuarios); TTL 60 s como **red de seguridad**, coherencia por **invalidación en escritura + versión** | ídem §2 |
-| Atomicidad | Redis Functions (voto único, renovar sesión, repoblar con versión) | [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §2 |
+| Caché | cache-aside sobre la fuente de verdad (IRIS para Partidos, MongoDB para Usuarios); coherencia por **invalidación en escritura** (`DEL`); TTL 60 s como permanencia máxima de una copia vieja | ídem §2 |
+| Atomicidad | Comandos nativos (`SADD` como guarda del voto único, `ZINCRBY`, `HINCRBY`) y `MULTI/EXEC` para las secuencias (crear, renovar y cerrar sesión, visita a tendencia) | [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §2 |
 | Memoria | `maxmemory 256mb` + `volatile-lru`: se desaloja sólo lo reconstruible; la votación abierta no vence ni se desaloja | [`memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §2 |
 | Ranking | ZSET por hora con TTL de 2 h | [`modelo_clave_valor.md`](./docs/modelo_clave_valor.md) |
 
-Resultados clave observados (detalle y limitaciones en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §4): 20 clientes simultáneos con el mismo usuario dieron puntaje **20** sin atomicidad y **1** con la función; 100.000 incrementos concurrentes dieron exactamente 100.000; bajo presión de memoria la votación abierta quedó intacta mientras se desalojaron ~16.000 claves con TTL.
+Resultados clave observados (detalle y limitaciones en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §4): 20 clientes simultáneos con el mismo usuario dieron puntaje **20** sin atomicidad y **1** con `SADD` como guarda; 100.000 `ZINCRBY` concurrentes dieron exactamente 100.000; bajo presión de memoria la votación abierta quedó intacta mientras se desalojaron ~16.000 claves con TTL.
 
 ---
 
