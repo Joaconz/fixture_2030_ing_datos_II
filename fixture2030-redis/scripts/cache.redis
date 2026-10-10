@@ -4,63 +4,70 @@
 #
 #  PATRÓN: cache-aside (la app manda; Redis nunca habla con la fuente).
 #  FUENTE DE VERDAD: IRIS para Partidos (N2) y MongoDB para Usuarios (N4), según la
-#  matriz del Hito 2. Aún no están implementadas. Redis guarda una COPIA
-#  reconstruible. Este hito no integra ninguna fuente (fuera de alcance): el
-#  "documento de origen" se escribe a mano en cada paso para mostrar el flujo.
+#  matriz del Hito 2. Redis guarda una COPIA reconstruible. Este hito no integra
+#  ninguna fuente (fuera de alcance): el "documento de origen" se escribe a mano
+#  en cada paso para mostrar el flujo.
 #
-#  Claves:  f30:cache:partido:{id}       STRING JSON, TTL 60 s   (máx. staleness aceptada)
-#           f30:cache:partido:{id}:ver   STRING entero, TTL 24 h (versión anti-"stale set")
+#  Claves:  f30:cache:partido:{id}            STRING JSON, TTL 60 s  (máx. permanencia aceptada)
+#           f30:cache:usuario:{id}:perfil     HASH, TTL 900 s
 #
 #  HIT   = la clave existe.
 #  MISS  = ausente (nunca cacheada, vencida por TTL, invalidada, desalojada por memoria
-#          o Redis reiniciado sin datos): la app lee la fuente y repuebla. Redis caído =
-#          el mismo camino sin repoblar: se degrada la latencia, no la disponibilidad.
+#          o Redis reiniciado sin datos): la app lee la fuente y repuebla con SET … EX.
+#          Redis caído = el mismo camino sin repoblar: se degrada la latencia, no la
+#          disponibilidad.
+#  INVALIDACIÓN: cuando cambia la fuente, la app hace DEL de la copia. No espera al TTL.
 #  TTL reales (60 s) salvo el paso 4.6, que usa 2 s para poder observar el vencimiento.
 # ============================================================
 
 ECHO "== 4.0 Preparación =="
-DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver
+DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-02
 
 ECHO "== 4.1 CACHE MISS: la app pregunta por PAR-D16-01 y no hay copia =="
 GET f30:cache:partido:PAR-D16-01
-ECHO "-- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --"
-GET f30:cache:partido:PAR-D16-01:ver
-ECHO "-- (aquí la app leería la fuente de verdad de Partidos, IRIS según el Hito 2, aún no implementada) y repuebla con TTL 60 s --"
-FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"0-0\",\"estado\":\"EN_VIVO\",\"version\":0}" 60 0
+ECHO "-- (aquí la app leería la fuente de verdad de Partidos, IRIS según el Hito 2) y repuebla con TTL 60 s --"
+SET f30:cache:partido:PAR-D16-01 "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"0-0\",\"estado\":\"EN_VIVO\"}" EX 60
 
 ECHO "== 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar la fuente =="
 GET f30:cache:partido:PAR-D16-01
 TTL f30:cache:partido:PAR-D16-01
 
 ECHO "== 4.3 CAMBIA LA FUENTE DE VERDAD: gol de ARG (la fuente pasa a 1-0). NO se espera al TTL =="
-ECHO "-- la app, tras confirmar el update en la fuente, INVALIDA: borra la copia y sube la versión, juntos --"
-FCALL cache_invalidar 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver
+ECHO "-- la app, tras confirmar el update en la fuente, INVALIDA la copia --"
+DEL f30:cache:partido:PAR-D16-01
 GET f30:cache:partido:PAR-D16-01
 
-ECHO "== 4.4 SIGUIENTE LECTURA = MISS controlado: lee la fuente (1-0) y repuebla con la versión nueva =="
-GET f30:cache:partido:PAR-D16-01:ver
-FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"1-0\",\"estado\":\"EN_VIVO\",\"version\":1}" 60 1
+ECHO "== 4.4 SIGUIENTE LECTURA = MISS controlado: lee la fuente (1-0) y repuebla =="
+SET f30:cache:partido:PAR-D16-01 "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"1-0\",\"estado\":\"EN_VIVO\"}" EX 60
 GET f30:cache:partido:PAR-D16-01
 
-ECHO "== 4.5 CARRERA EVITADA: un lector LENTO leyó la fuente ANTES del gol (versión 0) y intenta escribir tarde =="
-ECHO "-- devuelve 0: la copia vieja (0-0) se descarta, la caché conserva 1-0 --"
-FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver "{\"marcador\":\"0-0\",\"version\":0}" 60 0
+ECHO "== 4.5 LÍMITE CONOCIDO: un lector LENTO leyó la fuente ANTES del gol (0-0) y escribe DESPUÉS de la invalidación =="
+ECHO "-- secuencia: (lector lento lee 0-0) -> gol -> DEL de la invalidación -> el lector lento repuebla tarde --"
+DEL f30:cache:partido:PAR-D16-01
+SET f30:cache:partido:PAR-D16-01 "{\"partido_id\":\"PAR-D16-01\",\"local\":\"ARG\",\"visitante\":\"FRA\",\"marcador\":\"0-0\",\"estado\":\"EN_VIVO\"}" EX 60
+ECHO "-- la caché muestra 0-0 (copia obsoleta), pero como máximo hasta que venza el TTL: --"
 GET f30:cache:partido:PAR-D16-01
+TTL f30:cache:partido:PAR-D16-01
+ECHO "-- por eso el TTL de 60 s ES la permanencia máxima aceptada de una copia vieja (ciclo_de_vida_e_invalidacion.md §2.2) --"
 
 ECHO "== 4.6 EXPIRACIÓN POR TTL (tope de permanencia, no estrategia de coherencia) =="
 ECHO "-- copia con TTL de demostración de 2 s --"
-FCALL cache_poner_si_version 2 f30:cache:partido:PAR-D16-02 f30:cache:partido:PAR-D16-02:ver "{\"partido_id\":\"PAR-D16-02\",\"marcador\":\"0-0\"}" 2 0
+SET f30:cache:partido:PAR-D16-02 "{\"partido_id\":\"PAR-D16-02\",\"marcador\":\"0-0\"}" EX 2
 TTL f30:cache:partido:PAR-D16-02
 BLPOP f30:demo:espera 3
 GET f30:cache:partido:PAR-D16-02
 
 ECHO "== 4.7 SEGUNDO DATO EN CACHÉ: perfil de usuario (HASH, TTL 900 s, fuente: MongoDB N4) =="
+ECHO "-- HSET + EXPIRE en una transacción: nunca queda un perfil cacheado sin TTL --"
+MULTI
 HSET f30:cache:usuario:USR-0000001:perfil nombre "Usuario Demo" idioma es region AM
 EXPIRE f30:cache:usuario:USR-0000001:perfil 900
+EXEC
 HGETALL f30:cache:usuario:USR-0000001:perfil
+TTL f30:cache:usuario:USR-0000001:perfil
 ECHO "-- el usuario cambia su idioma en Mongo: se invalida la copia --"
 DEL f30:cache:usuario:USR-0000001:perfil
 EXISTS f30:cache:usuario:USR-0000001:perfil
 
 ECHO "== 4.8 Limpieza de la demo =="
-DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-01:ver f30:cache:partido:PAR-D16-02 f30:cache:partido:PAR-D16-02:ver
+DEL f30:cache:partido:PAR-D16-01 f30:cache:partido:PAR-D16-02

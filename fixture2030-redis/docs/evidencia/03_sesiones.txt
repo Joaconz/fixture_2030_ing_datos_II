@@ -1,8 +1,16 @@
-# Ejecutado: 2026-09-25T23:58:13Z
+# Ejecutado: 2026-10-10T00:09:12Z
 == 3.0 Preparación: borrar restos de una corrida anterior ==
 0
-== 3.1 CREAR: login del usuario USR-DEMO1 (30 min inactividad, 12 h tope) ==
-demo-A
+== 3.1 CREAR: login de USR-DEMO1. Hash + TTL + índice del usuario en una sola transacción ==
+OK
+QUEUED
+QUEUED
+QUEUED
+QUEUED
+10
+1
+1
+1
 == 3.2 RECUPERAR: todos los atributos (RF5) y TTL restante ==
 session_id
 demo-A
@@ -17,61 +25,140 @@ web
 estado
 ACTIVA
 creada_en
-1790380693
+1908979200
 ultima_actividad
-1790380693
+1908979200
 expira_absoluta
-1790423893
+1909022400
 solicitudes
 0
 1800
-== 3.3 ACTUALIZAR: un request autenticado renueva (devuelve usuario, región, rol, n.º solicitudes, TTL) ==
+== 3.3 ACTUALIZAR: request autenticado 60 s después ==
+-- (a) la app valida: existe (usuario_id no vacío) y estado ACTIVA --
 USR-DEMO1
-AM
-HINCHA
+ACTIVA
+1909022400
+-- (b) renueva: última actividad, contador de solicitudes y TTL, juntos --
+--     TTL = min(1800, expira_absoluta - ahora) = min(1800, 43140) = 1800 --
+OK
+QUEUED
+QUEUED
+QUEUED
+0
 1
+1
+1
+1908979260
+== 3.4 SESIÓN INEXISTENTE: HMGET devuelve todo vacío -> la app responde 401 y pide login (no renueva ni crea nada) ==
+
+
+
+0
+== 3.4 bis CARRERA ENTRE VALIDAR Y RENOVAR: la sesión vence justo después del HMGET ==
+-- el MULTI de renovación llega sobre una clave que ya no existe: HSET crea un hash PARCIAL --
+OK
+QUEUED
+QUEUED
+QUEUED
+1
+1
+1
+-- igual tiene TTL (el EXPIRE fue en la misma transacción): no queda una clave eterna --
 1800
+-- y no tiene usuario_id ni estado: la regla de validez la trata como inexistente (401) --
+
+
+
 1
-1790380693
-== 3.4 SESIÓN INEXISTENTE: ses_tocar devuelve nil -> la app responde 401 y pide login (no se crea nada) ==
-
-0
 == 3.5 BLOQUEO: un moderador marca la sesión BLOQUEADA; el siguiente request es rechazado y NO renueva ==
-demo-B
+OK
+QUEUED
+QUEUED
+QUEUED
+QUEUED
+10
+1
+1
+1
 0
-ERR SESION_BLOQUEADA
-
+-- la app lee estado = BLOQUEADA: responde 403 y no ejecuta la renovación --
+USR-DEMO1
+BLOQUEADA
+1909022400
+-- HSET no cambia el TTL: la sesión bloqueada vence sola --
+1800
 == 3.6 EXPIRACIÓN POR INACTIVIDAD (TTL de demostración: 3 s en vez de 1800 s) ==
-demo-C
+OK
+QUEUED
+QUEUED
+QUEUED
+QUEUED
+10
+1
+1
+1
 3
 -- se espera 4 s sin actividad (BLPOP sobre clave inexistente es una espera nativa, no un barrido) --
 
--- comprobación: EXISTS 0, TTL -2 (clave ausente) y ses_tocar devuelve nil --
+-- comprobación: EXISTS 0, TTL -2 (clave ausente) y HMGET vacío --
 0
 -2
 
+
+
 == 3.7 TOPE ABSOLUTO: el TTL nunca supera el tiempo que queda hasta expira_absoluta (demo: tope 5 s) ==
-demo-D
-5
-USR-DEMO2
-AF
-HINCHA
+OK
+QUEUED
+QUEUED
+QUEUED
+QUEUED
+10
 1
-5
--- pese a pedir 1800 s, el TTL queda acotado por el tope --
-5
+1
+1
+-- request 1 s después: la app calcula TTL = min(1800, expira_absoluta - ahora) = min(1800, 4) = 4 --
+USR-DEMO2
+ACTIVA
+1908979205
+OK
+QUEUED
+QUEUED
+QUEUED
+0
+1
+1
+-- aunque haya actividad, el TTL queda acotado por el tope --
+4
 
 0
-== 3.8 FINALIZAR: logout explícito (borra sesión y la saca del índice del usuario) ==
+== 3.8 FINALIZAR: logout explícito (borra la sesión y la saca del índice del usuario, juntos) ==
 demo-A
 demo-B
+OK
+QUEUED
+QUEUED
+1
 1
 0
 demo-B
 == 3.9 CERRAR TODAS: cambio de contraseña de USR-DEMO1 invalida todas sus sesiones ==
+OK
+QUEUED
+QUEUED
+QUEUED
+QUEUED
+10
+1
+1
+1
+-- la app lee el índice y arma las claves de cada sesión --
+demo-B
 demo-A
+OK
+QUEUED
+QUEUED
 2
-2
+1
 0
 0
 1

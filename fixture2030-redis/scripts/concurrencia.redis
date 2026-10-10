@@ -4,30 +4,35 @@
 #  La prueba con clientes realmente simultáneos está en scripts/concurrencia_paralela.sh
 #
 #  OPERACIÓN 1 — VOTO MVP ÚNICO POR USUARIO (RF8)
-#    Riesgo sin atomicidad (check-then-act): dos requests del MISMO usuario ejecutan
-#    SISMEMBER (ambos ven "no votó"), ambos suman -> voto doble. O el proceso cae entre
-#    SADD y ZINCRBY -> votante registrado pero voto sin contar.
-#    Solución: FCALL voto_emitir. Redis ejecuta la función como unidad: SADD + ZINCRBY
-#    no se intercalan con ningún otro cliente. SADD devuelve 1 sólo al primero.
+#    Riesgo (check-then-act): dos requests del MISMO usuario ejecutan SISMEMBER, ambos
+#    ven "no votó" y ambos suman -> voto doble.
+#    Solución: el chequeo y el registro son UN SOLO comando atómico: SADD. Devuelve 1
+#    solo al primer cliente que agrega al usuario; a todos los demás, 0. La app suma
+#    con ZINCRBY (también atómico) solo cuando SADD devolvió 1. Ningún intercalado
+#    puede producir dos 1 para el mismo usuario.
 #
 #  OPERACIÓN 2 — PARTIDOS EN TENDENCIA POR HORA (RF9)
 #    ZSET con bucket horario: ZINCRBY es atómico por sí mismo (un comando = una unidad)
-#    y el ranking sale ordenado sin ordenar en la app. EXPIRE NX fija el TTL sólo la
-#    primera vez: el bucket vence solo 2 h después.
+#    y el ranking sale ordenado sin ordenar en la app. ZINCRBY + EXPIRE NX van en
+#    MULTI/EXEC: no puede quedar un bucket sin TTL. EXPIRE NX fija el TTL solo la
+#    primera vez: el bucket vence solo 2 h después de su primera visita.
 # ============================================================
 
 ECHO "== 5.0 Preparación (votación de demostración aparte de la muestra) =="
 DEL f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking
 
-ECHO "== 5.1 VOTO: USR-A vota a ARG-10 -> {1, puntaje} =="
-FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A ARG-10
-ECHO "== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout) -> {0,0}, el ranking no cambia =="
-FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A ARG-10
-FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-A FRA-10
-ECHO "== 5.3 Otros votantes =="
-FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-B FRA-10
-FCALL voto_emitir 2 f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking USR-C ARG-10
-ECHO "== 5.4 Invariante: votos contados en el ranking == votantes distintos =="
+ECHO "== 5.1 VOTO: USR-A vota a ARG-10. SADD devuelve 1 -> la app suma con ZINCRBY =="
+SADD f30:voto:mvp:DEMO:votantes USR-A
+ZINCRBY f30:voto:mvp:DEMO:ranking 1 ARG-10
+ECHO "== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout). SADD devuelve 0 -> la app NO suma =="
+SADD f30:voto:mvp:DEMO:votantes USR-A
+SADD f30:voto:mvp:DEMO:votantes USR-A
+ECHO "== 5.3 Otros votantes (SADD 1 en cada uno, entonces ZINCRBY) =="
+SADD f30:voto:mvp:DEMO:votantes USR-B
+ZINCRBY f30:voto:mvp:DEMO:ranking 1 FRA-10
+SADD f30:voto:mvp:DEMO:votantes USR-C
+ZINCRBY f30:voto:mvp:DEMO:ranking 1 ARG-10
+ECHO "== 5.4 Invariante: votos contados en el ranking == votantes distintos (3) =="
 ZRANGE f30:voto:mvp:DEMO:ranking 0 -1 WITHSCORES
 SCARD f30:voto:mvp:DEMO:votantes
 DEL f30:voto:mvp:DEMO:votantes f30:voto:mvp:DEMO:ranking
@@ -42,11 +47,21 @@ ZREVRANK f30:rank:tendencia:2030062916 PAR-D16-01
 ZSCORE f30:rank:tendencia:2030062916 PAR-D16-01
 TTL f30:rank:tendencia:2030062916
 
-ECHO "== 5.7 Registrar visitas en un bucket nuevo: EXPIRE NX fija el TTL sólo en la primera visita =="
+ECHO "== 5.7 Registrar visitas en un bucket nuevo: ZINCRBY + EXPIRE NX en una transacción =="
 DEL f30:rank:tendencia:demo
-FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-A-1 7200
-FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-A-1 7200
-FCALL tendencia_registrar 1 f30:rank:tendencia:demo PAR-B-2 7200
+MULTI
+ZINCRBY f30:rank:tendencia:demo 1 PAR-A-1
+EXPIRE f30:rank:tendencia:demo 7200 NX
+EXEC
+ECHO "-- segunda visita: EXPIRE NX devuelve 0 (el TTL ya estaba puesto y no se reinicia) --"
+MULTI
+ZINCRBY f30:rank:tendencia:demo 1 PAR-A-1
+EXPIRE f30:rank:tendencia:demo 7200 NX
+EXEC
+MULTI
+ZINCRBY f30:rank:tendencia:demo 1 PAR-B-2
+EXPIRE f30:rank:tendencia:demo 7200 NX
+EXEC
 ZREVRANGE f30:rank:tendencia:demo 0 -1 WITHSCORES
 TTL f30:rank:tendencia:demo
 DEL f30:rank:tendencia:demo

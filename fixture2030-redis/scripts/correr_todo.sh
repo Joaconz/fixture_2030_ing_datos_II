@@ -16,20 +16,17 @@ mkdir -p "${REDIS_DATA_DIR:-$HOME/docker/data/redis}"   # el volumen nombrado ex
 docker compose up -d --wait > /dev/null
 echo "Versión: $($RC redis-cli INFO server | grep '^redis_version:' | tr -d '\r') | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Funciones (idempotente: REPLACE)
-$RC redis-cli -x FUNCTION LOAD REPLACE < scripts/funciones_f30.lua > /dev/null
-$RC redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua > /dev/null
 $RC redis-cli CONFIG RESETSTAT > /dev/null   # estadísticas limpias: la evidencia empieza de cero
 
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run inicializacion.redis; }  > $EV/01_inicializacion.txt
-{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run carga_muestra.redis; }   > $EV/02_carga_muestra.txt
+{ echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; $RC sh /scripts/carga_muestra.sh; } > $EV/02_carga_muestra.txt
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run sesiones.redis; }        > $EV/03_sesiones.txt
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run cache.redis; }           > $EV/04_cache.txt
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run concurrencia.redis; $RC sh /scripts/concurrencia_paralela.sh 20; } > $EV/05_concurrencia.txt
 sh scripts/benchmark.sh > $EV/06_benchmark.txt
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; $RC sh /scripts/memoria_prueba.sh; } > $EV/07_memoria.txt
 # la prueba de memoria degrada la muestra: se recarga y se miden métricas sobre el estado sano
-$RC redis-cli FCALL carga_muestra 0 2000 > /dev/null
+$RC sh /scripts/carga_muestra.sh > /dev/null
 { echo "# Ejecutado: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; run metricas.redis; }        > $EV/08_metricas.txt
 
 # Persistencia: volumen nombrado + reinicio + down/up sin -v (ver verificar_persistencia.sh)

@@ -6,7 +6,7 @@ Cubre los apartados de §8 del enunciado que no están en los otros documentos: 
 
 ## 1. Datos cargados (RF11)
 
-Generados por [`scripts/carga_muestra.lua`](../scripts/carga_muestra.lua) (función `carga_muestra`), invocada desde [`carga_muestra.redis`](../scripts/carga_muestra.redis). **Determinista**: sin `math.random` ni reloj para decidir valores; todo sale de fórmulas sobre el índice. Repetir la carga deja las mismas claves (sólo cambian timestamps y TTL restantes, que dependen del reloj del servidor).
+Generados por [`scripts/carga_muestra.sh`](../scripts/carga_muestra.sh): un `awk` arma los comandos (`HSET`, `EXPIRE`, `SADD`, `ZADD`, `ZINCRBY`) y los envía a `redis-cli`. Al final ejecuta [`carga_muestra.redis`](../scripts/carga_muestra.redis), que verifica lo cargado. **Determinista**: sin azar; todo sale de fórmulas sobre el índice, y los timestamps parten de un instante fijo de demostración (2030-06-29 16:00 UTC). Repetir la carga deja las mismas claves y los mismos valores. Solo cambian los TTL restantes, que Redis cuenta desde el momento de la carga.
 
 | Dato | Cantidad | Distribución |
 |---|---|---|
@@ -33,35 +33,46 @@ Los documentos de origen de la caché (la ficha de partido, que vendría de IRIS
 
 | Operación | Riesgo si se hace con comandos sueltos | Protección |
 |---|---|---|
-| **Voto MVP único** (`voto_emitir`) | *Check-then-act*: dos requests del mismo usuario ven "no votó" y ambos suman. O caída entre `SADD` y `ZINCRBY`: votante registrado sin voto contado | Función Redis: `SADD` + `ZINCRBY` como unidad |
-| **Renovar sesión** (`ses_tocar`) | La clave vence entre el chequeo y el `HSET` → hash parcial **sin TTL** (zombie) | Función Redis |
-| **Repoblar caché tras invalidar** (`cache_poner_si_version`) | Un lector lento escribe una copia obsoleta después de la invalidación | Versión + función Redis |
-| **Contar visitas** (`tendencia_registrar`) | Ninguno en el `ZINCRBY` (un comando nativo ya es atómico); el riesgo es `ZINCRBY` + `EXPIRE` separados: bucket sin TTL si cae el proceso | Función: los dos juntos |
+| **Voto MVP único** | *Check-then-act*: con `SISMEMBER` y después `SADD`, dos requests del mismo usuario ven "no votó" y ambos suman | `SADD` hace el chequeo y el registro en **un solo comando**: devuelve 1 solo al primero. La app suma con `ZINCRBY` solo si recibió 1 |
+| **Crear sesión** | Caída entre el `HSET` y el `EXPIRE`: sesión sin TTL (eterna) o fuera del índice del usuario | `MULTI/EXEC` con `HSET` + `EXPIRE` + `SADD` + `EXPIRE` |
+| **Renovar sesión** | Caída a mitad: actividad registrada sin renovar el TTL, o contador sin la actividad | `MULTI/EXEC` con `HSET` + `HINCRBY` + `EXPIRE`. La validación previa la hace la app con `HMGET` |
+| **Cerrar sesión** | Sesión borrada que sigue en el índice, o al revés | `MULTI/EXEC` con `SREM` + `DEL` |
+| **Contar visitas de tendencia** | Ninguno en el `ZINCRBY` (un comando nativo ya es atómico). El riesgo es `ZINCRBY` y `EXPIRE` separados: bucket sin TTL si cae el proceso | `MULTI/EXEC` con `ZINCRBY` + `EXPIRE … NX` |
+| **Contador de solicitudes de la sesión** | Leer, sumar en la app y escribir pierde incrementos | `HINCRBY`: el incremento ocurre en el servidor |
 
-### 2.2 Por qué es atómico
+### 2.2 Por qué es atómico, y qué no garantiza
 
-Redis ejecuta los comandos en **un único hilo**, uno por vez; una **función** (`FCALL`) o un `EVAL` se ejecuta completa antes de que se atienda otro cliente: nadie ve un estado intermedio. Se eligió función y no `MULTI/EXEC` porque `MULTI/EXEC` no permite **decidir** con lo leído dentro de la transacción (no hay `if`), y `WATCH` obligaría a reintentos del lado cliente. Las funciones se guardan en el AOF/RDB: sobreviven al reinicio ([`09_persistencia.txt`](./evidencia/09_persistencia.txt)). Las funciones no usan el reloj del cliente: leen `TIME` del servidor.
+Redis ejecuta los comandos en **un único hilo**, uno por vez. Hay dos niveles de atomicidad:
 
-Consecuencia a tener en cuenta: **una función lenta bloquea a todos**. Las de `f30` son O(1) o O(sesiones del usuario); `ses_cerrar_todas` es O(n) en las sesiones de **un** usuario (unidades, no millones).
+- **Un comando** (`SADD`, `ZINCRBY`, `HINCRBY`, `INCR`, `DEL`) se ejecuta entero. Por eso `SADD` alcanza como guarda del voto: no hay forma de que dos clientes reciban 1 para el mismo usuario.
+- **`MULTI/EXEC`** encola comandos y los ejecuta seguidos, sin comandos de otro cliente en el medio. Las respuestas llegan juntas al `EXEC`. No hay *rollback* ni condiciones adentro: lo que hay que decidir (¿existe la sesión? ¿está bloqueada? ¿cuánto TTL le queda?) se decide **antes**, con una lectura.
+
+Lo que queda fuera de esa garantía está documentado, no escondido:
+
+| Ventana | Qué puede pasar | Por qué se acepta |
+|---|---|---|
+| Entre la validación (`HMGET`) y la renovación (`MULTI`) | La sesión vence en el medio y el `HSET` crea un hash parcial | Tiene TTL (el `EXPIRE` va en el mismo `MULTI`) y no tiene `usuario_id`, así que la regla de validez lo trata como inexistente. Demostrado en `03_` §3.4 bis |
+| Entre `SADD` (devolvió 1) y `ZINCRBY` del voto | Si el proceso de la app cae justo ahí, el votante queda registrado y su voto no se cuenta | Nunca hay voto **doble**. La pérdida se detecta con el invariante `SCARD votantes == suma de puntajes`, que `concurrencia.redis` §5.4 verifica |
+| Repoblado de la caché después de una invalidación (lector lento) | Copia obsoleta hasta que vence el TTL | Acotado a 60 s ([`ciclo_de_vida_e_invalidacion.md`](./ciclo_de_vida_e_invalidacion.md) §2.2) |
 
 ### 2.3 Evidencia
 
-**(a) El riesgo existe** — [`05_concurrencia.txt`](./evidencia/05_concurrencia.txt), [`concurrencia_paralela.sh`](../scripts/concurrencia_paralela.sh): 20 procesos `redis-cli` simultáneos votando **con el mismo usuario**.
+**(a) El riesgo existe y la guarda lo evita.** Ver [`05_concurrencia.txt`](./evidencia/05_concurrencia.txt) y [`concurrencia_paralela.sh`](../scripts/concurrencia_paralela.sh): 20 procesos `redis-cli` simultáneos votan **con el mismo usuario**.
 
 | Variante | Puntaje de `ARG-10` | Correcto |
 |---|---|---|
 | A) `SISMEMBER` → pausa 0,2 s → `SADD` → `ZINCRBY` (no atómica) | **20** | 1 |
-| B) `FCALL voto_emitir` | **1** | 1 |
+| B) `SADD` (guarda) → pausa 0,2 s → `ZINCRBY` solo si `SADD` devolvió 1 | **1** | 1 |
 
-La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se vea siempre; sin ella la carrera existe igual pero es más rara. Este experimento demuestra que la carrera es posible, **no** su probabilidad en producción.
+La pausa de 0,2 s en (A) solo **agranda la ventana** de la carrera para que se vea siempre; sin ella la carrera existe igual, pero es más rara. (B) tiene la misma pausa y da 1: la decisión ya la tomó `SADD`. El experimento demuestra que la carrera es posible, **no** su probabilidad en producción.
 
-**(b) Corrección bajo carga** — [`06_benchmark.txt`](./evidencia/06_benchmark.txt) §B.3, 50 clientes, 100.000 requests:
+**(b) Corrección bajo carga.** Ver [`06_benchmark.txt`](./evidencia/06_benchmark.txt) §B.3: 50 clientes, 100.000 requests.
 
 | Prueba | Esperado | Obtenido |
 |---|---|---|
-| 100.000 `tendencia_registrar` concurrentes sobre la misma clave | puntaje exacto 100.000 | **100.000** |
-| 100.000 votos del mismo usuario | puntaje 1 | **1** |
-| 100.000 votos con usuarios al azar (rango 1.000) | votantes distintos == puntaje | **1.000 == 1.000** |
+| 100.000 `ZINCRBY` concurrentes sobre la misma clave | puntaje exacto 100.000 | **100.000** |
+| 100.000 `HINCRBY` concurrentes sobre el contador de una sesión | +100.000 exacto | **+100.000** |
+| 100.000 `SADD` con usuarios al azar (rango 1.000) | usuarios distintos, sin duplicados | **1.000** |
 
 ---
 
@@ -69,12 +80,10 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 
 | Script | Sección del enunciado | Propósito | Salida |
 |---|---|---|---|
-| [`funciones_f30.lua`](../scripts/funciones_f30.lua) | — | Librería `f30`: 8 funciones atómicas | — |
-| [`carga_muestra.lua`](../scripts/carga_muestra.lua) | — | Librería `f30carga`: generador determinista | — |
-| [`inicializacion.redis`](../scripts/inicializacion.redis) | inicio | PING, versión, nodo único, política de memoria, funciones | `01_` |
-| [`carga_muestra.redis`](../scripts/carga_muestra.redis) | carga | Genera y verifica el dataset | `02_` |
-| [`sesiones.redis`](../scripts/sesiones.redis) | sesiones | Crear, leer, renovar, bloquear, vencer, tope absoluto, cerrar | `03_` |
-| [`cache.redis`](../scripts/cache.redis) | caché | miss → hit → invalidación → miss, carrera evitada, TTL, perfil | `04_` |
+| [`inicializacion.redis`](../scripts/inicializacion.redis) | inicio | PING, versión, nodo único, política de memoria y persistencia | `01_` |
+| [`carga_muestra.sh`](../scripts/carga_muestra.sh) + [`carga_muestra.redis`](../scripts/carga_muestra.redis) | carga | Genera el dataset y lo verifica | `02_` |
+| [`sesiones.redis`](../scripts/sesiones.redis) | sesiones | Crear, leer, renovar (con `MULTI/EXEC`), bloquear, vencer, tope absoluto, cerrar | `03_` |
+| [`cache.redis`](../scripts/cache.redis) | caché | miss → hit → invalidación → miss, lector lento, TTL, perfil | `04_` |
 | [`concurrencia.redis`](../scripts/concurrencia.redis) + [`concurrencia_paralela.sh`](../scripts/concurrencia_paralela.sh) | operaciones concurrentes | Voto, ranking, tendencia; prueba con clientes paralelos | `05_` |
 | [`benchmark.sh`](../scripts/benchmark.sh) | métricas | Rendimiento y corrección con `redis-benchmark`; método de hit ratio | `06_` |
 | [`memoria_prueba.sh`](../scripts/memoria_prueba.sh) | métricas | TTL vs evicción | `07_` |
@@ -92,9 +101,9 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 
 | | |
 |---|---|
-| Fecha de la corrida | 2026-09-25 (UTC 23:58) |
+| Fecha de la corrida | 2026-10-10 (UTC 00:09) |
 | Redis | **8.10.2**, imagen `redis:latest` |
-| Host | Apple M4, 10 CPUs, 24 GB RAM; Docker Desktop con 10 CPUs y ~7,75 GB visibles para contenedores |
+| Host | Notebook con Windows 11, 12 CPUs; Docker Desktop (WSL2) con 12 CPUs y ~7,7 GB visibles para contenedores |
 | Herramienta | `redis-benchmark` dentro del contenedor, **50 clientes, 100.000 requests por prueba, sin pipeline** |
 | Configuración | `volatile-lru`, 256 MB, AOF `everysec` |
 
@@ -102,20 +111,21 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 
 | Operación | Req/s | p50 (ms) | p99 (ms) |
 |---|---|---|---|
-| `SET` (línea base, una clave) | 323.625 | 0,119 | 0,263 |
-| `GET` (línea base, una clave) | 317.460 | 0,087 | 0,111 |
-| `HGETALL` de una sesión (9 campos) | 181.488 | 0,111 | 0,615 |
-| `FCALL ses_tocar` (validar + renovar, **una sola clave** con 50 clientes) | 138.889 | 0,319 | 0,879 |
-| `FCALL tendencia_registrar` (una sola clave) | 121.507 | 0,303 | 0,919 |
-| `FCALL voto_emitir` (usuarios al azar) | 328.947 | 0,087 | 0,255 |
+| `SET` (línea base, una clave) | 107.643 | 0,407 | 0,879 |
+| `GET` (línea base, una clave) | 185.185 | 0,135 | 0,511 |
+| `HGETALL` de una sesión (10 campos) | 139.276 | 0,183 | 0,647 |
+| `HINCRBY` del contador de una sesión (parte de la renovación) | 97.752 | 0,415 | 0,943 |
+| `EXPIRE` de una sesión (parte de la renovación) | 109.529 | 0,399 | 0,807 |
+| `ZINCRBY` de tendencia (**una sola clave** con 50 clientes) | 102.987 | 0,431 | 0,951 |
+| `SADD` de la guarda del voto (usuarios al azar) | 167.504 | 0,143 | 0,791 |
 
-**Interpretación.** Renovar una sesión con la función es ~2× más lento que un `HGETALL` (varios comandos por dentro) pero sigue en el orden de 10⁵ req/s en este equipo. Estas cifras **no** dicen cuánto soportaría la plataforma real: sirven para comparar operaciones entre sí *en este equipo y esta corrida*.
+**Interpretación.** Todas las operaciones del módulo quedan en el orden de 10⁵ req/s en este equipo. `redis-benchmark` mide un comando por vez: la renovación de una sesión son tres comandos en un `MULTI/EXEC` (`HSET` + `HINCRBY` + `EXPIRE`), así que se mide por partes y no como transacción. Estas cifras **no** dicen cuánto soportaría la plataforma real: sirven para comparar operaciones entre sí *en este equipo y esta corrida*.
 
-**Variabilidad.** Es **una** corrida por prueba, sin intervalo de confianza. En una ejecución previa (no archivada) `tendencia_registrar` midió casi el doble que acá (~239.000 vs ~122.000 req/s), lo que da una idea del ruido: no se deben leer diferencias de ±30 % entre operaciones como reales.
+**Variabilidad.** Es **una** corrida por prueba, sin intervalo de confianza. La corrida anterior del módulo (25/09/2026, en otro equipo: Apple M4 con macOS) midió `SET` a 323.625 req/s; esta, a 107.643. La diferencia es de hardware y de virtualización, no del módulo: no se deben comparar cifras entre equipos ni leer como reales diferencias de ±30 % entre operaciones.
 
 ### 4.3 Hit ratio: qué se midió y qué no
 
-[`06_benchmark.txt`](./evidencia/06_benchmark.txt) §B.4 valida el **método** (`CONFIG RESETSTAT` → carga → `keyspace_hits/misses`). Se precargaron 56 de 112 claves y se pidieron 100.000 al azar: hit ratio observado **50,2 %**, coincidente con el ~50 % esperado por construcción. **No es un hit ratio de producción ni una promesa**: la relación real depende del tráfico, que no se midió (restricción de rendimiento del enunciado).
+[`06_benchmark.txt`](./evidencia/06_benchmark.txt) §B.4 valida el **método** (`CONFIG RESETSTAT` → carga → `keyspace_hits/misses`). Se precargaron 56 de 112 claves y se pidieron 100.000 al azar: hit ratio observado **50,0 %**, coincidente con el ~50 % esperado por construcción. **No es un hit ratio de producción ni una promesa**: la relación real depende del tráfico, que no se midió (restricción de rendimiento del enunciado).
 
 ### 4.4 TTL observados
 
@@ -124,7 +134,8 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 | Sesión nueva | 1800 | `03_` §3.2 |
 | Sesión renovada | 1800 | `03_` §3.3 |
 | Sesión con TTL de demo 3 s, tras esperar 4 s | `EXISTS 0`, `TTL -2` | `03_` §3.6 |
-| Sesión con tope absoluto 5 s, pidiendo renovar 1800 | TTL 5 (acotado) | `03_` §3.7 |
+| Sesión con tope absoluto 5 s, renovada 1 s después | TTL 4 = `min(1800, 4)` (acotado) | `03_` §3.7 |
+| Hash parcial creado por la carrera validar/renovar | 1800 (no queda eterno) | `03_` §3.4 bis |
 | Copia de partido | 60 | `04_` §4.2 |
 | Copia con TTL de demo 2 s, tras esperar 3 s | ausente | `04_` §4.6 |
 | Votación abierta | `-1` (sin TTL, a propósito) | `08_` §7.7 |
@@ -145,7 +156,7 @@ La pausa de 0,2 s en (A) sólo **agranda la ventana** de la carrera para que se 
 
 | Requisito / hito | Cómo lo respeta este módulo |
 |---|---|
-| **Hito 1 — escenario** (2–3 M usuarios simultáneos, >100.000 req/s, respuesta ≤ 100 ms) | La operación más frecuente (validar sesión) es una lectura+renovación en memoria de ~0,3 ms p50 en el laboratorio. No es una demostración de capacidad de producción (§4.5) |
+| **Hito 1 — escenario** (2–3 M usuarios simultáneos, >100.000 req/s, respuesta ≤ 100 ms) | La operación más frecuente (validar sesión) es una lectura (`HMGET`) más una renovación (`MULTI/EXEC` de tres comandos) en memoria; cada comando queda por debajo de 0,5 ms p50 en el laboratorio. No es una demostración de capacidad de producción (§4.5) |
 | **Hito 2 — modelo por necesidad** | Sesiones (N5) → clave/valor, como se decidió |
 | **Hito 3 — N5 AP, eventual, TTL, local por región** | Sesión local sin réplica cross-región; vigencia por TTL; pérdida = relogin. Se **mantiene** la exclusión de réplica entre regiones ([`memoria_y_escalabilidad.md`](./memoria_y_escalabilidad.md) §5). El caso abierto del Hito 3 ("¿qué pasa con la sesión si el usuario cambia de región?") **sigue sin resolverse**: no se aborda en este hito |
 | **Hito 2 — N2 Partidos y N4 Usuarios** | La matriz asigna **Partidos (N2) a Objetos (IRIS, 4,25)**, 0,10 sobre Documental (4,15), y **Usuarios (N4) a Documental (MongoDB, 4,10)**, 0,10 sobre Columnar (4,00). Ambas quedaron marcadas como decisiones frágiles (margen menor a 0,20). Son las fuentes de verdad de las copias de este módulo. **Ninguna está implementada todavía** |

@@ -1,34 +1,39 @@
-# Ejecutado: 2026-09-26T00:41:49Z
+# Ejecutado: 2026-10-10T00:09:23Z
 == 4.0 Preparación ==
 0
 == 4.1 CACHE MISS: la app pregunta por PAR-D16-01 y no hay copia ==
 
--- la app anota la versión ANTES de leer la fuente (0 si nunca se invalidó) --
-
--- (aquí la app leería la fuente de verdad de Partidos, IRIS según el Hito 2, aún no implementada) y repuebla con TTL 60 s --
-1
+-- (aquí la app leería la fuente de verdad de Partidos, IRIS según el Hito 2) y repuebla con TTL 60 s --
+OK
 == 4.2 CACHE HIT: la segunda lectura se resuelve en Redis, sin tocar la fuente ==
-{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"0-0","estado":"EN_VIVO","version":0}
+{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"0-0","estado":"EN_VIVO"}
 60
 == 4.3 CAMBIA LA FUENTE DE VERDAD: gol de ARG (la fuente pasa a 1-0). NO se espera al TTL ==
--- la app, tras confirmar el update en la fuente, INVALIDA: borra la copia y sube la versión, juntos --
+-- la app, tras confirmar el update en la fuente, INVALIDA la copia --
 1
 
-== 4.4 SIGUIENTE LECTURA = MISS controlado: lee la fuente (1-0) y repuebla con la versión nueva ==
+== 4.4 SIGUIENTE LECTURA = MISS controlado: lee la fuente (1-0) y repuebla ==
+OK
+{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"1-0","estado":"EN_VIVO"}
+== 4.5 LÍMITE CONOCIDO: un lector LENTO leyó la fuente ANTES del gol (0-0) y escribe DESPUÉS de la invalidación ==
+-- secuencia: (lector lento lee 0-0) -> gol -> DEL de la invalidación -> el lector lento repuebla tarde --
 1
-1
-{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"1-0","estado":"EN_VIVO","version":1}
-== 4.5 CARRERA EVITADA: un lector LENTO leyó la fuente ANTES del gol (versión 0) y intenta escribir tarde ==
--- devuelve 0: la copia vieja (0-0) se descarta, la caché conserva 1-0 --
-0
-{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"1-0","estado":"EN_VIVO","version":1}
+OK
+-- la caché muestra 0-0 (copia obsoleta), pero como máximo hasta que venza el TTL: --
+{"partido_id":"PAR-D16-01","local":"ARG","visitante":"FRA","marcador":"0-0","estado":"EN_VIVO"}
+60
+-- por eso el TTL de 60 s ES la permanencia máxima aceptada de una copia vieja (ciclo_de_vida_e_invalidacion.md §2.2) --
 == 4.6 EXPIRACIÓN POR TTL (tope de permanencia, no estrategia de coherencia) ==
 -- copia con TTL de demostración de 2 s --
-1
+OK
 2
 
 
 == 4.7 SEGUNDO DATO EN CACHÉ: perfil de usuario (HASH, TTL 900 s, fuente: MongoDB N4) ==
+-- HSET + EXPIRE en una transacción: nunca queda un perfil cacheado sin TTL --
+OK
+QUEUED
+QUEUED
 3
 1
 nombre
@@ -37,8 +42,9 @@ idioma
 es
 region
 AM
+900
 -- el usuario cambia su idioma en Mongo: se invalida la copia --
 1
 0
 == 4.8 Limpieza de la demo ==
-2
+1

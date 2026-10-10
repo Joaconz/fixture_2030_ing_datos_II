@@ -1,4 +1,4 @@
-# Ejecutado: 2026-09-25T23:58:13Z
+# Ejecutado: 2026-10-10T00:09:08Z
 == 1.1 Disponibilidad ==
 PONG
 == 1.2 Versión observada (latest exige registrarla, RNF10) ==
@@ -6,39 +6,39 @@ PONG
 redis_version:8.10.2
 redis_git_sha1:00000000
 redis_git_dirty:1
-redis_build_id:de5ed0cfd99e0b21
+redis_build_id:7e3bb15252fca6f9
 redis_mode:standalone
-os:Linux 7.0.12-linuxkit aarch64
+os:Linux 5.15.167.4-microsoft-standard-WSL2 x86_64
 arch_bits:64
-monotonic_clock:ARM CNTVCT @ 24 ticks/us
+monotonic_clock:POSIX clock_gettime
 multiplexing_api:epoll
 atomicvar_api:c11-builtin
 gcc_version:14.2.0
 process_id:1
 process_supervised:no
-run_id:672eb6b7eb27ad60f88df2aa3762a70477c9142c
+run_id:5b4de218f07b46cbcefc623021f1be7fe0918ca5
 tcp_port:6379
-server_time_usec:1790380693702395
-uptime_in_seconds:24
+server_time_usec:1791590949049449
+uptime_in_seconds:9
 uptime_in_days:0
 hz:10
 configured_hz:10
-lru_clock:11995797
+lru_clock:13206052
 executable:/data/redis-server
 config_file:/usr/local/etc/redis/redis.conf
 io_threads_active:0
 listener0:name=tcp,bind=0.0.0.0,port=6379
 == 1.3 Nodo único: rol master y cero réplicas conectadas ==
 master
-935436
+0
 
 # Replication
 role:master
 connected_slaves:0
 master_failover_state:no-failover
-master_replid:a8bd8d7729e1380130e01cf459e0eeb503cdc899
+master_replid:f75f7c98f8541b02527c8727413b7c3d61aac179
 master_replid2:0000000000000000000000000000000000000000
-master_repl_offset:935436
+master_repl_offset:0
 second_repl_offset:-1
 repl_backlog_active:0
 repl_backlog_size:1048576
@@ -57,70 +57,5 @@ appendfsync
 everysec
 dir
 /data
-== 1.5 Librerías de funciones cargadas (f30 = módulo, f30carga = utilería de la muestra) ==
-library_name
-f30carga
-engine
-LUA
-functions
-name
-carga_muestra
-description
-
-flags
-
-library_name
-f30
-engine
-LUA
-functions
-name
-cache_poner_si_version
-description
-
-flags
-
-name
-ses_tocar
-description
-
-flags
-
-name
-tendencia_registrar
-description
-
-flags
-
-name
-voto_emitir
-description
-
-flags
-
-name
-ses_cerrar_todas
-description
-
-flags
-
-name
-cache_invalidar
-description
-
-flags
-
-name
-ses_crear
-description
-
-flags
-
-name
-ses_cerrar
-description
-
-flags
-
-== 1.6 Claves actuales (DBSIZE es O(1): no recorre el keyspace) ==
-4192
+== 1.5 Claves actuales (DBSIZE es O(1): no recorre el keyspace) ==
+0

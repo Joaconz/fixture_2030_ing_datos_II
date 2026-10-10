@@ -1,19 +1,19 @@
-# Ejecutado: 2026-09-25T23:58:33Z
+# Ejecutado: 2026-10-10T00:10:04Z
 == M.0 Estado inicial ==
-maxmemory original: 268435456 bytes | used_memory: 2640424 bytes
+maxmemory original: 268435456 bytes | used_memory: 2558544 bytes
 policy: volatile-lru
-DBSIZE: 4253 | votantes: 500 | candidatos: 5
-expired_keys: 0 | evicted_keys: 0
-== M.1 CONFIG SET maxmemory 11029032 (uso + 8 MB) ==
+DBSIZE: 4155 | votantes: 500 | candidatos: 5
+expired_keys: 11 | evicted_keys: 0
+== M.1 CONFIG SET maxmemory 10947152 (uso + 8 MB) ==
 OK
 == M.2 Fase 1: 20.000 claves de relleno de 1 KB con TTL 3600 s ==
-used_memory: 10141552 (tope 11029032)
-evicted_keys: 15851   <- > 0: hubo evicción por presión, no por TTL
-expired_keys: 0   <- TTL: sin cambios (ninguna clave venció por tiempo)
-DBSIZE: 7258
+used_memory: 10059376 (tope 10947152)
+evicted_keys: 15652   <- > 0: hubo evicción por presión, no por TTL
+expired_keys: 11   <- TTL: sin cambios (ninguna clave venció por tiempo)
+DBSIZE: 7364
 votación abierta intacta -> votantes: 500 | candidatos: 5 | TTL: -1
 muestra de sesiones (1 = sobrevivió, 0 = desalojada):
-demo-ses-0000001-1: 0
+demo-ses-0000001-1: 1
 demo-ses-0000002-1: 0
 demo-ses-0000003-1: 0
 demo-ses-0000004-1: 0
@@ -27,10 +27,10 @@ demo-ses-0000011-1: 0
 OK
 -- escritura de un dato SIN TTL: el servidor desaloja lo volátil y, si aún no alcanza, la rechaza con OOM --
 escrituras hasta el primer rechazo: 2 | respuesta: OOM command not allowed when used memory > 'maxmemory'.
-evicted_keys: 21316
-DBSIZE: 1677
+evicted_keys: 20990
+DBSIZE: 1915
 votación abierta intacta -> votantes: 500 | candidatos: 5
 las lecturas siguen funcionando: FRA-10 101 
 == M.4 Restaurar maxmemory y limpiar ==
 OK
-maxmemory: 268435456 | DBSIZE: 8
+maxmemory: 268435456 | DBSIZE: 3

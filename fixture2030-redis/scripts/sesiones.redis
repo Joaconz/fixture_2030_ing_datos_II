@@ -1,21 +1,35 @@
 # ============================================================
 #  Fixture 2030 — Hito 7 · SESIONES (RF3, RF4, RF5)
 #  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/sesiones.redis | redis-cli"
-#  Requiere: funciones_f30.lua cargado. Usa claves `demo-*` propias (no toca la muestra).
+#  Usa claves `demo-*` propias (no toca la muestra).
 #
 #  POLÍTICA (detalle y justificación: docs/ciclo_de_vida_e_invalidacion.md §1)
 #   - Inactividad: 1800 s (30 min), renovada por cada request autenticado.
 #   - Tope absoluto: 43200 s (12 h): una sesión no se renueva para siempre.
 #   - Vencida = la clave ya no existe: la app responde "sesión inexistente" -> login.
 #   - Sin barridos: el vencimiento lo hace Redis con EXPIRE.
+#
+#  ATOMICIDAD: cada escritura de varios comandos va en MULTI/EXEC. Redis ejecuta
+#  los comandos encolados uno detrás de otro, sin intercalar comandos de otro
+#  cliente. Así nunca queda una sesión sin TTL ni un índice sin actualizar.
+#  La DECISIÓN (¿existe? ¿está ACTIVA? ¿cuánto TTL le queda?) la toma la app con
+#  una lectura previa (HMGET): MULTI/EXEC no permite condiciones adentro.
+#
+#  TIEMPO: los timestamps los pone la app con su reloj. En la demo se usa el instante
+#  fijo 2030-06-29 16:00:00 UTC = 1908979200 (epoch en segundos).
 # ============================================================
 
 ECHO "== 3.0 Preparación: borrar restos de una corrida anterior =="
-DEL f30:ses:demo-A f30:ses:demo-B f30:ses:demo-C f30:ses:demo-D f30:usr:USR-DEMO1:sesiones f30:usr:USR-DEMO2:sesiones
+DEL f30:ses:demo-A f30:ses:demo-B f30:ses:demo-C f30:ses:demo-D f30:ses:demo-E f30:usr:USR-DEMO1:sesiones f30:usr:USR-DEMO2:sesiones
 
 # ---------------- CREAR ----------------
-ECHO "== 3.1 CREAR: login del usuario USR-DEMO1 (30 min inactividad, 12 h tope) =="
-FCALL ses_crear 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA AM web 1800 43200
+ECHO "== 3.1 CREAR: login de USR-DEMO1. Hash + TTL + índice del usuario en una sola transacción =="
+MULTI
+HSET f30:ses:demo-A session_id demo-A usuario_id USR-DEMO1 rol HINCHA region AM dispositivo web estado ACTIVA creada_en 1908979200 ultima_actividad 1908979200 expira_absoluta 1909022400 solicitudes 0
+EXPIRE f30:ses:demo-A 1800
+SADD f30:usr:USR-DEMO1:sesiones demo-A
+EXPIRE f30:usr:USR-DEMO1:sesiones 43200
+EXEC
 
 # ---------------- RECUPERAR ----------------
 ECHO "== 3.2 RECUPERAR: todos los atributos (RF5) y TTL restante =="
@@ -23,53 +37,109 @@ HGETALL f30:ses:demo-A
 TTL f30:ses:demo-A
 
 # ---------------- ACTUALIZAR / RENOVAR ----------------
-ECHO "== 3.3 ACTUALIZAR: un request autenticado renueva (devuelve usuario, región, rol, n.º solicitudes, TTL) =="
-FCALL ses_tocar 1 f30:ses:demo-A 1800
+ECHO "== 3.3 ACTUALIZAR: request autenticado 60 s después =="
+ECHO "-- (a) la app valida: existe (usuario_id no vacío) y estado ACTIVA --"
+HMGET f30:ses:demo-A usuario_id estado expira_absoluta
+ECHO "-- (b) renueva: última actividad, contador de solicitudes y TTL, juntos --"
+ECHO "--     TTL = min(1800, expira_absoluta - ahora) = min(1800, 43140) = 1800 --"
+MULTI
+HSET f30:ses:demo-A ultima_actividad 1908979260
+HINCRBY f30:ses:demo-A solicitudes 1
+EXPIRE f30:ses:demo-A 1800
+EXEC
 HMGET f30:ses:demo-A solicitudes ultima_actividad
 
 # ---------------- SESIÓN INEXISTENTE ----------------
-ECHO "== 3.4 SESIÓN INEXISTENTE: ses_tocar devuelve nil -> la app responde 401 y pide login (no se crea nada) =="
-FCALL ses_tocar 1 f30:ses:no-existe 1800
+ECHO "== 3.4 SESIÓN INEXISTENTE: HMGET devuelve todo vacío -> la app responde 401 y pide login (no renueva ni crea nada) =="
+HMGET f30:ses:no-existe usuario_id estado expira_absoluta
 EXISTS f30:ses:no-existe
+
+ECHO "== 3.4 bis CARRERA ENTRE VALIDAR Y RENOVAR: la sesión vence justo después del HMGET =="
+ECHO "-- el MULTI de renovación llega sobre una clave que ya no existe: HSET crea un hash PARCIAL --"
+MULTI
+HSET f30:ses:demo-E ultima_actividad 1908979260
+HINCRBY f30:ses:demo-E solicitudes 1
+EXPIRE f30:ses:demo-E 1800
+EXEC
+ECHO "-- igual tiene TTL (el EXPIRE fue en la misma transacción): no queda una clave eterna --"
+TTL f30:ses:demo-E
+ECHO "-- y no tiene usuario_id ni estado: la regla de validez la trata como inexistente (401) --"
+HMGET f30:ses:demo-E usuario_id estado expira_absoluta
+DEL f30:ses:demo-E
 
 # ---------------- BLOQUEO ADMINISTRATIVO ----------------
 ECHO "== 3.5 BLOQUEO: un moderador marca la sesión BLOQUEADA; el siguiente request es rechazado y NO renueva =="
-FCALL ses_crear 2 f30:ses:demo-B f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA EU android 1800 43200
+MULTI
+HSET f30:ses:demo-B session_id demo-B usuario_id USR-DEMO1 rol HINCHA region EU dispositivo android estado ACTIVA creada_en 1908979200 ultima_actividad 1908979200 expira_absoluta 1909022400 solicitudes 0
+EXPIRE f30:ses:demo-B 1800
+SADD f30:usr:USR-DEMO1:sesiones demo-B
+EXPIRE f30:usr:USR-DEMO1:sesiones 43200
+EXEC
 HSET f30:ses:demo-B estado BLOQUEADA
-FCALL ses_tocar 1 f30:ses:demo-B 1800
+ECHO "-- la app lee estado = BLOQUEADA: responde 403 y no ejecuta la renovación --"
+HMGET f30:ses:demo-B usuario_id estado expira_absoluta
+ECHO "-- HSET no cambia el TTL: la sesión bloqueada vence sola --"
+TTL f30:ses:demo-B
 
 # ---------------- VENCIMIENTO POR INACTIVIDAD ----------------
 ECHO "== 3.6 EXPIRACIÓN POR INACTIVIDAD (TTL de demostración: 3 s en vez de 1800 s) =="
-FCALL ses_crear 2 f30:ses:demo-C f30:usr:USR-DEMO2:sesiones USR-DEMO2 HINCHA AF ios 3 43200
+MULTI
+HSET f30:ses:demo-C session_id demo-C usuario_id USR-DEMO2 rol HINCHA region AF dispositivo ios estado ACTIVA creada_en 1908979200 ultima_actividad 1908979200 expira_absoluta 1909022400 solicitudes 0
+EXPIRE f30:ses:demo-C 3
+SADD f30:usr:USR-DEMO2:sesiones demo-C
+EXPIRE f30:usr:USR-DEMO2:sesiones 43200
+EXEC
 TTL f30:ses:demo-C
 ECHO "-- se espera 4 s sin actividad (BLPOP sobre clave inexistente es una espera nativa, no un barrido) --"
 BLPOP f30:demo:espera 4
-ECHO "-- comprobación: EXISTS 0, TTL -2 (clave ausente) y ses_tocar devuelve nil --"
+ECHO "-- comprobación: EXISTS 0, TTL -2 (clave ausente) y HMGET vacío --"
 EXISTS f30:ses:demo-C
 TTL f30:ses:demo-C
-FCALL ses_tocar 1 f30:ses:demo-C 1800
+HMGET f30:ses:demo-C usuario_id estado expira_absoluta
 
 # ---------------- TOPE ABSOLUTO ----------------
 ECHO "== 3.7 TOPE ABSOLUTO: el TTL nunca supera el tiempo que queda hasta expira_absoluta (demo: tope 5 s) =="
-FCALL ses_crear 2 f30:ses:demo-D f30:usr:USR-DEMO2:sesiones USR-DEMO2 HINCHA AF web 1800 5
-TTL f30:ses:demo-D
-FCALL ses_tocar 1 f30:ses:demo-D 1800
-ECHO "-- pese a pedir 1800 s, el TTL queda acotado por el tope --"
+MULTI
+HSET f30:ses:demo-D session_id demo-D usuario_id USR-DEMO2 rol HINCHA region AF dispositivo web estado ACTIVA creada_en 1908979200 ultima_actividad 1908979200 expira_absoluta 1908979205 solicitudes 0
+EXPIRE f30:ses:demo-D 5
+SADD f30:usr:USR-DEMO2:sesiones demo-D
+EXPIRE f30:usr:USR-DEMO2:sesiones 43200
+EXEC
+ECHO "-- request 1 s después: la app calcula TTL = min(1800, expira_absoluta - ahora) = min(1800, 4) = 4 --"
+HMGET f30:ses:demo-D usuario_id estado expira_absoluta
+MULTI
+HSET f30:ses:demo-D ultima_actividad 1908979201
+HINCRBY f30:ses:demo-D solicitudes 1
+EXPIRE f30:ses:demo-D 4
+EXEC
+ECHO "-- aunque haya actividad, el TTL queda acotado por el tope --"
 TTL f30:ses:demo-D
 BLPOP f30:demo:espera 6
 EXISTS f30:ses:demo-D
 
 # ---------------- FINALIZAR ----------------
-ECHO "== 3.8 FINALIZAR: logout explícito (borra sesión y la saca del índice del usuario) =="
+ECHO "== 3.8 FINALIZAR: logout explícito (borra la sesión y la saca del índice del usuario, juntos) =="
 SMEMBERS f30:usr:USR-DEMO1:sesiones
-FCALL ses_cerrar 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones
+MULTI
+SREM f30:usr:USR-DEMO1:sesiones demo-A
+DEL f30:ses:demo-A
+EXEC
 EXISTS f30:ses:demo-A
 SMEMBERS f30:usr:USR-DEMO1:sesiones
 
 ECHO "== 3.9 CERRAR TODAS: cambio de contraseña de USR-DEMO1 invalida todas sus sesiones =="
-FCALL ses_crear 2 f30:ses:demo-A f30:usr:USR-DEMO1:sesiones USR-DEMO1 HINCHA AM web 1800 43200
-SCARD f30:usr:USR-DEMO1:sesiones
-FCALL ses_cerrar_todas 1 f30:usr:USR-DEMO1:sesiones f30:ses:
+MULTI
+HSET f30:ses:demo-A session_id demo-A usuario_id USR-DEMO1 rol HINCHA region AM dispositivo web estado ACTIVA creada_en 1908979200 ultima_actividad 1908979200 expira_absoluta 1909022400 solicitudes 0
+EXPIRE f30:ses:demo-A 1800
+SADD f30:usr:USR-DEMO1:sesiones demo-A
+EXPIRE f30:usr:USR-DEMO1:sesiones 43200
+EXEC
+ECHO "-- la app lee el índice y arma las claves de cada sesión --"
+SMEMBERS f30:usr:USR-DEMO1:sesiones
+MULTI
+DEL f30:ses:demo-A f30:ses:demo-B
+DEL f30:usr:USR-DEMO1:sesiones
+EXEC
 EXISTS f30:ses:demo-A f30:ses:demo-B
 EXISTS f30:usr:USR-DEMO1:sesiones
 

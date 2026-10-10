@@ -1,18 +1,11 @@
 # ============================================================
-#  Fixture 2030 — Hito 7 · CARGA DE MUESTRA (RF11)
-#  Ejecutar:  docker compose exec -T redis sh -c "grep -v '^#' /scripts/carga_muestra.redis | redis-cli"
+#  Fixture 2030 — Hito 7 · VERIFICACIÓN DE LA CARGA DE MUESTRA (RF11)
+#  La generación está en scripts/carga_muestra.sh, que ejecuta este archivo al final:
+#    docker compose exec -T redis sh /scripts/carga_muestra.sh
+#  Suelto (solo verificar):
+#    docker compose exec -T redis sh -c "grep -v '^#' /scripts/carga_muestra.redis | redis-cli"
 #  (redis-cli no admite comentarios: se filtran con grep)
-#  Idempotente: correrlo dos veces deja los mismos conteos.
 # ============================================================
-
-ECHO "== 2.1 Estado previo (DBSIZE es O(1), no recorre claves) =="
-DBSIZE
-
-# --- Carga: 2.000 usuarios (2.200 sesiones), tendencia de 112 partidos, 500 votos MVP.
-#     La librería f30carga se instala con:
-#       docker compose exec -T redis redis-cli -x FUNCTION LOAD REPLACE < scripts/carga_muestra.lua
-ECHO "== 2.2 Generación determinista =="
-FCALL carga_muestra 0 2000
 
 ECHO "== 2.3 Verificación de lo cargado =="
 DBSIZE

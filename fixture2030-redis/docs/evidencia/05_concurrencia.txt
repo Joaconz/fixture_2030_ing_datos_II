@@ -1,20 +1,18 @@
-# Ejecutado: 2026-09-25T23:58:27Z
+# Ejecutado: 2026-10-10T00:09:28Z
 == 5.0 Preparación (votación de demostración aparte de la muestra) ==
 0
-== 5.1 VOTO: USR-A vota a ARG-10 -> {1, puntaje} ==
+== 5.1 VOTO: USR-A vota a ARG-10. SADD devuelve 1 -> la app suma con ZINCRBY ==
 1
 1
-== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout) -> {0,0}, el ranking no cambia ==
+== 5.2 VOTO DUPLICADO: USR-A vuelve a votar (o reintenta por timeout). SADD devuelve 0 -> la app NO suma ==
 0
 0
-0
-0
-== 5.3 Otros votantes ==
+== 5.3 Otros votantes (SADD 1 en cada uno, entonces ZINCRBY) ==
 1
 1
 1
 2
-== 5.4 Invariante: votos contados en el ranking == votantes distintos ==
+== 5.4 Invariante: votos contados en el ranking == votantes distintos (3) ==
 FRA-10
 1
 ARG-10
@@ -42,12 +40,25 @@ PAR-A-4
 -- posición de PAR-D16-01 (0 = primero) y su puntaje --
 0
 250000
-7187
-== 5.7 Registrar visitas en un bucket nuevo: EXPIRE NX fija el TTL sólo en la primera visita ==
+7183
+== 5.7 Registrar visitas en un bucket nuevo: ZINCRBY + EXPIRE NX en una transacción ==
 0
+OK
+QUEUED
+QUEUED
 1
+1
+-- segunda visita: EXPIRE NX devuelve 0 (el TTL ya estaba puesto y no se reinicia) --
+OK
+QUEUED
+QUEUED
 2
+0
+OK
+QUEUED
+QUEUED
 1
+0
 PAR-A-1
 2
 PAR-B-2
@@ -56,5 +67,6 @@ PAR-B-2
 1
 == A) NO atómica: 20 clientes, mismo usuario ==
 puntaje de ARG-10 (correcto = 1): 20
-== B) Atómica (FCALL voto_emitir): 20 clientes, mismo usuario ==
+== B) Atómica (SADD como guarda): 20 clientes, mismo usuario ==
 puntaje de ARG-10 (correcto = 1): 1
+votantes registrados (correcto = 1): 1

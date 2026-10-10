@@ -1,0 +1,5 @@
+# Los scripts corren dentro del contenedor Linux: siempre con finales de línea LF,
+# también si el repositorio se clona en Windows (con CRLF, sh falla en silencio).
+*.sh    text eol=lf
+*.redis text eol=lf
+*.conf  text eol=lf
