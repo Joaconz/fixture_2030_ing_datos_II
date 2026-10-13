@@ -1,0 +1,2081 @@
+openapi: 3.1.0
+info:
+  title: Fixture 2030 — API REST integrada
+  description: 'API REST integrada del **Fixture Mundial 2030** (Ingeniería de Datos II, Hito 10).
+
+
+    Cada ruta corresponde a un caso de uso (ver `docs/casos_de_uso.md`) y a una fuente concreta:
+
+    MongoDB (equipos y jugadores), Neo4j (partidos, eventos y catálogo de tipos), Cassandra
+
+    (comentarios), Redis (sesiones y caché del detalle de partido) e InfluxDB 3 (estadísticas en vivo).
+
+    IRIS no forma parte de la arquitectura vigente desde la reentrega del Hito 3 (RF8 documentado como
+
+    fuente no cubierta).
+
+
+    Todos los errores usan el mismo formato `{code, message, requestId, details?}`. Toda respuesta
+
+    lleva `X-Request-Id`, que también aparece en los logs de la API y de cada adaptador.
+
+    '
+  version: 1.0.0
+servers:
+- url: http://localhost:8000
+  description: API local (notebook)
+paths:
+  /equipos/{codigo}:
+    get:
+      tags:
+      - Equipos · MongoDB
+      summary: Ficha de un equipo (MongoDB, búsqueda por _id con proyección)
+      operationId: getEquipo
+      parameters:
+      - name: codigo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Código FIFA de 3 letras.
+          examples:
+          - ARG
+          title: Codigo
+        description: Código FIFA de 3 letras.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipo'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el equipo solicitado.
+          content:
+            application/json:
+              example:
+                code: TEAM_NOT_FOUND
+                message: No existe el equipo solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /equipos/{codigo}/jugadores:
+    get:
+      tags:
+      - Equipos · MongoDB
+      summary: Plantel paginado de un equipo (MongoDB, índice {equipoId, posicion})
+      operationId: listJugadoresDeEquipo
+      parameters:
+      - name: codigo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Código FIFA de 3 letras.
+          examples:
+          - ARG
+          title: Codigo
+        description: Código FIFA de 3 letras.
+      - name: posicion
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - Arquero
+            - Defensor
+            - Mediocampista
+            - Delantero
+            type: string
+          - type: 'null'
+          title: Posicion
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[A-Za-z0-9_-]{1,200}={0,2}$
+          - type: 'null'
+          description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+          title: Cursor
+        description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaJugadores'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el equipo solicitado.
+          content:
+            application/json:
+              example:
+                code: TEAM_NOT_FOUND
+                message: No existe el equipo solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /equipos/{codigo}/partidos:
+    get:
+      tags:
+      - Partidos · Neo4j
+      summary: Partidos en los que participa un equipo (Neo4j, recorrido PARTICIPA_EN)
+      operationId: listPartidosDeEquipo
+      parameters:
+      - name: codigo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Z]{3}$
+          description: Código FIFA de 3 letras.
+          examples:
+          - ARG
+          title: Codigo
+        description: Código FIFA de 3 letras.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 10
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartidosDeEquipo'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el equipo solicitado.
+          content:
+            application/json:
+              example:
+                code: TEAM_NOT_FOUND
+                message: No existe el equipo solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /partidos/{partido_id}:
+    get:
+      tags:
+      - Partidos · Neo4j
+      summary: 'Detalle de un partido: equipos, sede, estado y marcador (Neo4j + caché Redis)'
+      operationId: getPartido
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartidoDetalle'
+          headers:
+            X-Cache:
+              description: 'HIT (Redis), MISS (Neo4j y se guarda) o BYPASS (Redis no disponible: se sirvió desde
+                Neo4j)'
+              schema:
+                type: string
+                enum:
+                - HIT
+                - MISS
+                - BYPASS
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el partido solicitado.
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: No existe el partido solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /partidos/{partido_id}/eventos:
+    get:
+      tags:
+      - Partidos · Neo4j
+      summary: Timeline de eventos de un partido, en orden de secuencia (Cypher parametrizado)
+      operationId: listEventosDePartido
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      - name: tipo
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - INICIO_PARTIDO
+            - FIN_PARTIDO
+            - PASE
+            - CORNER
+            - ATAJADA
+            - ASISTENCIA
+            - GOL
+            - PENAL
+            - FALTA
+            - TARJETA_AMARILLA
+            - TARJETA_ROJA
+            - SUSTITUCION
+            type: string
+          - type: 'null'
+          title: Tipo
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[A-Za-z0-9_-]{1,200}={0,2}$
+          - type: 'null'
+          description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+          title: Cursor
+        description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaEventos'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el partido solicitado.
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: No existe el partido solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+      - Partidos · Neo4j
+      summary: Registra un evento validado contra las reglas de su tipo (N8); idempotente por Idempotency-Key
+      operationId: registrarEvento
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,64}$
+          description: Clave elegida por el cliente; repetir la request con la misma clave no duplica la escritura
+            (RNF14).
+          title: Idempotency-Key
+        description: Clave elegida por el cliente; repetir la request con la misma clave no duplica la escritura
+          (RNF14).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoNuevo'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '200':
+          description: 'Reintento: el evento ya existía con esa clave'
+          headers:
+            Idempotent-Replayed:
+              description: Presente con valor `true` cuando la respuesta corresponde a un reintento
+              schema:
+                type: string
+                enum:
+                - 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el partido solicitado.
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: No existe el partido solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: El estado del partido impide el evento (FINALIZADO, posterior a FIN_PARTIDO, INICIO/FIN repetido)
+            o la clave ya se usó con otro cuerpo.
+          content:
+            application/json:
+              example:
+                code: MATCH_FINALIZED
+                message: El estado del partido impide el evento (FINALIZADO, posterior a FIN_PARTIDO, INICIO/FIN
+                  repetido) o la clave ya se usó con otro cuerpo.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /partidos/{partido_id}/estado:
+    patch:
+      tags:
+      - Partidos · Neo4j
+      summary: Cierre validado del partido (PROGRAMADO → FINALIZADO) en una transacción de escritura
+      operationId: cerrarPartido
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambioEstado'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartidoDetalle'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe el partido solicitado.
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: No existe el partido solicitado.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
+          content:
+            application/json:
+              example:
+                code: INVALID_TRANSITION
+                message: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /partidos/{partido_id}/comentarios:
+    get:
+      tags:
+      - Comentarios · Cassandra
+      summary: Comentarios de un partido, del más reciente al más antiguo, paginados por partición
+      operationId: listComentarios
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[A-Za-z0-9_-]{1,200}={0,2}$
+          - type: 'null'
+          description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+          title: Cursor
+        description: Cursor opaco devuelto como `nextCursor` por la página anterior.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaComentarios'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+      - Comentarios · Cassandra
+      summary: Publica un comentario (LOGGED BATCH en las dos tablas); idempotente por Idempotency-Key
+      operationId: publicarComentario
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,64}$
+          description: Clave elegida por el cliente; repetir la request con la misma clave no duplica la escritura
+            (RNF14).
+          title: Idempotency-Key
+        description: Clave elegida por el cliente; repetir la request con la misma clave no duplica la escritura
+          (RNF14).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComentarioNuevo'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comentario'
+        '200':
+          description: 'Reintento: el comentario ya existía'
+          headers:
+            Idempotent-Replayed:
+              schema:
+                type: string
+                enum:
+                - 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comentario'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+          content:
+            application/json:
+              example:
+                code: MATCH_NOT_FOUND
+                message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sesiones/{sesion_id}:
+    get:
+      tags:
+      - Sesiones · Redis
+      summary: 'Valida una sesión: HGETALL + TTL, sin renovarla'
+      operationId: getSesion
+      parameters:
+      - name: sesion_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9-]{3,64}$
+          examples:
+          - demo-ses-0000001-1
+          title: Sesion Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sesion'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: La sesión existe pero está BLOQUEADA.
+          content:
+            application/json:
+              example:
+                code: SESSION_BLOCKED
+                message: La sesión existe pero está BLOQUEADA.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe una sesión vigente con ese id (inexistente o expirada).
+          content:
+            application/json:
+              example:
+                code: SESSION_NOT_FOUND
+                message: No existe una sesión vigente con ese id (inexistente o expirada).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - Sesiones · Redis
+      summary: 'Invalida una sesión (MULTI/EXEC: SREM del índice del usuario + DEL)'
+      operationId: cerrarSesion
+      parameters:
+      - name: sesion_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9-]{3,64}$
+          examples:
+          - demo-ses-0000001-1
+          title: Sesion Id
+      responses:
+        '204':
+          description: Successful Response
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No existe una sesión vigente con ese id (inexistente o expirada).
+          content:
+            application/json:
+              example:
+                code: SESSION_NOT_FOUND
+                message: No existe una sesión vigente con ese id (inexistente o expirada).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /partidos/{partido_id}/estadisticas:
+    get:
+      tags:
+      - Estadísticas · InfluxDB
+      summary: Estadísticas por equipo en una ventana temporal (máx. 3 h), crudas o agregadas
+      description: 'Ventana [desde, hasta) obligatoria, con zona horaria, `desde < hasta` y como máximo 3 horas.
+        Una ventana sin puntos responde 200 con `puntos: []`; InfluxDB caído responde 503, nunca una lista vacía.'
+      operationId: getEstadisticasDePartido
+      parameters:
+      - name: partido_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^PAR-[A-Z0-9]{1,8}(-[A-Z0-9]{1,8}){0,2}$
+          description: Identificador del partido (clave natural del Hito 5).
+          examples:
+          - PAR-A-1
+          title: Partido Id
+        description: Identificador del partido (clave natural del Hito 5).
+      - name: desde
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          examples:
+          - '2030-06-09T13:00:00Z'
+          title: Desde
+      - name: hasta
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          examples:
+          - '2030-06-09T13:30:00Z'
+          title: Hasta
+      - name: agregacion
+        in: query
+        required: false
+        schema:
+          enum:
+          - raw
+          - 1m
+          - 5m
+          type: string
+          default: 1m
+          title: Agregacion
+      - name: equipo
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+          title: Equipo
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 2000
+          minimum: 1
+          default: 500
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadisticasPartido'
+        '400':
+          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          content:
+            application/json:
+              example:
+                code: VALIDATION_ERROR
+                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: La fuente de datos no respondió (caída o timeout).
+          content:
+            application/json:
+              example:
+                code: DEPENDENCY_UNAVAILABLE
+                message: La fuente de datos no respondió (caída o timeout).
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /health:
+    get:
+      tags:
+      - Salud
+      summary: La API está viva (no consulta fuentes)
+      operationId: health
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vivo'
+  /health/dependencias:
+    get:
+      tags:
+      - Salud
+      summary: Ping con timeout a MongoDB, Neo4j, Cassandra, Redis e InfluxDB
+      operationId: healthDependencias
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaludDependencias'
+        '503':
+          description: Al menos una fuente está DOWN (mismo cuerpo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaludDependencias'
+        '500':
+          description: Error interno; el detalle técnico queda sólo en los logs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: INTERNAL_ERROR
+                message: Error interno; el detalle técnico queda sólo en los logs.
+                requestId: req-3f9c2a1b7d4e5f60
+components:
+  schemas:
+    CambioEstado:
+      properties:
+        estado:
+          type: string
+          const: FINALIZADO
+          title: Estado
+      additionalProperties: false
+      type: object
+      required:
+      - estado
+      title: CambioEstado
+      description: 'Única transición expuesta: PROGRAMADO → FINALIZADO (cierre CP del Hito 3).'
+    Colores:
+      properties:
+        principal:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Principal
+        alternativo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Alternativo
+      additionalProperties: false
+      type: object
+      title: Colores
+    Comentario:
+      properties:
+        comentarioId:
+          type: string
+          title: Comentarioid
+          examples:
+          - PAR-A-1-C000012
+        partidoId:
+          type: string
+          title: Partidoid
+        usuarioId:
+          type: string
+          title: Usuarioid
+          examples:
+          - USR-0000042
+        alias:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Alias
+        hinchada:
+          anyOf:
+          - type: string
+            enum:
+            - LOCAL
+            - VISITANTE
+            - NEUTRAL
+          - type: 'null'
+          title: Hinchada
+        minutoPartido:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Minutopartido
+        contenido:
+          type: string
+          title: Contenido
+        idioma:
+          anyOf:
+          - type: string
+            enum:
+            - es
+            - pt
+            - en
+            - fr
+            - ar
+          - type: 'null'
+          title: Idioma
+        creadoEn:
+          type: string
+          format: date-time
+          title: Creadoen
+        respondeA:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Respondea
+        estadoModeracion:
+          type: string
+          title: Estadomoderacion
+          examples:
+          - PUBLICADO
+      additionalProperties: false
+      type: object
+      required:
+      - comentarioId
+      - partidoId
+      - usuarioId
+      - contenido
+      - creadoEn
+      - estadoModeracion
+      title: Comentario
+    ComentarioNuevo:
+      properties:
+        usuarioId:
+          type: string
+          pattern: ^USR-[A-Z0-9]{3,12}$
+          title: Usuarioid
+          examples:
+          - USR-0000042
+        alias:
+          type: string
+          maxLength: 40
+          minLength: 1
+          title: Alias
+          examples:
+          - hincha42
+        contenido:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Contenido
+          examples:
+          - ¡Qué golazo!
+        creadoEn:
+          type: string
+          format: date-time
+          title: Creadoen
+          description: 'Instante del comentario en el reloj del torneo simulado (con zona horaria). Debe caer dentro
+            del tramo de comentarios del partido (−15′ a +125′ del inicio). Es parte de la clave primaria: reenviar
+            la misma request no duplica.'
+          examples:
+          - '2030-06-09T13:47:00Z'
+        minutoPartido:
+          anyOf:
+          - type: integer
+            maximum: 130.0
+            minimum: 0.0
+          - type: 'null'
+          title: Minutopartido
+        hinchada:
+          anyOf:
+          - type: string
+            enum:
+            - LOCAL
+            - VISITANTE
+            - NEUTRAL
+          - type: 'null'
+          title: Hinchada
+        idioma:
+          type: string
+          enum:
+          - es
+          - pt
+          - en
+          - fr
+          - ar
+          title: Idioma
+          default: es
+        respondeA:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          title: Respondea
+      additionalProperties: false
+      type: object
+      required:
+      - usuarioId
+      - alias
+      - contenido
+      - creadoEn
+      title: ComentarioNuevo
+    Equipo:
+      properties:
+        codigo:
+          type: string
+          title: Codigo
+          description: = equipos._id (código FIFA)
+          examples:
+          - ARG
+        nombre:
+          type: string
+          title: Nombre
+          examples:
+          - Argentina
+        confederacion:
+          type: string
+          enum:
+          - CONMEBOL
+          - UEFA
+          - CAF
+          - AFC
+          - CONCACAF
+          - OFC
+          title: Confederacion
+        rankingFifa:
+          type: integer
+          minimum: 1.0
+          title: Rankingfifa
+          examples:
+          - 1
+        grupo:
+          type: string
+          pattern: ^[A-P]$
+          title: Grupo
+          examples:
+          - A
+        entrenador:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Entrenador
+        sede:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sede
+        colores:
+          anyOf:
+          - $ref: '#/components/schemas/Colores'
+          - type: 'null'
+        cantidadJugadores:
+          anyOf:
+          - type: integer
+            minimum: 0.0
+          - type: 'null'
+          title: Cantidadjugadores
+      additionalProperties: false
+      type: object
+      required:
+      - codigo
+      - nombre
+      - confederacion
+      - rankingFifa
+      - grupo
+      title: Equipo
+      description: 'Proyección de `equipos` (Mongo): no se expone el documento completo.'
+    EquipoEnPartido:
+      properties:
+        equipoCodigo:
+          type: string
+          title: Equipocodigo
+          examples:
+          - ARG
+        nombre:
+          type: string
+          title: Nombre
+      additionalProperties: false
+      type: object
+      required:
+      - equipoCodigo
+      - nombre
+      title: EquipoEnPartido
+    ErrorDetalle:
+      properties:
+        campo:
+          type: string
+          title: Campo
+        problema:
+          type: string
+          title: Problema
+      additionalProperties: false
+      type: object
+      required:
+      - campo
+      - problema
+      title: ErrorDetalle
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+          examples:
+          - MATCH_NOT_FOUND
+        message:
+          type: string
+          title: Message
+          examples:
+          - No existe el partido PAR-X-9.
+        requestId:
+          type: string
+          title: Requestid
+          examples:
+          - req-3f9c2a1b7d4e5f60
+        details:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ErrorDetalle'
+            type: array
+          - type: 'null'
+          title: Details
+      additionalProperties: false
+      type: object
+      required:
+      - code
+      - message
+      - requestId
+      title: ErrorResponse
+      description: Formato único de error (RF12).
+    EstadisticasPartido:
+      properties:
+        partidoId:
+          type: string
+          title: Partidoid
+        desde:
+          type: string
+          format: date-time
+          title: Desde
+        hasta:
+          type: string
+          format: date-time
+          title: Hasta
+        agregacion:
+          type: string
+          enum:
+          - raw
+          - 1m
+          - 5m
+          title: Agregacion
+        puntos:
+          items:
+            $ref: '#/components/schemas/PuntoEstadistica'
+          type: array
+          title: Puntos
+        cantidad:
+          type: integer
+          title: Cantidad
+        truncado:
+          type: boolean
+          title: Truncado
+          description: true si se alcanzó el tope de puntos (`limit`) y hay más en la ventana
+      additionalProperties: false
+      type: object
+      required:
+      - partidoId
+      - desde
+      - hasta
+      - agregacion
+      - puntos
+      - cantidad
+      - truncado
+      title: EstadisticasPartido
+    EstadoDependencia:
+      properties:
+        nombre:
+          type: string
+          enum:
+          - mongodb
+          - neo4j
+          - cassandra
+          - redis
+          - influxdb
+          title: Nombre
+        estado:
+          type: string
+          enum:
+          - UP
+          - DOWN
+          title: Estado
+        latenciaMs:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Latenciams
+        detalle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Detalle
+      additionalProperties: false
+      type: object
+      required:
+      - nombre
+      - estado
+      title: EstadoDependencia
+    Evento:
+      properties:
+        eventoId:
+          type: string
+          title: Eventoid
+          examples:
+          - PAR-A-1-EV-05
+        partidoId:
+          type: string
+          title: Partidoid
+          examples:
+          - PAR-A-1
+        secuencia:
+          type: integer
+          minimum: 1.0
+          title: Secuencia
+          description: Reloj lógico dentro del partido (Hito 3)
+        tipo:
+          type: string
+          enum:
+          - INICIO_PARTIDO
+          - FIN_PARTIDO
+          - PASE
+          - CORNER
+          - ATAJADA
+          - ASISTENCIA
+          - GOL
+          - PENAL
+          - FALTA
+          - TARJETA_AMARILLA
+          - TARJETA_ROJA
+          - SUSTITUCION
+          title: Tipo
+        minuto:
+          type: integer
+          maximum: 130.0
+          minimum: 0.0
+          title: Minuto
+        condicionEquipo:
+          anyOf:
+          - type: string
+            enum:
+            - LOCAL
+            - VISITANTE
+          - type: 'null'
+          title: Condicionequipo
+        dorsalProtagonista:
+          anyOf:
+          - type: integer
+            maximum: 99.0
+            minimum: 1.0
+          - type: 'null'
+          title: Dorsalprotagonista
+        protagonista:
+          anyOf:
+          - $ref: '#/components/schemas/Protagonista'
+          - type: 'null'
+        timestamp:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Timestamp
+        origen:
+          type: string
+          enum:
+          - CARGA
+          - API
+          title: Origen
+          description: CARGA = carga del Hito 5; API = alta por este endpoint
+          default: CARGA
+      additionalProperties: false
+      type: object
+      required:
+      - eventoId
+      - partidoId
+      - secuencia
+      - tipo
+      - minuto
+      title: Evento
+    EventoNuevo:
+      properties:
+        tipo:
+          type: string
+          enum:
+          - INICIO_PARTIDO
+          - FIN_PARTIDO
+          - PASE
+          - CORNER
+          - ATAJADA
+          - ASISTENCIA
+          - GOL
+          - PENAL
+          - FALTA
+          - TARJETA_AMARILLA
+          - TARJETA_ROJA
+          - SUSTITUCION
+          title: Tipo
+        minuto:
+          type: integer
+          maximum: 130.0
+          minimum: 0.0
+          title: Minuto
+          examples:
+          - 88
+        condicionEquipo:
+          anyOf:
+          - type: string
+            enum:
+            - LOCAL
+            - VISITANTE
+          - type: 'null'
+          title: Condicionequipo
+          examples:
+          - LOCAL
+        dorsalProtagonista:
+          anyOf:
+          - type: integer
+            maximum: 99.0
+            minimum: 1.0
+          - type: 'null'
+          title: Dorsalprotagonista
+          examples:
+          - 9
+      additionalProperties: false
+      type: object
+      required:
+      - tipo
+      - minuto
+      title: EventoNuevo
+      description: 'Alta de un evento. Las reglas por tipo (qué campos exige cada uno) se
+
+        validan en el servicio antes de escribir; ver docs/contratos_y_errores.md.'
+    Jugador:
+      properties:
+        dni:
+          type: string
+          title: Dni
+          description: Clave natural del jugador en Mongo
+          examples:
+          - '30000010'
+        nombre:
+          type: string
+          title: Nombre
+        apellido:
+          type: string
+          title: Apellido
+        fechaNacimiento:
+          type: string
+          format: date
+          title: Fechanacimiento
+        posicion:
+          type: string
+          enum:
+          - Arquero
+          - Defensor
+          - Mediocampista
+          - Delantero
+          title: Posicion
+        dorsal:
+          type: integer
+          maximum: 99.0
+          minimum: 1.0
+          title: Dorsal
+        equipoCodigo:
+          type: string
+          title: Equipocodigo
+          examples:
+          - ARG
+      additionalProperties: false
+      type: object
+      required:
+      - dni
+      - nombre
+      - apellido
+      - fechaNacimiento
+      - posicion
+      - dorsal
+      - equipoCodigo
+      title: Jugador
+    Marcador:
+      properties:
+        golesLocal:
+          type: integer
+          minimum: 0.0
+          title: Goleslocal
+        golesVisitante:
+          type: integer
+          minimum: 0.0
+          title: Golesvisitante
+      additionalProperties: false
+      type: object
+      required:
+      - golesLocal
+      - golesVisitante
+      title: Marcador
+    PaginaComentarios:
+      properties:
+        partidoId:
+          type: string
+          title: Partidoid
+        items:
+          items:
+            $ref: '#/components/schemas/Comentario'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+          description: Cursor opaco (ventana, bucket y último creado_en); null al agotar el partido
+      additionalProperties: false
+      type: object
+      required:
+      - partidoId
+      - items
+      - limit
+      title: PaginaComentarios
+    PaginaEventos:
+      properties:
+        partidoId:
+          type: string
+          title: Partidoid
+        items:
+          items:
+            $ref: '#/components/schemas/Evento'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+      additionalProperties: false
+      type: object
+      required:
+      - partidoId
+      - items
+      - limit
+      title: PaginaEventos
+    PaginaJugadores:
+      properties:
+        equipoCodigo:
+          type: string
+          title: Equipocodigo
+        items:
+          items:
+            $ref: '#/components/schemas/Jugador'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nextcursor
+          description: null cuando no hay más páginas
+      additionalProperties: false
+      type: object
+      required:
+      - equipoCodigo
+      - items
+      - limit
+      title: PaginaJugadores
+    PartidoDeEquipo:
+      properties:
+        partidoId:
+          type: string
+          title: Partidoid
+          examples:
+          - PAR-A-1
+        fase:
+          type: string
+          title: Fase
+          examples:
+          - GRUPOS
+        grupo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grupo
+        fechaHora:
+          type: string
+          format: date-time
+          title: Fechahora
+        estado:
+          type: string
+          enum:
+          - PROGRAMADO
+          - FINALIZADO
+          title: Estado
+        condicion:
+          type: string
+          enum:
+          - LOCAL
+          - VISITANTE
+          title: Condicion
+        rivalCodigo:
+          type: string
+          title: Rivalcodigo
+          examples:
+          - MEX
+        golesLocal:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Goleslocal
+        golesVisitante:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Golesvisitante
+      additionalProperties: false
+      type: object
+      required:
+      - partidoId
+      - fase
+      - fechaHora
+      - estado
+      - condicion
+      - rivalCodigo
+      title: PartidoDeEquipo
+      description: Un partido del equipo visto desde el grafo (recorrido PARTICIPA_EN).
+    PartidoDetalle:
+      properties:
+        partidoId:
+          type: string
+          title: Partidoid
+          examples:
+          - PAR-A-1
+        fase:
+          type: string
+          title: Fase
+          examples:
+          - GRUPOS
+        grupo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grupo
+        jornada:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Jornada
+        fechaHora:
+          type: string
+          format: date-time
+          title: Fechahora
+        estado:
+          type: string
+          enum:
+          - PROGRAMADO
+          - FINALIZADO
+          title: Estado
+        sede:
+          anyOf:
+          - $ref: '#/components/schemas/Sede'
+          - type: 'null'
+        local:
+          $ref: '#/components/schemas/EquipoEnPartido'
+        visitante:
+          $ref: '#/components/schemas/EquipoEnPartido'
+        marcador:
+          anyOf:
+          - $ref: '#/components/schemas/Marcador'
+          - type: 'null'
+          description: null mientras el partido no está FINALIZADO
+        cantidadEventos:
+          type: integer
+          minimum: 0.0
+          title: Cantidadeventos
+      additionalProperties: false
+      type: object
+      required:
+      - partidoId
+      - fase
+      - fechaHora
+      - estado
+      - local
+      - visitante
+      - cantidadEventos
+      title: PartidoDetalle
+    PartidosDeEquipo:
+      properties:
+        equipoCodigo:
+          type: string
+          title: Equipocodigo
+        items:
+          items:
+            $ref: '#/components/schemas/PartidoDeEquipo'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+      additionalProperties: false
+      type: object
+      required:
+      - equipoCodigo
+      - items
+      - limit
+      title: PartidosDeEquipo
+    Protagonista:
+      properties:
+        dni:
+          type: string
+          title: Dni
+        nombre:
+          type: string
+          title: Nombre
+        apellido:
+          type: string
+          title: Apellido
+      additionalProperties: false
+      type: object
+      required:
+      - dni
+      - nombre
+      - apellido
+      title: Protagonista
+    PuntoEstadistica:
+      properties:
+        time:
+          type: string
+          format: date-time
+          title: Time
+          description: Instante del punto (raw) o inicio del tramo (1m/5m), UTC
+        equipoCodigo:
+          type: string
+          title: Equipocodigo
+          examples:
+          - ARG
+        condicion:
+          anyOf:
+          - type: string
+            enum:
+            - LOCAL
+            - VISITANTE
+          - type: 'null'
+          title: Condicion
+        posesionPct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Posesionpct
+          description: 'raw: valor; 1m/5m: último valor del tramo'
+        pasesAcum:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Pasesacum
+          description: 'Contador acumulado; 1m/5m: máximo del tramo'
+        tirosAcum:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Tirosacum
+        golesAcum:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Golesacum
+        minutoJuego:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Minutojuego
+      additionalProperties: false
+      type: object
+      required:
+      - time
+      - equipoCodigo
+      title: PuntoEstadistica
+    SaludDependencias:
+      properties:
+        estado:
+          type: string
+          enum:
+          - OK
+          - DEGRADADO
+          title: Estado
+        dependencias:
+          items:
+            $ref: '#/components/schemas/EstadoDependencia'
+          type: array
+          title: Dependencias
+      additionalProperties: false
+      type: object
+      required:
+      - estado
+      - dependencias
+      title: SaludDependencias
+    Sede:
+      properties:
+        sedeId:
+          type: string
+          title: Sedeid
+          examples:
+          - URU-CEN
+        nombre:
+          type: string
+          title: Nombre
+        ciudad:
+          type: string
+          title: Ciudad
+        pais:
+          type: string
+          title: Pais
+        region:
+          type: string
+          title: Region
+          examples:
+          - AMERICAS
+      additionalProperties: false
+      type: object
+      required:
+      - sedeId
+      - nombre
+      - ciudad
+      - pais
+      - region
+      title: Sede
+    Sesion:
+      properties:
+        sesionId:
+          type: string
+          title: Sesionid
+          examples:
+          - demo-ses-0000001-1
+        usuarioId:
+          type: string
+          title: Usuarioid
+          examples:
+          - USR-0000001
+        rol:
+          type: string
+          enum:
+          - HINCHA
+          - MODERADOR
+          title: Rol
+        region:
+          type: string
+          title: Region
+          examples:
+          - AM
+        dispositivo:
+          type: string
+          title: Dispositivo
+          examples:
+          - web
+        estado:
+          type: string
+          const: ACTIVA
+          title: Estado
+          description: Una sesión BLOQUEADA responde 403, nunca 200
+        creadaEn:
+          type: string
+          format: date-time
+          title: Creadaen
+        ultimaActividad:
+          type: string
+          format: date-time
+          title: Ultimaactividad
+        expiraAbsoluta:
+          type: string
+          format: date-time
+          title: Expiraabsoluta
+        ttlSegundos:
+          type: integer
+          title: Ttlsegundos
+          description: TTL restante en Redis; la consulta NO lo renueva
+      additionalProperties: false
+      type: object
+      required:
+      - sesionId
+      - usuarioId
+      - rol
+      - region
+      - dispositivo
+      - estado
+      - creadaEn
+      - ultimaActividad
+      - expiraAbsoluta
+      - ttlSegundos
+      title: Sesion
+    Vivo:
+      properties:
+        estado:
+          type: string
+          const: OK
+          title: Estado
+          default: OK
+      additionalProperties: false
+      type: object
+      title: Vivo
+tags:
+- name: Equipos · MongoDB
+  description: 'Módulo documental (Hito 4): base `fixture2030`, colecciones `equipos` y `jugadores`.'
+- name: Partidos · Neo4j
+  description: Partidos (N2), eventos (N3) y catálogo de tipos (N8) en el grafo del Hito 5; el detalle usa caché
+    Redis.
+- name: Comentarios · Cassandra
+  description: 'Keyspace `fixture2030_comentarios` (Hito 6): partición (partido, ventana de 10 min, bucket).'
+- name: Sesiones · Redis
+  description: Hash `f30:ses:{id}` con TTL (Hito 7).
+- name: Estadísticas · InfluxDB
+  description: Tabla `estadisticas_equipo` de la base `fixture2030_vivo` (Hito 8).
+- name: Salud
+  description: Vida de la API y conectividad de las fuentes.

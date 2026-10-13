@@ -1,0 +1,19 @@
+# Secretos y configuración local (RNF6/RNF7)
+.env
+.env.*
+!.env.example
+*.token
+secrets/
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+# Front
+web/node_modules/
+web/dist/
+web/.vercel/
+web/.env.local
+# Logs crudos (la evidencia versionada se sanea antes de copiarla a docs/evidencia)
+*.log
