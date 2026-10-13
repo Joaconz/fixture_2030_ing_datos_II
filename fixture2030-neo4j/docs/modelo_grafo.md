@@ -192,6 +192,8 @@ Con dos tipos, cada consulta de fixture que no distingue condición (ej. "todos 
 **`Grupo` como nodo y no como propiedad.**
 En MongoDB `grupo: "A"` es correcto: la pregunta natural es "traeme los equipos del grupo A", un filtro. En el grafo la pregunta natural cambia a "¿qué separa a estos dos equipos?", y ahí el grupo es un punto de paso del recorrido. Además permite colgar del grupo la programación (`CORRESPONDE_A`) sin repetir la letra en cada partido.
 
+> **Nota (13/10/2026) — reentrega del Hito 3.** Con el ok del profesor, el modelo de objetos (IRIS) salió de la arquitectura y **este módulo pasó a ser la fuente de verdad** de los tipos de evento (N8) y de los partidos (N2), además de los eventos (N3). `:TipoEvento` y `:Partido` dejan de ser réplicas de otro motor. El texto de esta sección se conserva como se entregó en el Hito 5. Ver [`../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 **`TipoEvento` replicado localmente y de solo lectura.**
 El Hito 3 asignó los tipos de evento (N8) a un motor de objetos con prioridad **CP**. Tener una copia local acá permite validar y agrupar sin consultar otro subsistema en el camino caliente — que es justamente lo que un módulo AP no puede permitirse. La copia **no es autoritativa**: si el catálogo cambia, este módulo se actualiza por propagación, no al revés.
 

@@ -194,6 +194,8 @@ ls docs/evidencia                                             # 01_ … 09_
 
 ## 10. Relación con los hitos previos
 
+> **Nota (13/10/2026) — reentrega del Hito 3.** Con el ok del profesor, el modelo de objetos (IRIS) salió de la arquitectura: la fuente de verdad de **Partidos (N2) pasó a Neo4j**, el mismo grafo del que ya salen los identificadores `PAR-…` de este módulo. Las menciones a IRIS como fuente de Partidos en este módulo describen la arquitectura vigente al entregar el Hito 7 y se conservan así (también en scripts y evidencia). El diseño de la caché no cambia, porque no depende del motor de la fuente. Ver [`../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md).
+
 - **Hito 2/3** — Sesiones (N5) → clave/valor, **AP, eventual, TTL, local por región, sin réplica cross-región**; Usuarios (N4) → MongoDB y Partidos (N2) → IRIS (matriz del Hito 2) son la fuente de verdad de las copias; ninguno está implementado todavía. **Discrepancia heredada:** el Hito 3 lista N2 como MongoDB; este módulo sigue el Hito 2 ([`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §5).
 - **Hito 4** — MongoDB implementa hoy sólo `equipos` y `jugadores`. Las fuentes de verdad de las copias de este módulo, **Partidos (N2, IRIS)** y **Usuarios (N4, MongoDB)**, **todavía no están implementadas**; los identificadores `PAR-…` de la muestra provienen del grafo del Hito 5 (Neo4j). La integración es sólo conceptual (fuera de alcance).
 - **Hito 5/6** — mismos identificadores `PAR-…` y `USR-…`; el Hito 6 ya preveía cachear la configuración de partición de cada partido (Q0).

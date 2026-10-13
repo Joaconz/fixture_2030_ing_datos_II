@@ -64,6 +64,8 @@ Siete etiquetas y nueve tipos de relación. El detalle completo (atributos, tipo
 | **Hito 4** | **Clave natural** en vez de ObjectId, para permitir cargas idempotentes por upsert | Se reutilizan las mismas claves (`equipos._id` = código FIFA, `jugadores.dni`) y la misma estrategia de idempotencia, ahora con `MERGE`. |
 | **Hito 4** | Índices puntuales, solo donde hay una consulta que los justifique | Mismo criterio: 9 índices, cada uno atado a una consulta concreta (§6). |
 
+> **Nota (13/10/2026) — reentrega del Hito 3.** Con el ok del profesor, el modelo de objetos (IRIS) salió de la arquitectura y **este módulo pasó a ser la fuente de verdad** de los tipos de evento (N8) y de los partidos (N2), además de los eventos (N3). `:TipoEvento` y `:Partido` dejan de ser réplicas de otro motor. El texto de esta sección se conserva como se entregó en el Hito 5. Ver [`../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 ### 3.2 Cómo este modelo respeta ser un sistema **AP**
 
 El Hito 3 definió Eventos en vivo (N3) como **AP**: ante una partición de red se sacrifica consistencia y se sigue respondiendo. Un modelo de datos no "es" AP por sí solo — el motor lo es —, pero sí puede **hacerlo posible o imposible**. Tres decisiones del modelo son las que lo hacen posible:

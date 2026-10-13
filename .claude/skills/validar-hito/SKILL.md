@@ -26,7 +26,7 @@ Antes de escribir una sola línea de implementación, producir esta tabla (en la
 
 | Afirmación del plan nuevo | Fuente citada | Verificado contra | Resultado | Acción |
 |---|---|---|---|---|
-| (ej: "Partidos vive en MongoDB") | Un doc de hito viejo, sin re-verificar | Hito 2 §4 (matriz con puntajes) | **Contradice** | Es Objetos/IRIS por 0,10 — este error concreto ya se corrigió (ver Historial de revisión del Hito 3), pero sirve de ejemplo de qué buscar |
+| (ej: "Partidos vive en IRIS") | Un doc de hito viejo, sin re-verificar | Estado canónico, fila N2 (y Hito 3, sección de revisión) | **Superado** | Desde la reentrega del Hito 3 (13/10/2026) Partidos y Tipos de evento viven en Neo4j; la matriz del Hito 2 sigue siendo la fuente de puntajes y márgenes, no de la asignación final de N2/N8 |
 | (ej: "se reutiliza jugadores.dni de Mongo") | README Neo4j | `fixture2030-mongodb/load/seed.js` | **No verificable / conocido como falso** | Ver Hallazgo H1: dni no es estable. No asumir sin resolver primero |
 | (ej: "Sesiones no replica entre regiones") | Hito 3 §CAP | Hito 3 §CAP (sin contradicción) | **Consistente** | Ninguna |
 
