@@ -1,0 +1,43 @@
+{
+  "id": "bd05a6f2-0352-59b5-a2be-8e916fcb4ba7",
+  "name": "Fixture 2030 — local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "equipoCodigo",
+      "value": "ARG",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "partidoId",
+      "value": "PAR-A-1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "partidoDemo",
+      "value": "PAR-DEMO-API",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sesionId",
+      "value": "demo-ses-0000001-1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sesionBloqueada",
+      "value": "demo-ses-0000033-1",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

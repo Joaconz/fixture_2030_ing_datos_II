@@ -51,43 +51,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/Equipo'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el equipo solicitado.
+          description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: TEAM_NOT_FOUND
-                message: No existe el equipo solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                TEAM_NOT_FOUND:
+                  summary: TEAM_NOT_FOUND
+                  value:
+                    code: TEAM_NOT_FOUND
+                    message: No existe el equipo solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /equipos/{codigo}/jugadores:
@@ -149,43 +161,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginaJugadores'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
+                INVALID_CURSOR:
+                  summary: INVALID_CURSOR
+                  value:
+                    code: INVALID_CURSOR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el equipo solicitado.
+          description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: TEAM_NOT_FOUND
-                message: No existe el equipo solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                TEAM_NOT_FOUND:
+                  summary: TEAM_NOT_FOUND
+                  value:
+                    code: TEAM_NOT_FOUND
+                    message: No existe el equipo solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /equipos/{codigo}/partidos:
@@ -223,43 +253,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartidosDeEquipo'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el equipo solicitado.
+          description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: TEAM_NOT_FOUND
-                message: No existe el equipo solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                TEAM_NOT_FOUND:
+                  summary: TEAM_NOT_FOUND
+                  value:
+                    code: TEAM_NOT_FOUND
+                    message: No existe el equipo solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /partidos/{partido_id}:
@@ -298,43 +340,55 @@ paths:
                 - MISS
                 - BYPASS
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el partido solicitado.
+          description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: No existe el partido solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: No existe el partido solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /partidos/{partido_id}/eventos:
@@ -404,43 +458,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginaEventos'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
+                INVALID_CURSOR:
+                  summary: INVALID_CURSOR
+                  value:
+                    code: INVALID_CURSOR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el partido solicitado.
+          description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: No existe el partido solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: No existe el partido solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
@@ -498,55 +570,99 @@ paths:
               schema:
                 $ref: '#/components/schemas/Evento'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Cuerpo inválido o regla del tipo de evento violada (N8). Códigos: `VALIDATION_ERROR`, `EVENT_RULE_VIOLATION`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Cuerpo inválido o regla del tipo de evento violada (N8).
+                    requestId: req-3f9c2a1b7d4e5f60
+                EVENT_RULE_VIOLATION:
+                  summary: EVENT_RULE_VIOLATION
+                  value:
+                    code: EVENT_RULE_VIOLATION
+                    message: Cuerpo inválido o regla del tipo de evento violada (N8).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el partido solicitado.
+          description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: No existe el partido solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: No existe el partido solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: El estado del partido impide el evento (FINALIZADO, posterior a FIN_PARTIDO, INICIO/FIN repetido)
-            o la clave ya se usó con otro cuerpo.
+          description: 'El estado del partido impide el evento, o la clave ya se usó con otro cuerpo. Códigos: `MATCH_FINALIZED`,
+            `EVENT_AFTER_FIN`, `DUPLICATE_UNIQUE_EVENT`, `EVENT_TYPE_NOT_IN_CATALOG`, `IDEMPOTENCY_KEY_REUSED`.'
           content:
             application/json:
-              example:
-                code: MATCH_FINALIZED
-                message: El estado del partido impide el evento (FINALIZADO, posterior a FIN_PARTIDO, INICIO/FIN
-                  repetido) o la clave ya se usó con otro cuerpo.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_FINALIZED:
+                  summary: MATCH_FINALIZED
+                  value:
+                    code: MATCH_FINALIZED
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
+                EVENT_AFTER_FIN:
+                  summary: EVENT_AFTER_FIN
+                  value:
+                    code: EVENT_AFTER_FIN
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
+                DUPLICATE_UNIQUE_EVENT:
+                  summary: DUPLICATE_UNIQUE_EVENT
+                  value:
+                    code: DUPLICATE_UNIQUE_EVENT
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
+                EVENT_TYPE_NOT_IN_CATALOG:
+                  summary: EVENT_TYPE_NOT_IN_CATALOG
+                  value:
+                    code: EVENT_TYPE_NOT_IN_CATALOG
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
+                IDEMPOTENCY_KEY_REUSED:
+                  summary: IDEMPOTENCY_KEY_REUSED
+                  value:
+                    code: IDEMPOTENCY_KEY_REUSED
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /partidos/{partido_id}/estado:
@@ -581,53 +697,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartidoDetalle'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe el partido solicitado.
+          description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: No existe el partido solicitado.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: No existe el partido solicitado.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
+          description: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO. Códigos: `INVALID_TRANSITION`,
+            `MISSING_FIN_PARTIDO`.'
           content:
             application/json:
-              example:
-                code: INVALID_TRANSITION
-                message: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INVALID_TRANSITION:
+                  summary: INVALID_TRANSITION
+                  value:
+                    code: INVALID_TRANSITION
+                    message: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
+                    requestId: req-3f9c2a1b7d4e5f60
+                MISSING_FIN_PARTIDO:
+                  summary: MISSING_FIN_PARTIDO
+                  value:
+                    code: MISSING_FIN_PARTIDO
+                    message: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.'
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /partidos/{partido_id}/comentarios:
@@ -676,43 +814,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginaComentarios'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
+                INVALID_CURSOR:
+                  summary: INVALID_CURSOR
+                  value:
+                    code: INVALID_CURSOR
+                    message: Parámetro inválido o cursor que no corresponde.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.
+            Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
@@ -769,43 +926,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/Comentario'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Cuerpo inválido o `creadoEn` fuera del tramo del partido. Códigos: `VALIDATION_ERROR`, `COMMENT_OUTSIDE_MATCH_WINDOW`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Cuerpo inválido o `creadoEn` fuera del tramo del partido.
+                    requestId: req-3f9c2a1b7d4e5f60
+                COMMENT_OUTSIDE_MATCH_WINDOW:
+                  summary: COMMENT_OUTSIDE_MATCH_WINDOW
+                  value:
+                    code: COMMENT_OUTSIDE_MATCH_WINDOW
+                    message: Cuerpo inválido o `creadoEn` fuera del tramo del partido.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+          description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.
+            Códigos: `MATCH_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: MATCH_NOT_FOUND
-                message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                MATCH_NOT_FOUND:
+                  summary: MATCH_NOT_FOUND
+                  value:
+                    code: MATCH_NOT_FOUND
+                    message: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.'
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /sesiones/{sesion_id}:
@@ -832,53 +1008,68 @@ paths:
               schema:
                 $ref: '#/components/schemas/Sesion'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: La sesión existe pero está BLOQUEADA.
+          description: 'La sesión existe pero está BLOQUEADA. Códigos: `SESSION_BLOCKED`.'
           content:
             application/json:
-              example:
-                code: SESSION_BLOCKED
-                message: La sesión existe pero está BLOQUEADA.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                SESSION_BLOCKED:
+                  summary: SESSION_BLOCKED
+                  value:
+                    code: SESSION_BLOCKED
+                    message: La sesión existe pero está BLOQUEADA.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe una sesión vigente con ese id (inexistente o expirada).
+          description: 'No existe una sesión vigente con ese id (inexistente o expirada). Códigos: `SESSION_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: SESSION_NOT_FOUND
-                message: No existe una sesión vigente con ese id (inexistente o expirada).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                SESSION_NOT_FOUND:
+                  summary: SESSION_NOT_FOUND
+                  value:
+                    code: SESSION_NOT_FOUND
+                    message: No existe una sesión vigente con ese id (inexistente o expirada).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
@@ -900,43 +1091,55 @@ paths:
         '204':
           description: Successful Response
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No existe una sesión vigente con ese id (inexistente o expirada).
+          description: 'No existe una sesión vigente con ese id (inexistente o expirada). Códigos: `SESSION_NOT_FOUND`.'
           content:
             application/json:
-              example:
-                code: SESSION_NOT_FOUND
-                message: No existe una sesión vigente con ese id (inexistente o expirada).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                SESSION_NOT_FOUND:
+                  summary: SESSION_NOT_FOUND
+                  value:
+                    code: SESSION_NOT_FOUND
+                    message: No existe una sesión vigente con ese id (inexistente o expirada).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /partidos/{partido_id}/estadisticas:
@@ -1014,33 +1217,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/EstadisticasPartido'
         '400':
-          description: La request no cumple el contrato (parámetro, query o cuerpo inválido).
+          description: 'Parámetro inválido o ventana temporal inválida. Códigos: `VALIDATION_ERROR`, `INVALID_TIME_WINDOW`,
+            `TIME_WINDOW_TOO_LARGE`.'
           content:
             application/json:
-              example:
-                code: VALIDATION_ERROR
-                message: La request no cumple el contrato (parámetro, query o cuerpo inválido).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Parámetro inválido o ventana temporal inválida.
+                    requestId: req-3f9c2a1b7d4e5f60
+                INVALID_TIME_WINDOW:
+                  summary: INVALID_TIME_WINDOW
+                  value:
+                    code: INVALID_TIME_WINDOW
+                    message: Parámetro inválido o ventana temporal inválida.
+                    requestId: req-3f9c2a1b7d4e5f60
+                TIME_WINDOW_TOO_LARGE:
+                  summary: TIME_WINDOW_TOO_LARGE
+                  value:
+                    code: TIME_WINDOW_TOO_LARGE
+                    message: Parámetro inválido o ventana temporal inválida.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: La fuente de datos no respondió (caída o timeout).
+          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
-              example:
-                code: DEPENDENCY_UNAVAILABLE
-                message: La fuente de datos no respondió (caída o timeout).
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                DEPENDENCY_UNAVAILABLE:
+                  summary: DEPENDENCY_UNAVAILABLE
+                  value:
+                    code: DEPENDENCY_UNAVAILABLE
+                    message: La fuente de datos no respondió (caída o timeout).
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /health:
@@ -1076,15 +1301,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/SaludDependencias'
         '500':
-          description: Error interno; el detalle técnico queda sólo en los logs.
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: INTERNAL_ERROR
-                message: Error interno; el detalle técnico queda sólo en los logs.
-                requestId: req-3f9c2a1b7d4e5f60
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
 components:
   schemas:
     CambioEstado:

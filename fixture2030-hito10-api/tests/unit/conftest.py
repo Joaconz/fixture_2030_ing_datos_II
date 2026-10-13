@@ -54,6 +54,14 @@ _GETTERS = {"mongodb": deps.get_mongo, "neo4j": deps.get_neo4j, "cassandra": dep
             "redis": deps.get_redis, "influxdb": deps.get_influx}
 
 
+def _proveedor(fake: Any) -> Callable[[], Any]:
+    # Sin parámetros a propósito: un `lambda f=fake: f` haría que FastAPI tratara
+    # `f` como query param y copiara (deepcopy) el fake en cada request.
+    def _dep() -> Any:
+        return fake
+    return _dep
+
+
 @pytest.fixture
 def make_client() -> Callable[..., TestClient]:
     """make_client(mongodb=fake, redis=fake, ...) → TestClient. Las fuentes no
@@ -61,7 +69,6 @@ def make_client() -> Callable[..., TestClient]:
     def _make(**fakes: Any) -> TestClient:
         app = create_app()
         for nombre, getter in _GETTERS.items():
-            fake = fakes.get(nombre, FuenteCaida(nombre))
-            app.dependency_overrides[getter] = lambda f=fake: f
+            app.dependency_overrides[getter] = _proveedor(fakes.get(nombre, FuenteCaida(nombre)))
         return TestClient(app, raise_server_exceptions=False)
     return _make

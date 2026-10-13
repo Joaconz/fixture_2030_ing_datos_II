@@ -41,10 +41,13 @@ class ErrorResponse(ApiModel):
     details: list[ErrorDetalle] | None = None
 
 
-def _err(descripcion: str, code: str) -> dict[str, Any]:
-    return {"model": ErrorResponse, "description": descripcion,
-            "content": {"application/json": {"example": {
-                "code": code, "message": descripcion, "requestId": "req-3f9c2a1b7d4e5f60"}}}}
+def _err(descripcion: str, *codes: str) -> dict[str, Any]:
+    """Respuesta de error documentada con un ejemplo por cada `code` posible."""
+    ejemplos = {c: {"summary": c, "value": {"code": c, "message": descripcion,
+                                           "requestId": "req-3f9c2a1b7d4e5f60"}} for c in codes}
+    return {"model": ErrorResponse,
+            "description": descripcion + " Códigos: " + ", ".join(f"`{c}`" for c in codes) + ".",
+            "content": {"application/json": {"examples": ejemplos}}}
 
 
 # Respuestas de error reutilizables en la declaración de cada ruta.
@@ -57,8 +60,12 @@ def r404(code: str, descripcion: str) -> dict[int, dict[str, Any]]:
     return {404: _err(descripcion, code)}
 
 
-def r409(descripcion: str, code: str = "CONFLICT") -> dict[int, dict[str, Any]]:
-    return {409: _err(descripcion, code)}
+def r400(descripcion: str, *codes: str) -> dict[int, dict[str, Any]]:
+    return {400: _err(descripcion, "VALIDATION_ERROR", *codes)}
+
+
+def r409(descripcion: str, *codes: str) -> dict[int, dict[str, Any]]:
+    return {409: _err(descripcion, *(codes or ("CONFLICT",)))}
 
 
 def r403(code: str, descripcion: str) -> dict[int, dict[str, Any]]:

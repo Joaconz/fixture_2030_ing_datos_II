@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import equipos_service
-from app.schemas.common import R400, R500, R503, Cursor, EquipoCodigo, r404
+from app.schemas.common import R400, R500, R503, Cursor, EquipoCodigo, r400, r404
 from app.schemas.equipos import Equipo, PaginaJugadores, PartidosDeEquipo, Posicion
 from app.services.equipos import EquiposService
 
@@ -24,7 +24,8 @@ async def get_equipo(codigo: EquipoCodigo, svc: Svc) -> Equipo:
 
 @router.get("/{codigo}/jugadores", tags=["Equipos · MongoDB"], operation_id="listJugadoresDeEquipo",
             summary="Plantel paginado de un equipo (MongoDB, índice {equipoId, posicion})",
-            response_model=PaginaJugadores, responses={**R400, **R404_EQUIPO, **R503, **R500})
+            response_model=PaginaJugadores,
+            responses={**r400("Parámetro inválido o cursor que no corresponde.", "INVALID_CURSOR"), **R404_EQUIPO, **R503, **R500})
 async def list_jugadores(codigo: EquipoCodigo, svc: Svc,
                          posicion: Annotated[Posicion | None, Query()] = None,
                          limit: Annotated[int, Query(ge=1, le=50)] = 20,

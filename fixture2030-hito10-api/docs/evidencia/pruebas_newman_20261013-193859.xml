@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Fixture 2030 — API REST integrada (Hito 10)" tests="39" time="0.253">
+  <testsuite name="Salud / API viva" id="cc18876c-5795-5dfb-905a-780784aec79f" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.014">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.014" classname="SaludApiViva"/>
+    <testcase name="status 200" time="0.014" classname="SaludApiViva"/>
+    <testcase name="estado OK" time="0.014" classname="SaludApiViva"/>
+  </testsuite>
+  <testsuite name="Salud / Dependencias (las cinco UP)" id="3227d6d7-e4a6-54f3-b6c7-851ed71ba1b9" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.019">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.019" classname="SaludDependenciasLasCincoUp"/>
+    <testcase name="status 200" time="0.019" classname="SaludDependenciasLasCincoUp"/>
+    <testcase name="forma de salud" time="0.019" classname="SaludDependenciasLasCincoUp"/>
+    <testcase name="las cinco fuentes UP" time="0.019" classname="SaludDependenciasLasCincoUp"/>
+  </testsuite>
+  <testsuite name="Equipos · MongoDB / Equipo por código" id="647746bd-b23c-5fd0-9a87-24647c9d69e0" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.004">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.004" classname="EquiposMongoDbEquipoPorCodigo"/>
+    <testcase name="status 200" time="0.004" classname="EquiposMongoDbEquipoPorCodigo"/>
+    <testcase name="forma de equipo" time="0.004" classname="EquiposMongoDbEquipoPorCodigo"/>
+    <testcase name="es el equipo pedido" time="0.004" classname="EquiposMongoDbEquipoPorCodigo"/>
+  </testsuite>
+  <testsuite name="Equipos · MongoDB / Jugadores · página 1" id="6ac05ab6-63ae-5f3f-9ad2-4dba9fba71fa" timestamp="2026-10-13T19:39:00.605Z" tests="6" failures="0" errors="0" time="0.004">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+    <testcase name="status 200" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+    <testcase name="forma de página de jugadores" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+    <testcase name="como máximo 5, ordenados por dorsal" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+    <testcase name="forma de jugador" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+    <testcase name="hay nextCursor para seguir" time="0.004" classname="EquiposMongoDbJugadoresPagina1"/>
+  </testsuite>
+  <testsuite name="Equipos · MongoDB / Jugadores · página 2 (cursor)" id="5190cffd-9df7-54fc-b49f-4dfe44ea6483" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.003">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.003" classname="EquiposMongoDbJugadoresPagina2Cursor"/>
+    <testcase name="status 200" time="0.003" classname="EquiposMongoDbJugadoresPagina2Cursor"/>
+    <testcase name="forma de página de jugadores" time="0.003" classname="EquiposMongoDbJugadoresPagina2Cursor"/>
+    <testcase name="continúa después del último dorsal de la página 1" time="0.003" classname="EquiposMongoDbJugadoresPagina2Cursor"/>
+  </testsuite>
+  <testsuite name="Partidos · Neo4j / Partidos de un equipo" id="7090e74a-b27b-5a22-8b0e-b0a5e915b62f" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.007">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.007" classname="PartidosNeo4JPartidosDeUnEquipo"/>
+    <testcase name="status 200" time="0.007" classname="PartidosNeo4JPartidosDeUnEquipo"/>
+    <testcase name="forma de partidos del equipo" time="0.007" classname="PartidosNeo4JPartidosDeUnEquipo"/>
+    <testcase name="forma de partido del equipo" time="0.007" classname="PartidosNeo4JPartidosDeUnEquipo"/>
+  </testsuite>
+  <testsuite name="Partidos · Neo4j / Detalle de partido (1ª lectura)" id="7629e74d-d9b8-518c-9b0f-76bf0cf52273" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="PartidosNeo4JDetalleDePartido1Lectura"/>
+    <testcase name="status 200" time="0.002" classname="PartidosNeo4JDetalleDePartido1Lectura"/>
+    <testcase name="forma de detalle" time="0.002" classname="PartidosNeo4JDetalleDePartido1Lectura"/>
+    <testcase name="X-Cache informado" time="0.002" classname="PartidosNeo4JDetalleDePartido1Lectura"/>
+  </testsuite>
+  <testsuite name="Partidos · Neo4j / Detalle de partido (2ª lectura → HIT)" id="c7bc6955-82d6-574c-a853-3569a2d72e38" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="PartidosNeo4JDetalleDePartido2LecturaHit"/>
+    <testcase name="status 200" time="0.002" classname="PartidosNeo4JDetalleDePartido2LecturaHit"/>
+    <testcase name="forma de detalle" time="0.002" classname="PartidosNeo4JDetalleDePartido2LecturaHit"/>
+    <testcase name="X-Cache: HIT" time="0.002" classname="PartidosNeo4JDetalleDePartido2LecturaHit"/>
+    <testcase name="mismo cuerpo que la 1ª lectura" time="0.002" classname="PartidosNeo4JDetalleDePartido2LecturaHit"/>
+  </testsuite>
+  <testsuite name="Partidos · Neo4j / Timeline de eventos" id="01daafb2-e343-52df-ae72-65e5cb35ac7c" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.027">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.027" classname="PartidosNeo4JTimelineDeEventos"/>
+    <testcase name="status 200" time="0.027" classname="PartidosNeo4JTimelineDeEventos"/>
+    <testcase name="forma de página de eventos" time="0.027" classname="PartidosNeo4JTimelineDeEventos"/>
+    <testcase name="orden por secuencia ascendente" time="0.027" classname="PartidosNeo4JTimelineDeEventos"/>
+    <testcase name="forma de evento" time="0.027" classname="PartidosNeo4JTimelineDeEventos"/>
+  </testsuite>
+  <testsuite name="Comentarios · Cassandra / Publicar comentario" id="676e354d-8591-5518-b584-2587b304802b" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.010">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.010" classname="ComentariosCassandraPublicarComentario"/>
+    <testcase name="status 201" time="0.010" classname="ComentariosCassandraPublicarComentario"/>
+    <testcase name="forma de comentario" time="0.010" classname="ComentariosCassandraPublicarComentario"/>
+    <testcase name="sin cabecera de reintento" time="0.010" classname="ComentariosCassandraPublicarComentario"/>
+  </testsuite>
+  <testsuite name="Comentarios · Cassandra / Publicar comentario (reintento → 200)" id="b0355f15-57f2-51d6-b92a-eb90cdb3c8a5" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.004">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.004" classname="ComentariosCassandraPublicarComentarioReintento200"/>
+    <testcase name="status 200" time="0.004" classname="ComentariosCassandraPublicarComentarioReintento200"/>
+    <testcase name="forma de comentario" time="0.004" classname="ComentariosCassandraPublicarComentarioReintento200"/>
+    <testcase name="Idempotent-Replayed: true" time="0.004" classname="ComentariosCassandraPublicarComentarioReintento200"/>
+    <testcase name="mismo comentario, sin duplicar" time="0.004" classname="ComentariosCassandraPublicarComentarioReintento200"/>
+  </testsuite>
+  <testsuite name="Comentarios · Cassandra / Comentarios · página 1" id="964568af-01cf-5d91-9564-a441191a51dc" timestamp="2026-10-13T19:39:00.605Z" tests="6" failures="0" errors="0" time="0.007">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+    <testcase name="status 200" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+    <testcase name="forma de página de comentarios" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+    <testcase name="creadoEn descendente" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+    <testcase name="forma de comentario" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+    <testcase name="nextCursor para seguir" time="0.007" classname="ComentariosCassandraComentariosPagina1"/>
+  </testsuite>
+  <testsuite name="Comentarios · Cassandra / Comentarios · página 2 (nextCursor encadenado)" id="84375699-d652-5984-972a-788c592296d4" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.006">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.006" classname="ComentariosCassandraComentariosPagina2NextCursorEncadenado"/>
+    <testcase name="status 200" time="0.006" classname="ComentariosCassandraComentariosPagina2NextCursorEncadenado"/>
+    <testcase name="forma de página de comentarios" time="0.006" classname="ComentariosCassandraComentariosPagina2NextCursorEncadenado"/>
+    <testcase name="sin repetidos respecto de la página 1" time="0.006" classname="ComentariosCassandraComentariosPagina2NextCursorEncadenado"/>
+    <testcase name="continúa hacia atrás en el tiempo" time="0.006" classname="ComentariosCassandraComentariosPagina2NextCursorEncadenado"/>
+  </testsuite>
+  <testsuite name="Sesiones · Redis / Sesión de demo (200, o 404 si expiró)" id="ac83f661-e410-5f23-9dce-2e72551c3134" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="SesionesRedisSesionDeDemo200O404SiExpiro"/>
+    <testcase name="status 200 o 404 (TTL de 30 min de la carga)" time="0.002" classname="SesionesRedisSesionDeDemo200O404SiExpiro"/>
+    <testcase name="forma de sesión" time="0.002" classname="SesionesRedisSesionDeDemo200O404SiExpiro"/>
+    <testcase name="sesión ACTIVA y TTL positivo" time="0.002" classname="SesionesRedisSesionDeDemo200O404SiExpiro"/>
+  </testsuite>
+  <testsuite name="Sesiones · Redis / Sesión inexistente → 404" id="e0ae78d8-4a18-5bec-bf55-8d6f06d96916" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.003">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.003" classname="SesionesRedisSesionInexistente404"/>
+    <testcase name="status 404" time="0.003" classname="SesionesRedisSesionInexistente404"/>
+    <testcase name="error con formato único y code SESSION_NOT_FOUND" time="0.003" classname="SesionesRedisSesionInexistente404"/>
+  </testsuite>
+  <testsuite name="Sesiones · Redis / Sesión bloqueada → 403" id="a0d6e463-49dd-5a27-bfce-b65e430d10b4" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="SesionesRedisSesionBloqueada403"/>
+    <testcase name="status 403" time="0.002" classname="SesionesRedisSesionBloqueada403"/>
+    <testcase name="error con formato único y code SESSION_BLOCKED" time="0.002" classname="SesionesRedisSesionBloqueada403"/>
+  </testsuite>
+  <testsuite name="Sesiones · Redis / Invalidar sesión → 204" id="79b30acd-3f90-5916-ae91-1bf0e05c8d32" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.003">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.003" classname="SesionesRedisInvalidarSesion204"/>
+    <testcase name="status 204" time="0.003" classname="SesionesRedisInvalidarSesion204"/>
+    <testcase name="sin cuerpo" time="0.003" classname="SesionesRedisInvalidarSesion204"/>
+  </testsuite>
+  <testsuite name="Sesiones · Redis / Invalidar otra vez → 404" id="aea19e31-5a2e-5d65-b035-0e377afb5c5f" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.003">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.003" classname="SesionesRedisInvalidarOtraVez404"/>
+    <testcase name="status 404" time="0.003" classname="SesionesRedisInvalidarOtraVez404"/>
+    <testcase name="error con formato único y code SESSION_NOT_FOUND" time="0.003" classname="SesionesRedisInvalidarOtraVez404"/>
+  </testsuite>
+  <testsuite name="Estadísticas · InfluxDB / Crudas (raw) con tope" id="6121083c-116d-55c1-82f0-e19aad4192f4" timestamp="2026-10-13T19:39:00.605Z" tests="6" failures="0" errors="0" time="0.013">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+    <testcase name="status 200" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+    <testcase name="forma de estadísticas" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+    <testcase name="raw, tope de 50 alcanzado → truncado" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+    <testcase name="forma de punto" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+    <testcase name="puntos dentro de la ventana, en orden" time="0.013" classname="EstadisticasInfluxDbCrudasRawConTope"/>
+  </testsuite>
+  <testsuite name="Estadísticas · InfluxDB / Agregadas por minuto (1m)" id="204f2f2d-de2c-5e19-9a96-8c43d98f01d0" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.010">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.010" classname="EstadisticasInfluxDbAgregadasPorMinuto1M"/>
+    <testcase name="status 200" time="0.010" classname="EstadisticasInfluxDbAgregadasPorMinuto1M"/>
+    <testcase name="forma de estadísticas" time="0.010" classname="EstadisticasInfluxDbAgregadasPorMinuto1M"/>
+    <testcase name="1m: 30 tramos × 2 equipos, sin truncar" time="0.010" classname="EstadisticasInfluxDbAgregadasPorMinuto1M"/>
+    <testcase name="tramos alineados al minuto" time="0.010" classname="EstadisticasInfluxDbAgregadasPorMinuto1M"/>
+  </testsuite>
+  <testsuite name="Estadísticas · InfluxDB / Ventana invertida → 400" id="e23e7cff-f027-5578-87e9-11161561ec7d" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EstadisticasInfluxDbVentanaInvertida400"/>
+    <testcase name="status 400" time="0.001" classname="EstadisticasInfluxDbVentanaInvertida400"/>
+    <testcase name="error con formato único y code INVALID_TIME_WINDOW" time="0.001" classname="EstadisticasInfluxDbVentanaInvertida400"/>
+  </testsuite>
+  <testsuite name="Estadísticas · InfluxDB / Ventana de más de 3 h → 400" id="d783424d-90ec-5b23-a582-edab21a0232e" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EstadisticasInfluxDbVentanaDeMasDe3H400"/>
+    <testcase name="status 400" time="0.001" classname="EstadisticasInfluxDbVentanaDeMasDe3H400"/>
+    <testcase name="error con formato único y code TIME_WINDOW_TOO_LARGE" time="0.001" classname="EstadisticasInfluxDbVentanaDeMasDe3H400"/>
+  </testsuite>
+  <testsuite name="Estadísticas · InfluxDB / Ventana sin datos → 200 vacío" id="7118dd76-13b8-560f-a3ef-b5c279c3db76" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.005">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.005" classname="EstadisticasInfluxDbVentanaSinDatos200Vacio"/>
+    <testcase name="status 200" time="0.005" classname="EstadisticasInfluxDbVentanaSinDatos200Vacio"/>
+    <testcase name="forma de estadísticas" time="0.005" classname="EstadisticasInfluxDbVentanaSinDatos200Vacio"/>
+    <testcase name="puntos: [] (no 404, no 503)" time="0.005" classname="EstadisticasInfluxDbVentanaSinDatos200Vacio"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Código de equipo inválido → 400" id="8a1ddf8e-52ad-5a79-82bb-57e9a83b5e85" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EscenariosDeErrorCodigoDeEquipoInvalido400"/>
+    <testcase name="status 400" time="0.001" classname="EscenariosDeErrorCodigoDeEquipoInvalido400"/>
+    <testcase name="error con formato único y code VALIDATION_ERROR" time="0.001" classname="EscenariosDeErrorCodigoDeEquipoInvalido400"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Equipo inexistente → 404" id="33a319c2-daf8-50f6-aade-5c5b022b0d65" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="EscenariosDeErrorEquipoInexistente404"/>
+    <testcase name="status 404" time="0.002" classname="EscenariosDeErrorEquipoInexistente404"/>
+    <testcase name="error con formato único y code TEAM_NOT_FOUND" time="0.002" classname="EscenariosDeErrorEquipoInexistente404"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Partido inexistente → 404" id="7867d2f9-f2cb-54bd-b8ae-f0fa62139b40" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.007">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.007" classname="EscenariosDeErrorPartidoInexistente404"/>
+    <testcase name="status 404" time="0.007" classname="EscenariosDeErrorPartidoInexistente404"/>
+    <testcase name="error con formato único y code MATCH_NOT_FOUND" time="0.007" classname="EscenariosDeErrorPartidoInexistente404"/>
+    <testcase name="la ausencia no se cachea" time="0.007" classname="EscenariosDeErrorPartidoInexistente404"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Eventos de partido inexistente → 404" id="78202868-6228-5a58-8f83-65ed3cebf731" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.005">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.005" classname="EscenariosDeErrorEventosDePartidoInexistente404"/>
+    <testcase name="status 404" time="0.005" classname="EscenariosDeErrorEventosDePartidoInexistente404"/>
+    <testcase name="error con formato único y code MATCH_NOT_FOUND" time="0.005" classname="EscenariosDeErrorEventosDePartidoInexistente404"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Ruta inexistente → 404" id="59bf8bdb-5297-5b54-91e0-91c0f7c88bff" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.000">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.000" classname="EscenariosDeErrorRutaInexistente404"/>
+    <testcase name="status 404" time="0.000" classname="EscenariosDeErrorRutaInexistente404"/>
+    <testcase name="error con formato único y code ROUTE_NOT_FOUND" time="0.000" classname="EscenariosDeErrorRutaInexistente404"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Estadísticas sin zona horaria → 400" id="ea56a8ee-5e2a-54ef-aceb-befb76e2c1d0" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EscenariosDeErrorEstadisticasSinZonaHoraria400"/>
+    <testcase name="status 400" time="0.001" classname="EscenariosDeErrorEstadisticasSinZonaHoraria400"/>
+    <testcase name="error con formato único y code VALIDATION_ERROR" time="0.001" classname="EscenariosDeErrorEstadisticasSinZonaHoraria400"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / limit fuera de rango → 400" id="7df655b5-ad0e-58cc-b86a-d5e3abdd73a0" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EscenariosDeErrorLimitFueraDeRango400"/>
+    <testcase name="status 400" time="0.001" classname="EscenariosDeErrorLimitFueraDeRango400"/>
+    <testcase name="error con formato único y code VALIDATION_ERROR" time="0.001" classname="EscenariosDeErrorLimitFueraDeRango400"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Evento sin Idempotency-Key → 400" id="30a02e93-b0b1-5d83-89de-9d18a64b0a32" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.002">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.002" classname="EscenariosDeErrorEventoSinIdempotencyKey400"/>
+    <testcase name="status 400" time="0.002" classname="EscenariosDeErrorEventoSinIdempotencyKey400"/>
+    <testcase name="error con formato único y code VALIDATION_ERROR" time="0.002" classname="EscenariosDeErrorEventoSinIdempotencyKey400"/>
+  </testsuite>
+  <testsuite name="Escenarios de error / Evento que viola la regla del tipo → 400" id="dd80752d-215b-5026-8b39-bc20b8052181" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.001">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.001" classname="EscenariosDeErrorEventoQueViolaLaReglaDelTipo400"/>
+    <testcase name="status 400" time="0.001" classname="EscenariosDeErrorEventoQueViolaLaReglaDelTipo400"/>
+    <testcase name="error con formato único y code EVENT_RULE_VIOLATION" time="0.001" classname="EscenariosDeErrorEventoQueViolaLaReglaDelTipo400"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 1 · POST GOL VISITANTE → 201" id="76335224-9409-50ec-8cbc-f980dde4b8e0" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.019">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.019" classname="FlujoDeCierreParDemoApi1PostGolVisitante201"/>
+    <testcase name="status 201" time="0.019" classname="FlujoDeCierreParDemoApi1PostGolVisitante201"/>
+    <testcase name="forma de evento" time="0.019" classname="FlujoDeCierreParDemoApi1PostGolVisitante201"/>
+    <testcase name="es el gol del visitante, origen API" time="0.019" classname="FlujoDeCierreParDemoApi1PostGolVisitante201"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 2 · mismo POST → 200 + Idempotent-Replayed" id="cb95eab1-4739-5a6e-aa4d-50a34015ac27" timestamp="2026-10-13T19:39:00.605Z" tests="5" failures="0" errors="0" time="0.013">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.013" classname="FlujoDeCierreParDemoApi2MismoPost200IdempotentReplayed"/>
+    <testcase name="status 200" time="0.013" classname="FlujoDeCierreParDemoApi2MismoPost200IdempotentReplayed"/>
+    <testcase name="forma de evento" time="0.013" classname="FlujoDeCierreParDemoApi2MismoPost200IdempotentReplayed"/>
+    <testcase name="Idempotent-Replayed: true" time="0.013" classname="FlujoDeCierreParDemoApi2MismoPost200IdempotentReplayed"/>
+    <testcase name="mismo evento, misma secuencia" time="0.013" classname="FlujoDeCierreParDemoApi2MismoPost200IdempotentReplayed"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 3 · PATCH estado sin FIN_PARTIDO → 409" id="0c21de60-fd7a-5323-a709-0accb9e1266a" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.010">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.010" classname="FlujoDeCierreParDemoApi3PatchEstadoSinFinPartido409"/>
+    <testcase name="status 409" time="0.010" classname="FlujoDeCierreParDemoApi3PatchEstadoSinFinPartido409"/>
+    <testcase name="error con formato único y code MISSING_FIN_PARTIDO" time="0.010" classname="FlujoDeCierreParDemoApi3PatchEstadoSinFinPartido409"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 4 · POST FIN_PARTIDO → 201" id="a454efff-e87a-5124-8579-08743aa422af" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.016">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.016" classname="FlujoDeCierreParDemoApi4PostFinPartido201"/>
+    <testcase name="status 201" time="0.016" classname="FlujoDeCierreParDemoApi4PostFinPartido201"/>
+    <testcase name="forma de evento" time="0.016" classname="FlujoDeCierreParDemoApi4PostFinPartido201"/>
+    <testcase name="FIN_PARTIDO posterior al gol" time="0.016" classname="FlujoDeCierreParDemoApi4PostFinPartido201"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 5 · PATCH estado → 200 FINALIZADO con marcador" id="5a9a46ba-e3eb-5894-9386-e2832f246309" timestamp="2026-10-13T19:39:00.605Z" tests="4" failures="0" errors="0" time="0.012">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.012" classname="FlujoDeCierreParDemoApi5PatchEstado200FinalizadoConMarcador"/>
+    <testcase name="status 200" time="0.012" classname="FlujoDeCierreParDemoApi5PatchEstado200FinalizadoConMarcador"/>
+    <testcase name="forma de detalle" time="0.012" classname="FlujoDeCierreParDemoApi5PatchEstado200FinalizadoConMarcador"/>
+    <testcase name="FINALIZADO con marcador derivado de los GOL (1–1)" time="0.012" classname="FlujoDeCierreParDemoApi5PatchEstado200FinalizadoConMarcador"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 6 · PATCH otra vez → 409 INVALID_TRANSITION" id="51028657-42e4-5fee-8182-fd48f82abc83" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.005">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.005" classname="FlujoDeCierreParDemoApi6PatchOtraVez409InvalidTransition"/>
+    <testcase name="status 409" time="0.005" classname="FlujoDeCierreParDemoApi6PatchOtraVez409InvalidTransition"/>
+    <testcase name="error con formato único y code INVALID_TRANSITION" time="0.005" classname="FlujoDeCierreParDemoApi6PatchOtraVez409InvalidTransition"/>
+  </testsuite>
+  <testsuite name="Flujo de cierre (PAR-DEMO-API) / 7 · POST evento en partido finalizado → 409" id="9c99040c-a1ea-534e-b5de-bb9274adc611" timestamp="2026-10-13T19:39:00.605Z" tests="3" failures="0" errors="0" time="0.006">
+    <testcase name="X-Request-Id de respuesta = el enviado" time="0.006" classname="FlujoDeCierreParDemoApi7PostEventoEnPartidoFinalizado409"/>
+    <testcase name="status 409" time="0.006" classname="FlujoDeCierreParDemoApi7PostEventoEnPartidoFinalizado409"/>
+    <testcase name="error con formato único y code MATCH_FINALIZED" time="0.006" classname="FlujoDeCierreParDemoApi7PostEventoEnPartidoFinalizado409"/>
+  </testsuite>
+</testsuites>

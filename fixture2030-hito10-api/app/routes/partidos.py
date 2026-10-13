@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.deps import eventos_service, partidos_service
-from app.schemas.common import R400, R500, R503, Cursor, IdempotencyKey, PartidoId, r404, r409
+from app.schemas.common import R400, R500, R503, Cursor, IdempotencyKey, PartidoId, r400, r404, r409
 from app.schemas.eventos import Evento, EventoNuevo, PaginaEventos, TipoEvento
 from app.schemas.partidos import CambioEstado, PartidoDetalle
 from app.services.eventos import EventosService
@@ -33,7 +33,8 @@ async def get_partido(partido_id: PartidoId, response: Response,
 
 @router.get("/{partido_id}/eventos", operation_id="listEventosDePartido",
             summary="Timeline de eventos de un partido, en orden de secuencia (Cypher parametrizado)",
-            response_model=PaginaEventos, responses={**R400, **R404_PARTIDO, **R503, **R500})
+            response_model=PaginaEventos,
+            responses={**r400("Parámetro inválido o cursor que no corresponde.", "INVALID_CURSOR"), **R404_PARTIDO, **R503, **R500})
 async def list_eventos(partido_id: PartidoId,
                        svc: Annotated[EventosService, Depends(eventos_service)],
                        tipo: Annotated[TipoEvento | None, Query()] = None,
@@ -46,8 +47,11 @@ async def list_eventos(partido_id: PartidoId,
              summary="Registra un evento validado contra las reglas de su tipo (N8); idempotente por Idempotency-Key",
              response_model=Evento, status_code=status.HTTP_201_CREATED,
              responses={200: {"model": Evento, "description": "Reintento: el evento ya existía con esa clave", "headers": CABECERA_REPLAY},
-                        **R400, **R404_PARTIDO,
-                        **r409("El estado del partido impide el evento (FINALIZADO, posterior a FIN_PARTIDO, INICIO/FIN repetido) o la clave ya se usó con otro cuerpo.", "MATCH_FINALIZED"),
+                        **r400("Cuerpo inválido o regla del tipo de evento violada (N8).", "EVENT_RULE_VIOLATION"),
+                        **R404_PARTIDO,
+                        **r409("El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.",
+                               "MATCH_FINALIZED", "EVENT_AFTER_FIN", "DUPLICATE_UNIQUE_EVENT",
+                               "EVENT_TYPE_NOT_IN_CATALOG", "IDEMPOTENCY_KEY_REUSED"),
                         **R503, **R500})
 async def registrar_evento(partido_id: PartidoId, body: EventoNuevo, response: Response,
                            idempotency_key: IdempotencyKey,
@@ -63,7 +67,8 @@ async def registrar_evento(partido_id: PartidoId, body: EventoNuevo, response: R
               summary="Cierre validado del partido (PROGRAMADO → FINALIZADO) en una transacción de escritura",
               response_model=PartidoDetalle,
               responses={**R400, **R404_PARTIDO,
-                         **r409("Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.", "INVALID_TRANSITION"),
+                         **r409("Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.",
+                                "INVALID_TRANSITION", "MISSING_FIN_PARTIDO"),
                          **R503, **R500})
 async def cerrar_partido(partido_id: PartidoId, body: CambioEstado,
                          svc: Annotated[EventosService, Depends(eventos_service)]) -> PartidoDetalle:
