@@ -79,7 +79,15 @@ def test_plantel_de_equipo_inexistente_es_404_no_lista_vacia(make_client):
     mongo = FakeMongo()
     r = make_client(mongodb=mongo).get("/equipos/XXX/jugadores")
     assert r.status_code == 404 and r.json()["code"] == "TEAM_NOT_FOUND"
-    assert mongo.llamadas == [("get_equipo", "XXX")]
+    # la existencia del equipo se consulta sólo porque la página salió vacía
+    assert mongo.llamadas == [("list_jugadores", "XXX", None, None, 21), ("get_equipo", "XXX")]
+
+
+def test_pagina_con_jugadores_no_consulta_el_equipo(make_client):
+    mongo = FakeMongo()
+    r = make_client(mongodb=mongo).get("/equipos/ARG/jugadores", params={"limit": 5})
+    assert r.status_code == 200 and len(r.json()["items"]) == 5
+    assert [c[0] for c in mongo.llamadas] == ["list_jugadores"]
 
 
 def test_equipo_existente_sin_jugadores_da_200_vacio(make_client):

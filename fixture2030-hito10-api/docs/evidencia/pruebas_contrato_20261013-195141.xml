@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites errors="0" failures="0" skipped="0" tests="10" time="2.702699">
+  <testsuite name="schemathesis" hostname="MacBook-Air.local" errors="0" failures="0" skipped="0" tests="10" time="2.702699">
+    <testcase name="GET /equipos/{codigo}" time="0.232997" />
+    <testcase name="GET /health" time="0.007715" />
+    <testcase name="GET /health/dependencias" time="0.018357" />
+    <testcase name="GET /sesiones/{sesion_id}" time="0.114954" />
+    <testcase name="GET /equipos/{codigo}/jugadores" time="0.394186" />
+    <testcase name="GET /equipos/{codigo}/partidos" time="0.264757" />
+    <testcase name="GET /partidos/{partido_id}" time="0.183354" />
+    <testcase name="GET /partidos/{partido_id}/comentarios" time="0.439132" />
+    <testcase name="GET /partidos/{partido_id}/estadisticas" time="0.488109" />
+    <testcase name="GET /partidos/{partido_id}/eventos" time="0.559138" />
+  </testsuite>
+</testsuites>

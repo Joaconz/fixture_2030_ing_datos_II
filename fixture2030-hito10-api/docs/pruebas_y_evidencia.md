@@ -8,10 +8,10 @@
 
 | Prueba | Herramienta | Resultado | Evidencia |
 |---|---|---|---|
-| Unitarias (sin Docker, adaptadores falsos) | pytest | **190 / 190** | [`pruebas_unitarias_20261013-194201.md`](./evidencia/pruebas_unitarias_20261013-194201.md) |
-| Integración (API real ↔ 5 fuentes, contraste nativo) | pytest + `docker exec` | **32 / 32** | [`pruebas_integracion_20261013-194201.md`](./evidencia/pruebas_integracion_20261013-194201.md) |
-| Funcionales de punta a punta | Newman (Postman) | **39 requests, 150 / 150 aserciones** | [`pruebas_newman_20261013-193859.xml`](./evidencia/pruebas_newman_20261013-193859.xml) |
-| Contrato OpenAPI ↔ servidor | schemathesis 4.31 | **641 casos, 0 fallas** (operaciones de lectura) | [`pruebas_contrato_20261013-193906.xml`](./evidencia/pruebas_contrato_20261013-193906.xml) |
+| Unitarias (sin Docker, adaptadores falsos) | pytest | **191 / 191** | [`pruebas_unitarias_20261013-195125.md`](./evidencia/pruebas_unitarias_20261013-195125.md) |
+| Integración (API real ↔ 5 fuentes, contraste nativo) | pytest + `docker exec` | **32 / 32** | [`pruebas_integracion_20261013-195125.md`](./evidencia/pruebas_integracion_20261013-195125.md) |
+| Funcionales de punta a punta | Newman (Postman) | **39 requests, 150 / 150 aserciones** | [`pruebas_newman_20261013-195140.xml`](./evidencia/pruebas_newman_20261013-195140.xml) |
+| Contrato OpenAPI ↔ servidor | schemathesis 4.31 | **641 casos, 0 fallas** (operaciones de lectura) | [`pruebas_contrato_20261013-195141.xml`](./evidencia/pruebas_contrato_20261013-195141.xml) |
 | Contrato versionado ↔ código | pytest (`test_openapi_drift`) | OK | incluido en unitarias |
 | Dependencia caída (`docker stop`), las 5 fuentes | `prueba_dependencia_caida.sh` | **5 / 5 OK** | `dependencia_caida_<fuente>_*.md` |
 | Dependencia colgada (`docker pause`) | script ad hoc en el doc | 503 a los 2,0 s en Redis, Cassandra e InfluxDB | [`dependencia_lenta_pause_20261013-194058.md`](./evidencia/dependencia_lenta_pause_20261013-194058.md) |

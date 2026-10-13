@@ -23,10 +23,6 @@ class EstadisticasService:
 
     async def consultar(self, partido_id: str, desde: datetime, hasta: datetime,
                         agregacion: Agregacion, equipo: str | None, limit: int) -> EstadisticasPartido:
-        if desde.tzinfo is None or hasta.tzinfo is None:
-            raise ValidationApiError("`desde` y `hasta` deben incluir zona horaria.",
-                                     code="VALIDATION_ERROR",
-                                     details=[{"campo": "desde/hasta", "problema": "sin zona horaria"}])
         if desde >= hasta:
             raise ValidationApiError("La ventana es inválida: `desde` debe ser anterior a `hasta`.",
                                      code="INVALID_TIME_WINDOW",

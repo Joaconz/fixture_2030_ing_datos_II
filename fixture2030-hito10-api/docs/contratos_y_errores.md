@@ -13,7 +13,7 @@ El contrato completo (paths, parámetros, cuerpos, schemas, ejemplos y códigos)
 | `GET /equipos/{codigo}/partidos` | CU3 | Neo4j · recorrido `PARTICIPA_EN` | 200 | 400, 404, 503 |
 | `GET /partidos/{partidoId}` | CU4 | Neo4j + caché Redis (cache-aside, `X-Cache`) | 200 | 400, 404 `MATCH_NOT_FOUND`, 503 |
 | `GET /partidos/{partidoId}/eventos` | CU5 | Neo4j · Cypher por `(partidoId, secuencia)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503 |
-| `POST /partidos/{partidoId}/eventos` | CU6 | Neo4j · transacción de escritura + reglas N8 | 201 / 200 replay | 400 (`EVENT_RULE_VIOLATION`), 404, 409 (5 códigos), 503 |
+| `POST /partidos/{partidoId}/eventos` | CU6 | Neo4j · transacción de escritura + reglas N8 | 201 / 200 replay | 400 (`EVENT_RULE_VIOLATION`), 404, 409 (6 códigos), 503 |
 | `PATCH /partidos/{partidoId}/estado` | CU7 | Neo4j · transacción de escritura (cierre CP) | 200 | 400, 404, 409 (`INVALID_TRANSITION`, `MISSING_FIN_PARTIDO`), 503 |
 | `GET /partidos/{partidoId}/comentarios` | CU8 | Cassandra · Q0 + particiones `(partido, ventana, bucket)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503 |
 | `POST /partidos/{partidoId}/comentarios` | CU9 | Cassandra · `LOGGED BATCH` en dos tablas | 201 / 200 replay | 400 (`COMMENT_OUTSIDE_MATCH_WINDOW`), 404, 503 |
@@ -55,7 +55,7 @@ Todo lo siguiente lo rechaza Pydantic/FastAPI **antes** de entrar al servicio; n
 | `CORNER` | obligatoria | opcional | 0–130 |
 | `PASE`, `ATAJADA`, `ASISTENCIA`, `GOL`, `PENAL`, `FALTA`, `TARJETA_AMARILLA`, `TARJETA_ROJA`, `SUSTITUCION` | obligatoria | obligatorio | 0–130 |
 
-Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PARTIDO`, `INICIO`/`FIN` únicos, tipo presente en el catálogo) se chequean dentro de la transacción de escritura, porque tienen que ser atómicas con el alta: devuelven 409.
+Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PARTIDO`, `INICIO`/`FIN` únicos, el minuto no retrocede respecto del último evento, tipo presente en el catálogo) se chequean dentro de la transacción de escritura, porque tienen que ser atómicas con el alta: devuelven 409.
 
 ## 3. Formato único de error (RF12 / RNF4)
 
@@ -91,6 +91,7 @@ Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PART
 | 409 | `MATCH_FINALIZED` | Evento sobre un partido `FINALIZADO` | POST eventos |
 | 409 | `EVENT_AFTER_FIN` | Evento posterior a `FIN_PARTIDO` | POST eventos |
 | 409 | `DUPLICATE_UNIQUE_EVENT` | Segundo `INICIO_PARTIDO` o `FIN_PARTIDO` | POST eventos |
+| 409 | `EVENT_OUT_OF_ORDER` | El `minuto` es anterior al del último evento registrado del partido | POST eventos |
 | 409 | `EVENT_TYPE_NOT_IN_CATALOG` | El tipo no existe como `:TipoEvento` en el grafo | POST eventos |
 | 409 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con otro cuerpo | POST eventos |
 | 409 | `INVALID_TRANSITION` | El partido no está `PROGRAMADO` (p. ej. cierre repetido) | PATCH estado |

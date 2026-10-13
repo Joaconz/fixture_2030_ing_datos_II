@@ -71,9 +71,9 @@ Columnas pedidas por §5.1: consumidor · entrada · fuente · respuesta esperad
 
 ### CU6 — Registrar un evento del partido (mesa de control)
 - **Consumidor:** mesa de control. **Entrada:** `partidoId`, cabecera `Idempotency-Key`, cuerpo `{tipo, minuto, condicionEquipo?, dorsalProtagonista?}`.
-- **Fuente:** Neo4j. Las **reglas de cada tipo de evento (N8)** se validan en la API, que es el único camino de escritura (decisión de la reentrega del Hito 3): qué campos exige cada tipo, `INICIO_PARTIDO` y `FIN_PARTIDO` únicos, nada después de `FIN_PARTIDO`, nada en un partido `FINALIZADO`, tipo presente en el catálogo `:TipoEvento`.
+- **Fuente:** Neo4j. Las **reglas de cada tipo de evento (N8)** se validan en la API, que es el único camino de escritura (decisión de la reentrega del Hito 3): qué campos exige cada tipo, `INICIO_PARTIDO` y `FIN_PARTIDO` únicos, nada después de `FIN_PARTIDO`, el minuto no puede ser anterior al del último evento, nada en un partido `FINALIZADO`, tipo presente en el catálogo `:TipoEvento`.
 - **Respuesta:** 201 con el evento creado (`secuencia` = siguiente del partido).
-- **No existe:** 404 `MATCH_NOT_FOUND`. **Regla violada:** 400 `EVENT_RULE_VIOLATION` (campo exigido ausente) o 409 (`MATCH_FINALIZED`, `EVENT_AFTER_FIN`, `DUPLICATE_UNIQUE_EVENT`). **Fuente caída:** 503 (no se escribió nada: la transacción no llegó a confirmarse).
+- **No existe:** 404 `MATCH_NOT_FOUND`. **Regla violada:** 400 `EVENT_RULE_VIOLATION` (campo exigido ausente) o 409 (`MATCH_FINALIZED`, `EVENT_AFTER_FIN`, `DUPLICATE_UNIQUE_EVENT`, `EVENT_OUT_OF_ORDER`). **Fuente caída:** 503 (no se escribió nada: la transacción no llegó a confirmarse).
 - **Tipo:** creación. **Idempotencia:** el `eventoId` se deriva de la clave; repetir la request responde 200 con el mismo evento y `Idempotent-Replayed: true`, sin duplicar. Misma clave con otro cuerpo: 409 `IDEMPOTENCY_KEY_REUSED`.
 - **Éxito:** el evento aparece una sola vez en `cypher-shell` aunque la request se repita.
 

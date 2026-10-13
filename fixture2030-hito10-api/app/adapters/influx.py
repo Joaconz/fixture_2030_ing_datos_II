@@ -136,14 +136,12 @@ class InfluxAdapter:
         self.settings = settings
         self._transport = transport  # sólo para pruebas (httpx.MockTransport)
         self._cliente: httpx.AsyncClient | None = None
+        self._token: str | None = None   # se lee del archivo una vez; se relee tras un 401/403
 
     # ------------------------------------------------------------------ ciclo
     async def connect(self) -> None:
         """Crea el cliente HTTP; no abre conexiones (la API arranca aunque Influx esté caído)."""
-        if self._cliente is None:
-            self._cliente = httpx.AsyncClient(base_url=self.settings.influx_url,
-                                              timeout=httpx.Timeout(self.settings.dep_timeout_s),
-                                              transport=self._transport)
+        self._http()
 
     async def close(self) -> None:
         if self._cliente is not None:
@@ -151,8 +149,7 @@ class InfluxAdapter:
             self._cliente = None
 
     def _http(self) -> httpx.AsyncClient:
-        if self._cliente is None:
-            # connect() no se llamó (p. ej. un script): se crea igual, sin red.
+        if self._cliente is None:   # también si connect() no se llamó (p. ej. un script); sin red
             self._cliente = httpx.AsyncClient(base_url=self.settings.influx_url,
                                               timeout=httpx.Timeout(self.settings.dep_timeout_s),
                                               transport=self._transport)
@@ -182,7 +179,9 @@ class InfluxAdapter:
         return [fila_a_punto(f) for f in filas]
 
     async def _query(self, sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
-        token = self.settings.influx_token_value()
+        if self._token is None:
+            self._token = self.settings.influx_token_value()   # E/S de disco sólo la primera vez
+        token = self._token
         if not token:
             log.error("token de InfluxDB no configurado: definir INFLUX_TOKEN o crear el archivo "
                       "de INFLUX_TOKEN_FILE (fixture2030-influxdb/scripts/autorizacion_local.sh)",
@@ -207,6 +206,7 @@ class InfluxAdapter:
                 raise DependencyUnavailableError(self.nombre)
             return datos
         if r.status_code in (401, 403):
+            self._token = None   # token rotado o recreado: releerlo en la próxima consulta
             self._log_rechazo(r.status_code, "token rechazado por InfluxDB")
         else:
             self._log_rechazo(r.status_code, "InfluxDB rechazó la consulta")

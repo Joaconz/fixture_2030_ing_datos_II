@@ -132,6 +132,11 @@ def test_flujo_de_cierre_completo(api, idem_key):
     assert_error(api.post(f"/partidos/{DEMO}/eventos", json={"tipo": "GOL", "minuto": 72},
                           headers={"Idempotency-Key": idem_key + "x"}), 400, "EVENT_RULE_VIOLATION")
 
+    # Minuto anterior al último evento registrado (GOL al 70) → 409, sin escribir
+    assert_error(api.post(f"/partidos/{DEMO}/eventos",
+                          json={"tipo": "PASE", "minuto": 10, "condicionEquipo": "LOCAL", "dorsalProtagonista": 5},
+                          headers={"Idempotency-Key": idem_key + "old"}), 409, "EVENT_OUT_OF_ORDER")
+
     # Cierre sin FIN_PARTIDO → 409
     assert_error(api.patch(f"/partidos/{DEMO}/estado", json={"estado": "FINALIZADO"}),
                  409, "MISSING_FIN_PARTIDO")

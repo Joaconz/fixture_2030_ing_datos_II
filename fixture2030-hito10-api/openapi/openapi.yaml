@@ -50,6 +50,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Equipo'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -63,6 +69,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
@@ -76,6 +88,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -89,6 +107,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -102,6 +130,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /equipos/{codigo}/jugadores:
     get:
       tags:
@@ -160,6 +194,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginaJugadores'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
@@ -179,6 +219,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
@@ -192,6 +238,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -205,6 +257,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -218,6 +280,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /equipos/{codigo}/partidos:
     get:
       tags:
@@ -252,6 +320,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartidosDeEquipo'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -265,6 +339,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el equipo solicitado. Códigos: `TEAM_NOT_FOUND`.'
           content:
@@ -278,6 +358,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -291,6 +377,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -304,6 +400,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /partidos/{partido_id}:
     get:
       tags:
@@ -339,6 +441,11 @@ paths:
                 - HIT
                 - MISS
                 - BYPASS
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -352,6 +459,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
@@ -365,6 +478,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -378,6 +497,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -391,6 +520,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /partidos/{partido_id}/eventos:
     get:
       tags:
@@ -457,6 +592,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginaEventos'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
@@ -476,6 +617,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
@@ -489,6 +636,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -502,6 +655,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -515,6 +678,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
     post:
       tags:
       - Partidos · Neo4j
@@ -556,6 +725,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Evento'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '200':
           description: 'Reintento: el evento ya existía con esa clave'
           headers:
@@ -565,6 +740,11 @@ paths:
                 type: string
                 enum:
                 - 'true'
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -588,6 +768,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
@@ -601,9 +787,15 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '409':
           description: 'El estado del partido impide el evento, o la clave ya se usó con otro cuerpo. Códigos: `MATCH_FINALIZED`,
-            `EVENT_AFTER_FIN`, `DUPLICATE_UNIQUE_EVENT`, `EVENT_TYPE_NOT_IN_CATALOG`, `IDEMPOTENCY_KEY_REUSED`.'
+            `EVENT_AFTER_FIN`, `DUPLICATE_UNIQUE_EVENT`, `EVENT_OUT_OF_ORDER`, `EVENT_TYPE_NOT_IN_CATALOG`, `IDEMPOTENCY_KEY_REUSED`.'
           content:
             application/json:
               examples:
@@ -625,6 +817,12 @@ paths:
                     code: DUPLICATE_UNIQUE_EVENT
                     message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
                     requestId: req-3f9c2a1b7d4e5f60
+                EVENT_OUT_OF_ORDER:
+                  summary: EVENT_OUT_OF_ORDER
+                  value:
+                    code: EVENT_OUT_OF_ORDER
+                    message: El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.
+                    requestId: req-3f9c2a1b7d4e5f60
                 EVENT_TYPE_NOT_IN_CATALOG:
                   summary: EVENT_TYPE_NOT_IN_CATALOG
                   value:
@@ -639,6 +837,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -652,6 +856,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -665,6 +879,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /partidos/{partido_id}/estado:
     patch:
       tags:
@@ -696,6 +916,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartidoDetalle'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -709,6 +935,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe el partido solicitado. Códigos: `MATCH_NOT_FOUND`.'
           content:
@@ -722,6 +954,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '409':
           description: 'Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO. Códigos: `INVALID_TRANSITION`,
             `MISSING_FIN_PARTIDO`.'
@@ -742,6 +980,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -755,6 +999,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -768,6 +1022,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /partidos/{partido_id}/comentarios:
     get:
       tags:
@@ -813,6 +1073,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginaComentarios'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'Parámetro inválido o cursor que no corresponde. Códigos: `VALIDATION_ERROR`, `INVALID_CURSOR`.'
           content:
@@ -832,6 +1098,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.
             Códigos: `MATCH_NOT_FOUND`.'
@@ -846,6 +1118,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -859,6 +1137,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -872,6 +1160,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
     post:
       tags:
       - Comentarios · Cassandra
@@ -913,6 +1207,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Comentario'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '200':
           description: 'Reintento: el comentario ya existía'
           headers:
@@ -921,6 +1221,11 @@ paths:
                 type: string
                 enum:
                 - 'true'
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -944,6 +1249,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'El partido no tiene configuración de partición (Q0): no existe para el módulo de comentarios.
             Códigos: `MATCH_NOT_FOUND`.'
@@ -958,6 +1269,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -971,6 +1288,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -984,6 +1311,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /sesiones/{sesion_id}:
     get:
       tags:
@@ -1007,6 +1340,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Sesion'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -1020,6 +1359,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '403':
           description: 'La sesión existe pero está BLOQUEADA. Códigos: `SESSION_BLOCKED`.'
           content:
@@ -1033,6 +1378,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe una sesión vigente con ese id (inexistente o expirada). Códigos: `SESSION_NOT_FOUND`.'
           content:
@@ -1046,6 +1397,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -1059,6 +1416,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -1072,6 +1439,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
     delete:
       tags:
       - Sesiones · Redis
@@ -1090,6 +1463,12 @@ paths:
       responses:
         '204':
           description: Successful Response
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'La request no cumple el contrato (parámetro, query o cuerpo inválido). Códigos: `VALIDATION_ERROR`.'
           content:
@@ -1103,6 +1482,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '404':
           description: 'No existe una sesión vigente con ese id (inexistente o expirada). Códigos: `SESSION_NOT_FOUND`.'
           content:
@@ -1116,6 +1501,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -1129,6 +1520,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -1142,6 +1543,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /partidos/{partido_id}/estadisticas:
     get:
       tags:
@@ -1216,6 +1623,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadisticasPartido'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '400':
           description: 'Parámetro inválido o ventana temporal inválida. Códigos: `VALIDATION_ERROR`, `INVALID_TIME_WINDOW`,
             `TIME_WINDOW_TOO_LARGE`.'
@@ -1242,6 +1655,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
           content:
@@ -1255,6 +1674,16 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -1268,6 +1697,12 @@ paths:
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /health:
     get:
       tags:
@@ -1281,6 +1716,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Vivo'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /health/dependencias:
     get:
       tags:
@@ -1294,12 +1735,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SaludDependencias'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
         '503':
           description: Al menos una fuente está DOWN (mismo cuerpo)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SaludDependencias'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
         '500':
           description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
           content:
@@ -1313,6 +1770,12 @@ paths:
                     code: INTERNAL_ERROR
                     message: Error interno; el detalle técnico queda sólo en los logs.
                     requestId: req-3f9c2a1b7d4e5f60
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
 components:
   schemas:
     CambioEstado:

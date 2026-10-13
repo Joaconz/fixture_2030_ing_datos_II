@@ -46,7 +46,7 @@ import logging
 from dataclasses import dataclass
 from typing import Literal
 
-from app.core.errors import NotFoundError, ValidationApiError
+from app.core.errors import DependencyUnavailableError, NotFoundError, ValidationApiError
 from app.schemas.eventos import Evento, EventoNuevo, PaginaEventos
 from app.schemas.partidos import CambioEstado, PartidoDetalle
 from app.services import cursor_entero
@@ -152,7 +152,7 @@ class EventosService:
         # convertirla en error (el cliente reintentaría algo que ya ocurrió).
         try:
             await self.redis.cache_del_partido(partido_id)
-        except Exception as exc:  # noqa: BLE001 — degradación documentada (vence por TTL)
+        except DependencyUnavailableError as exc:   # el adaptador traduce todo error de Redis a esto
             log.warning("no se pudo invalidar la caché del partido; vence por TTL", extra={
                 "evento": "cache", "dependencia": "redis", "operacion": "cache_del_partido",
                 "resultado": "no_invalidada", "tipo": type(exc).__name__})

@@ -1,0 +1,21 @@
+# Dependencias y build
+node_modules
+dist
+dist-ssr
+.vercel
+
+# Variables locales (sólo se versiona .env.example)
+.env.local
+.env.*.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / SO
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?

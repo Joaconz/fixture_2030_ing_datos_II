@@ -119,10 +119,10 @@ RETURN p.estado AS estado
 CYPHER_ESTADO_EVENTOS = """
 MATCH (p:Partido {partidoId: $partidoId})
 OPTIONAL MATCH (ev:Evento)-[:OCURRE_EN]->(p)
-WITH p, max(ev.secuencia) AS maxSecuencia,
+WITH p, max(ev.secuencia) AS maxSecuencia, max(ev.minuto) AS maxMinuto,
      sum(CASE WHEN ev.tipo = 'FIN_PARTIDO' THEN 1 ELSE 0 END) AS fines,
      sum(CASE WHEN ev.tipo = $tipo THEN 1 ELSE 0 END) AS mismoTipo
-RETURN maxSecuencia, fines, mismoTipo,
+RETURN maxSecuencia, maxMinuto, fines, mismoTipo,
        EXISTS { (:TipoEvento {tipoEventoId: $tipo}) } AS enCatalogo
 """
 
@@ -288,6 +288,11 @@ async def _tx_registrar(tx: AsyncManagedTransaction, partido_id: str, evento_id:
     if nuevo.tipo in TIPOS_UNICOS and estado["mismoTipo"] > 0:
         raise ConflictError(f"El partido ya tiene un evento {nuevo.tipo}.",
                             code="DUPLICATE_UNIQUE_EVENT")
+    if estado["maxMinuto"] is not None and nuevo.minuto < estado["maxMinuto"]:
+        # El reloj lógico es `secuencia`; el minuto de juego tampoco puede retroceder
+        # (un FIN_PARTIDO al minuto 5 después de un GOL al 13 dejaría un timeline absurdo).
+        raise ConflictError(f"El minuto {nuevo.minuto} es anterior al último evento registrado "
+                            f"(minuto {estado['maxMinuto']}).", code="EVENT_OUT_OF_ORDER")
     if not estado["enCatalogo"]:
         raise ConflictError(f"El tipo {nuevo.tipo} no está en el catálogo :TipoEvento.",
                             code="EVENT_TYPE_NOT_IN_CATALOG")

@@ -16,7 +16,7 @@ operación falla con 503 (timeouts de conexión y de socket = `dep_timeout_s`).
 from __future__ import annotations
 
 from redis.asyncio import Redis
-from redis.exceptions import BusyLoadingError, ConnectionError, TimeoutError, WatchError
+from redis.exceptions import BusyLoadingError, ConnectionError, RedisError, TimeoutError, WatchError
 
 from app.adapters.base import ejecutar
 from app.config.settings import Settings
@@ -24,6 +24,10 @@ from app.core.errors import DependencyUnavailableError
 from app.services.ports import SesionCruda
 
 ERRORES_DISPONIBILIDAD: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, BusyLoadingError)
+# La caché es una optimización: CUALQUIER error de Redis en sus comandos (también un
+# WRONGTYPE si otra herramienta dejó otro tipo en la clave) se trata como "caché no
+# disponible" y el detalle se sirve desde Neo4j (BYPASS), nunca como 500.
+ERRORES_CACHE: tuple[type[BaseException], ...] = (RedisError,)
 INTENTOS_CIERRE = 2   # el primero + un reintento si WATCH abortó el EXEC
 
 
@@ -55,10 +59,13 @@ class RedisAdapter:
         self._r: Redis | None = None
 
     # ------------------------------------------------------------------ ciclo de vida
+    def _crear_cliente(self) -> Redis:
+        return Redis.from_url(self.settings.redis_url.get_secret_value(),
+                              socket_connect_timeout=self._timeout, socket_timeout=self._timeout,
+                              decode_responses=True)
+
     async def connect(self) -> None:
-        self._r = Redis.from_url(self.settings.redis_url.get_secret_value(),
-                                 socket_connect_timeout=self._timeout, socket_timeout=self._timeout,
-                                 decode_responses=True)
+        self._r = self._crear_cliente()
 
     async def close(self) -> None:
         if self._r is not None:
@@ -68,14 +75,13 @@ class RedisAdapter:
     @property
     def r(self) -> Redis:
         if self._r is None:     # por si se usa sin lifespan (no debería pasar)
-            self._r = Redis.from_url(self.settings.redis_url.get_secret_value(),
-                                     socket_connect_timeout=self._timeout, socket_timeout=self._timeout,
-                                     decode_responses=True)
+            self._r = self._crear_cliente()
         return self._r
 
-    async def _ejecutar(self, operacion: str, awaitable):  # type: ignore[no-untyped-def]
+    async def _ejecutar(self, operacion: str, awaitable,  # type: ignore[no-untyped-def]
+                        errores: tuple[type[BaseException], ...] = ERRORES_DISPONIBILIDAD):
         return await ejecutar(self.nombre, operacion, awaitable, timeout_s=self._timeout,
-                              errores_de_disponibilidad=ERRORES_DISPONIBILIDAD)
+                              errores_de_disponibilidad=errores)
 
     async def ping(self) -> None:
         await self._ejecutar("ping", self.r.ping())
@@ -129,11 +135,14 @@ class RedisAdapter:
 
     # ------------------------------------------------------------------ caché de partido
     async def cache_get_partido(self, partido_id: str) -> str | None:
-        return await self._ejecutar("cache_get_partido", self.r.get(clave_cache_partido(partido_id)))
+        return await self._ejecutar("cache_get_partido", self.r.get(clave_cache_partido(partido_id)),
+                                    ERRORES_CACHE)
 
     async def cache_set_partido(self, partido_id: str, valor_json: str, ttl_s: int) -> None:
         await self._ejecutar("cache_set_partido",
-                             self.r.set(clave_cache_partido(partido_id), valor_json, ex=ttl_s))
+                             self.r.set(clave_cache_partido(partido_id), valor_json, ex=ttl_s),
+                             ERRORES_CACHE)
 
     async def cache_del_partido(self, partido_id: str) -> None:
-        await self._ejecutar("cache_del_partido", self.r.delete(clave_cache_partido(partido_id)))
+        await self._ejecutar("cache_del_partido", self.r.delete(clave_cache_partido(partido_id)),
+                             ERRORES_CACHE)

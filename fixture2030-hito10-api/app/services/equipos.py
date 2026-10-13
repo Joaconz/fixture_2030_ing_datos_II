@@ -35,15 +35,17 @@ class EquiposService:
         """CU2: plantel ordenado por dorsal, paginado por keyset sobre el dorsal.
 
         1. El cursor se valida ANTES de tocar Mongo (400 INVALID_CURSOR).
-        2. Se verifica que el equipo exista: un código inexistente es 404
-           TEAM_NOT_FOUND, no una lista vacía ambigua (CU2).
+        2. Si la página sale vacía se verifica que el equipo exista: un código
+           inexistente es 404 TEAM_NOT_FOUND, no una lista vacía ambigua (CU2).
         3. Se piden `limit + 1` filas: si vuelve la fila extra hay otra página,
            y el `nextCursor` es el dorsal de la última fila efectivamente devuelta.
         """
         despues = cursor_entero.decodificar(TIPO_CURSOR, cursor)
-        if await self.mongo.get_equipo(codigo) is None:
-            raise _equipo_inexistente(codigo)
         filas = await self.mongo.list_jugadores(codigo, posicion, despues, limit + 1)
+        # Sólo una página vacía es ambigua (¿equipo inexistente o sin jugadores de esa
+        # posición?): recién ahí se consulta el equipo, no en cada página.
+        if not filas and await self.mongo.get_equipo(codigo) is None:
+            raise _equipo_inexistente(codigo)
         items = filas[:limit]
         siguiente = (cursor_entero.codificar(TIPO_CURSOR, items[-1].dorsal)
                      if len(filas) > limit else None)

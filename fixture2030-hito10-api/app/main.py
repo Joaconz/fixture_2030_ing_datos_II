@@ -100,7 +100,18 @@ def create_app() -> FastAPI:
         # FastAPI documenta 422 por defecto; esta API responde 400 (ver core/errors.py).
         for ruta in schema.get("paths", {}).values():
             for op in ruta.values():
-                op.get("responses", {}).pop("422", None)
+                respuestas = op.get("responses", {})
+                respuestas.pop("422", None)
+                # Cabeceras que emite el middleware/handlers en TODA respuesta (RF18) y en los 503.
+                for status, resp in respuestas.items():
+                    cabeceras = resp.setdefault("headers", {})
+                    cabeceras["X-Request-Id"] = {
+                        "description": "Identificador de la request (el enviado por el cliente si es seguro, "
+                                       "o uno generado); el mismo valor está en `requestId` y en los logs",
+                        "schema": {"type": "string"}}
+                    if status == "503":
+                        cabeceras["Retry-After"] = {"description": "Segundos sugeridos antes de reintentar",
+                                                    "schema": {"type": "integer"}}
         for nombre in ("HTTPValidationError", "ValidationError"):
             schema.get("components", {}).get("schemas", {}).pop(nombre, None)
         app.openapi_schema = schema

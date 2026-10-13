@@ -50,7 +50,7 @@ async def list_eventos(partido_id: PartidoId,
                         **r400("Cuerpo inválido o regla del tipo de evento violada (N8).", "EVENT_RULE_VIOLATION"),
                         **R404_PARTIDO,
                         **r409("El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.",
-                               "MATCH_FINALIZED", "EVENT_AFTER_FIN", "DUPLICATE_UNIQUE_EVENT",
+                               "MATCH_FINALIZED", "EVENT_AFTER_FIN", "DUPLICATE_UNIQUE_EVENT", "EVENT_OUT_OF_ORDER",
                                "EVENT_TYPE_NOT_IN_CATALOG", "IDEMPOTENCY_KEY_REUSED"),
                         **R503, **R500})
 async def registrar_evento(partido_id: PartidoId, body: EventoNuevo, response: Response,

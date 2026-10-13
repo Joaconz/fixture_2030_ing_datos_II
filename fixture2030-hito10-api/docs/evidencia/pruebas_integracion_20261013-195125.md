@@ -1,4 +1,4 @@
-# pytest tests/integration — 2026-10-13T19:42:06Z — API en :8000 contra las 5 fuentes en Docker; contraste con mongosh, cypher-shell, cqlsh y redis-cli dentro de cada test
+# pytest tests/integration — 2026-10-13T19:51:30Z — API en :8000 contra las 5 fuentes en Docker; contraste con mongosh, cypher-shell, cqlsh y redis-cli dentro de cada test
 ```
 tests/integration/test_api_integracion.py::test_health_dependencias_todas_up PASSED [  3%]
 tests/integration/test_api_integracion.py::test_equipo_coincide_con_mongosh PASSED [  6%]
@@ -32,5 +32,5 @@ tests/integration/test_api_integracion.py::test_estadisticas_raw_y_agregadas PAS
 tests/integration/test_api_integracion.py::test_estadisticas_ventana_sin_datos_200_vacio PASSED [ 93%]
 tests/integration/test_api_integracion.py::test_estadisticas_ventana_invertida_400 PASSED [ 96%]
 tests/integration/test_api_integracion.py::test_estadisticas_ventana_mayor_a_3h_400 PASSED [100%]
-============================= 32 passed in 10.06s ==============================
+============================== 32 passed in 7.60s ==============================
 ```
