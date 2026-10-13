@@ -121,6 +121,8 @@ Escritura append-only continua distribuida entre nodos, con durabilidad garantiz
 
 ### Entidades complejas → Objetos (IRIS)
 
+> **Nota de trazabilidad (no está en el PDF original):** en la reentrega del Hito 3 (13/10/2026), con el ok del profesor, los tipos de evento pasaron a **Neo4j**, junto con los eventos y los partidos, y el modelo de objetos salió de la arquitectura. Ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 Los eventos presentan subtipos con atributos y reglas propias: Gol, Tarjeta y Cambio comparten estructura común pero difieren en sus campos específicos. El modelo de objetos representa esa jerarquía de forma directa: una estructura común con partes específicas por tipo, sin las columnas vacías que exigiría forzarlo en un esquema fijo.
 
 Se propone una división de responsabilidades: IRIS mantiene la definición de los tipos de evento y sus reglas de validación, mientras que Neo4j almacena las instancias y sus relaciones. IRIS modela el esquema del dominio; Neo4j, lo ocurrido durante los partidos.
@@ -164,3 +166,5 @@ El costo de esta duplicación es que el grafo puede quedar desactualizado si la 
 ## Historial de revisión
 
 **26/09/2026 — corrección de alcance (ver [`correcciones-profesor.md`](./correcciones-profesor.md)).** El profesor marcó que el documento adelantaba mecanismos internos no vistos hasta la Clase 1 (MVCC, CTEs recursivas, consenso multi-región, arquitectura peer-to-peer, diseño de clave de partición compuesta, TTL, downsampling, herencia de objetos en IRIS) y pedía justificar solo con volumen, velocidad, acceso, esquema, escalabilidad y ACID/BASE. Se reescribieron los pasajes de la Sección 2 (Usuarios y Sesiones, Partidos y Eventos, distribución geográfica) y la Sección 3 (Comentarios, Sesiones, Estadísticas en vivo, Entidades complejas) para justificar con esas seis dimensiones únicamente, sin nombrar el mecanismo interno de ningún motor ni proponer un diseño de partición concreto. **No cambió ninguna entidad, modelo elegido, alternativa descartada ni la matriz de decisión** — es una corrección de nivel de detalle, no de arquitectura.
+
+**13/10/2026 — nota de trazabilidad.** Se agregó una nota en "Entidades complejas → Objetos (IRIS)" que apunta a la reentrega del Hito 3, donde los tipos de evento pasaron a Neo4j. El texto original no se modificó.

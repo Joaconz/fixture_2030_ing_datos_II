@@ -1,5 +1,7 @@
 # Fixture 2030 — Hito 9 · Entidades complejas (InterSystems IRIS)
 
+> **Fuera de la arquitectura vigente desde el 13/10/2026.** En la reentrega del Hito 3, con el ok del profesor, el modelo de objetos salió de la arquitectura: Partidos (N2) y Tipos de evento (N8) pasaron a Neo4j. Este módulo se conserva tal como se entregó en el Hito 9 y no es fuente de verdad de ningún dato. Ver [`../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 **Repositorio:** https://github.com/Joaconz/fixture_2030_ing_datos_II
 **Ingeniería de Datos II · Grupo 2** — Santiago Pazos, Valentina Frisoli, Joaquín Núñez
 

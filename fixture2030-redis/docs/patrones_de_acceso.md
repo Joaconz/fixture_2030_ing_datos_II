@@ -20,6 +20,8 @@ El escenario del Hito 1 exige sostener **2–3 millones de usuarios simultáneos
 El Hito 3 ya fijó la naturaleza de este dato: **Sesiones (N5) es AP, consistencia eventual, vigencia por TTL, local por región, sin réplica entre regiones**; perder una sesión es tolerable ("en el peor caso se repite un login"). Según la matriz del Hito 2, Usuarios (N4) vive en MongoDB y Partidos (N2) en el motor de objetos (IRIS): son la **fuente de verdad** de lo que aquí se cachea. Ninguno de los dos está implementado todavía.
 
 > **Trazabilidad de N2.** El Hito 2 asigna Partidos a **Objetos (IRIS, 4,25)**, apenas 0,10 sobre Documental (4,15). El Hito 3 lo lista como MongoDB "por 0,20", lo que contradice al Hito 2. Este módulo sigue la matriz del Hito 2; el diseño de la caché no depende del motor de la fuente. Detalle en [`concurrencia_y_pruebas.md`](./concurrencia_y_pruebas.md) §5.
+>
+> **Nota (13/10/2026) — reentrega del Hito 3.** Con el ok del profesor, el modelo de objetos (IRIS) salió de la arquitectura: la fuente de verdad de **Partidos (N2) pasó a Neo4j**, el mismo grafo del que ya salen los identificadores `PAR-…` de este módulo. Las menciones a IRIS como fuente de Partidos en este módulo describen la arquitectura vigente al entregar el Hito 7 y se conservan así (también en scripts y evidencia). El diseño de la caché no cambia, porque no depende del motor de la fuente. Ver [`../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../../docs/hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md).
 
 ### Supuestos de carga (declarados, no medidos en producción)
 

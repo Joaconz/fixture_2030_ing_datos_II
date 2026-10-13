@@ -98,6 +98,8 @@ La matriz completa va en la planilla anexa: seis criterios con su peso y su just
 
 **Nota para lectura automática (validar-hito / auditar-hito):** la fila **N2 Partidos** gana **Objetos (IRIS) con 4,25**, por 0,10 sobre Documental (4,15). La fila **N4 Usuarios** gana **Documental (MongoDB) con 4,10**, por 0,10 sobre Columnar (4,00). Cualquier documento posterior que afirme un ganador distinto para N2 o N4, o un margen distinto de 0,10 para cualquiera de las dos, contradice esta tabla — que es la fuente.
 
+> **Asignación revisada en la reentrega del Hito 3 (13/10/2026).** Los puntajes de esta tabla no cambian, pero la asignación final de **N2 Partidos** y **N8 Entidades complejas** pasó de Objetos (IRIS) a **Grafo (Neo4j)**, con el ok del profesor, por un criterio que la matriz no medía: el costo de mantener un mismo dominio repartido entre dos modelos (preguntas 5 y 7 de la Sección 5). Ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 Como muestra del detalle que hay en la planilla, va la primera necesidad desagregada.
 
 | N1 — Equipos y jugadores | Peso | Documental | Grafo | Clave-valor | Columnar | Objetos | Temporal |
@@ -119,6 +121,8 @@ Como muestra del detalle que hay en la planilla, va la primera necesidad desagre
 Manda el esquema. Los atributos que importan de un jugador cambian según su posición, y el modelo documental admite que dos jugadores del mismo plantel tengan campos distintos sin dejar columnas vacías ni rehacer la estructura. El acceso acompaña: el equipo y su plantel se guardan juntos, así que leer una selección completa es una sola operación, y también se puede buscar por atributo. Volumen y escalabilidad casi no pesan, con 64 equipos y 1.500 jugadores fijos. La alternativa más cercana es el modelo de objetos con 4,00, que representa igual de bien un dato con partes variables y ofrece garantías ACID más firmes. *Trade-off aceptado:* ganamos libertad para cambiar la estructura sin migrar los datos existentes, y cedemos control sobre esa misma estructura. Nada garantiza desde el modelo que todos los arqueros lleven los mismos campos: esa validación queda del lado de la aplicación.
 
 ### N2 · Partidos → Objetos (IRIS, 4,25)
+
+> **Revisado en la reentrega del Hito 3 (13/10/2026):** esta necesidad pasó a **Grafo (Neo4j)**. El texto de abajo es la justificación original del Hito 2 y se conserva sin cambios. Ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
 
 El criterio determinante es la consistencia, con 30%. Al cerrar un partido se actualizan resultado, clasificado y tabla de posiciones en conjunto, y no puede haber un momento en el que dos usuarios vean marcadores distintos: es un caso que exige ACID y no tolera BASE. El modelo de objetos ofrece esas garantías y representa el partido como una entidad con sus partes, que es como se lo consulta. El volumen no interviene, son 127 partidos que no crecen. Quedó a **0,10 puntos** el modelo **documental con 4,15**, que también ofrece garantías ACID y gana en escalabilidad. *Trade-off aceptado:* priorizamos la garantía ACID sobre la escalabilidad, y podemos hacerlo porque el conjunto de partidos está acotado de antemano. El costo es que Partidos queda separado de Equipos y Jugadores, con los que se consulta a menudo. **Es la decisión más ajustada de la matriz** y la señalamos como tal.
 
@@ -148,6 +152,8 @@ El momento en que se genera cada dato es su dimensión principal, y las consulta
 
 ### N8 · Entidades complejas → Objetos (IRIS, 4,60)
 
+> **Revisado en la reentrega del Hito 3 (13/10/2026):** esta necesidad pasó a **Grafo (Neo4j)**. El texto de abajo es la justificación original del Hito 2 y se conserva sin cambios. Ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
+
 Gol, Tarjeta y Cambio comparten parte de su estructura y difieren en el resto, y cada tipo tiene reglas propias que deben cumplirse siempre. Esa combinación —estructura parcialmente común y validación obligatoria— es lo que el modelo de objetos resuelve de forma directa, y explica que gane esquema, acceso y consistencia a la vez. **Es la decisión con mayor margen de toda la matriz**, un punto entero sobre el modelo documental (3,60), que puede guardar los tres tipos en una misma colección pero deja las reglas de cada uno fuera del modelo. *Trade-off aceptado:* el modelo de objetos es el que menos escala de los que sostienen volumen, y lo damos por bueno porque el catálogo de tipos es acotado y no crece con la audiencia. Queda anotado que esta decisión y la de N3 se reparten un mismo dominio: el modelo de objetos define qué es cada tipo de evento, el grafo guarda lo que ocurrió en los partidos.
 
 ### N9 · Auditoría e históricos → Columnar (Cassandra, 4,50)
@@ -169,6 +175,8 @@ La plataforma queda con una arquitectura políglota que usa los seis modelos eva
 | Clave-valor | Redis | Sesiones | Velocidad de respuesta por acceso directo |
 | Columnar | Cassandra | Comentarios, Auditoría e históricos | Escalabilidad y volumen sostenido |
 | Objetos | InterSystems IRIS | **Partidos, Tipos de evento** | Garantías ACID y estructura con partes propias |
+
+> **Mapa vigente desde la reentrega del Hito 3 (13/10/2026):** el modelo de objetos sale de la arquitectura y **Grafo (Neo4j)** pasa a tener Partidos, Eventos y Tipos de evento. Los dos puntos de contacto descriptos en el párrafo siguiente (Partidos↔Eventos y Eventos↔Tipos de evento) dejan de cruzar modelos. Ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
 | Series temporales | InfluxDB | Estadísticas en vivo | Generación continua y consulta por período |
 
 El mapa tiene dos puntos de contacto que vale la pena señalar, porque son los que pueden fallar. El primero está entre Partidos y Eventos: el resultado oficial vive en el modelo de objetos y los eventos de ese mismo partido en el grafo, así que el estado de un partido queda repartido entre dos modelos. El segundo está entre Eventos y Tipos de evento: el modelo de objetos define qué es un Gol y el grafo guarda los goles que ocurrieron, y los dos tienen que mantenerse alineados cuando un tipo cambia.
@@ -184,12 +192,14 @@ Sobre la implementación documental de equipos y jugadores, que empieza en el pr
 Sobre el conjunto de la arquitectura:
 
 4. Las dos decisiones frágiles, N2 y N4, se resolvieron por 0,10 puntos. ¿Qué evidencia nueva las cambiaría? Para N2, que el volumen de partidos deje de ser acotado; para N4, que el padrón crezca bastante por encima de lo estimado.
-5. ¿Cómo se mantiene alineado el estado de un partido, repartido entre el modelo de objetos y el grafo? Es la contrapartida directa de haber separado Partidos de Eventos, y el Hito 1 ya advirtió que un desajuste así no se corrige solo.
+5. ¿Cómo se mantiene alineado el estado de un partido, repartido entre el modelo de objetos y el grafo? Es la contrapartida directa de haber separado Partidos de Eventos, y el Hito 1 ya advirtió que un desajuste así no se corrige solo. **→ Respondida en la reentrega del Hito 3 (13/10/2026):** Partidos y Tipos de evento pasan al grafo; ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
 6. La auditoría quedó en un modelo que se apoya en BASE, sobre un dato que pierde sentido si se pierde. ¿Ese nivel de garantía es suficiente, o la necesidad exige revisar el peso que le dimos a la consistencia?
-7. ¿La separación entre Tipos de evento y Eventos justifica mantener dos modelos para un mismo dominio? La matriz la sostiene por puntaje en cada necesidad por separado, pero ninguno de los seis criterios mide lo que cuesta mantener dos modelos alineados.
+7. ¿La separación entre Tipos de evento y Eventos justifica mantener dos modelos para un mismo dominio? La matriz la sostiene por puntaje en cada necesidad por separado, pero ninguno de los seis criterios mide lo que cuesta mantener dos modelos alineados. **→ Respondida en la reentrega del Hito 3 (13/10/2026):** Partidos y Tipos de evento pasan al grafo; ver [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
 
 ---
 
 ## Historial de revisión
 
 **26/09/2026 — cierre de las tres decisiones que pidió reforzar la corrección del profesor** (N2, N4, N9 — ver [`correcciones-profesor.md`](./correcciones-profesor.md)). Las tres preguntas 4 y 6 de arriba pedían justamente esto. Se agregó, dentro de la justificación de cada una (Sección 4), un párrafo **"Resuelto en el Hito 3"** que resume el argumento que las cerró (análisis CAP para N2 y N4, parámetros N/R/W para N9) y linkea a la sección exacta del documento del Hito 3. No se modificó ninguna puntuación, peso ni modelo elegido de la matriz — el cierre es un puntero a dónde se resolvió, no una re-evaluación.
+
+**13/10/2026 — asignación de N2 y N8 revisada en la reentrega del Hito 3.** Se agregaron notas (sin tocar puntajes, pesos ni el texto original de cada justificación) en: la nota para lectura automática de la Sección 3, los encabezados de N2 y N8 en la Sección 4, el mapa de persistencia y las preguntas 5 y 7 de la Sección 5. Todas apuntan a [`../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md`](../hito-3-arquitectura-distribuida/hito-3-arquitectura-distribuida.md), sección "Revisión de la asignación del modelo de objetos (reentrega)".
