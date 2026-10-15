@@ -17,3 +17,6 @@ web/.vercel/
 web/.env.local
 # Logs crudos (la evidencia versionada se sanea antes de copiarla a docs/evidencia)
 *.log
+
+# Artefactos generados por schemathesis al correr las pruebas de contrato
+.schemathesis/
