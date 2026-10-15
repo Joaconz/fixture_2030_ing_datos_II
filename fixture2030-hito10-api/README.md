@@ -102,7 +102,6 @@ fixture2030-hito10-api/
 | Seguridad | [`docs/seguridad.md`](docs/seguridad.md) |
 | Rendimiento básico | [`docs/rendimiento.md`](docs/rendimiento.md) |
 | Coherencia con el TPO | [`docs/coherencia_tpo.md`](docs/coherencia_tpo.md) |
-| Auditoría del hito | [`docs/auditoria_hito10.md`](docs/auditoria_hito10.md) |
 
 ## Limitaciones conocidas
 
