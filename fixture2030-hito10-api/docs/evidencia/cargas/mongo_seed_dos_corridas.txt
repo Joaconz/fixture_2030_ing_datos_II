@@ -1,0 +1,17 @@
+# H1 (estado canónico): load/seed.js corrido dos veces seguidas contra el Mongo real — 2026-10-13T19:46:45Z
+## corrida 1
+── Cargando equipos ──
+  Equipos insertados: 0
+  Equipos actualizados: 0
+── Cargando jugadores ──
+  Jugadores insertados: 0
+  Jugadores actualizados: 0
+conteo equipos=64 jugadores=1472 dni_distintos=1472 huella_dni=11776:30000001,30000002,30000003
+## corrida 2
+── Cargando equipos ──
+  Equipos insertados: 0
+  Equipos actualizados: 0
+── Cargando jugadores ──
+  Jugadores insertados: 0
+  Jugadores actualizados: 0
+conteo equipos=64 jugadores=1472 dni_distintos=1472 huella_dni=11776:30000001,30000002,30000003

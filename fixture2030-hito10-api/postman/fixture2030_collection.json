@@ -1,0 +1,2938 @@
+{
+  "info": {
+    "_postman_id": "50120360-c5e0-58e8-9f5c-66d921a51fef",
+    "name": "Fixture 2030 — API REST integrada (Hito 10)",
+    "description": "Pruebas funcionales de la API (§5.12). Una carpeta por fuente, escenarios de error y el flujo de cierre de PAR-DEMO-API. Cada request manda un `X-Request-Id` fijo (pm-…) para buscarlo en los logs de la API, y cada test verifica status exacto, `code` en errores, `requestId` = cabecera `X-Request-Id` y la forma del cuerpo.\n\nCorrer: `newman run postman/fixture2030_collection.json -e postman/fixture2030_environment.json` (o `bash scripts/ejecutar_pruebas.sh newman`). Requisitos: API en baseUrl, cinco fuentes arriba, sesiones de demo de Redis recién cargadas (TTL 30 min) y PAR-DEMO-API re-sembrado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "27939720-3e19-5d7e-8d51-df25cc382346",
+        "type": "text/javascript",
+        "exec": [
+          "// Una Idempotency-Key base por corrida (Newman arranca siempre sin ella; en la app",
+          "// de Postman se borra al final del flujo de cierre). Patrón: ^[A-Za-z0-9_-]{8,64}$",
+          "if (!pm.collectionVariables.get('idemKey')) {",
+          "  const azar = Math.random().toString(36).slice(2, 10);",
+          "  pm.collectionVariables.set('idemKey', 'pm-' + Date.now().toString(36) + '-' + azar);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "idemKey",
+      "value": ""
+    },
+    {
+      "key": "cursorJugadores",
+      "value": ""
+    },
+    {
+      "key": "ultimoDorsal",
+      "value": ""
+    },
+    {
+      "key": "detalleJson",
+      "value": ""
+    },
+    {
+      "key": "comentarioId",
+      "value": ""
+    },
+    {
+      "key": "cursorComentarios",
+      "value": ""
+    },
+    {
+      "key": "idsPagina1",
+      "value": ""
+    },
+    {
+      "key": "ultimoCreadoEn",
+      "value": ""
+    },
+    {
+      "key": "eventoGolId",
+      "value": ""
+    },
+    {
+      "key": "eventoGolSecuencia",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "id": "6c0d294e-a165-5706-978d-5ff9171b77b4",
+      "name": "Salud",
+      "description": "Vida de la API y ping a las cinco fuentes (CU13).",
+      "item": [
+        {
+          "id": "cc18876c-5795-5dfb-905a-780784aec79f",
+          "name": "API viva",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-salud-vivo"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "535d068a-4e1b-57c4-9bcd-35492091cf93",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "pm.test('estado OK', () => pm.expect(b).to.eql({estado: 'OK'}));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "3227d6d7-e4a6-54f3-b6c7-851ed71ba1b9",
+          "name": "Dependencias (las cinco UP)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-salud-dependencias"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health/dependencias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "dependencias"
+              ]
+            },
+            "description": "200 sólo si las cinco responden; con alguna DOWN responde 503 con el mismo cuerpo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ead04907-2cae-5a63-92fa-15cfbe382975",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('salud', b, {estado: 'string', dependencias: 'array'});",
+                  "pm.test('las cinco fuentes UP', () => {",
+                  "  pm.expect(b.estado).to.eql('OK');",
+                  "  pm.expect(b.dependencias.map(d => d.nombre).sort()).to.eql(['cassandra', 'influxdb', 'mongodb', 'neo4j', 'redis']);",
+                  "  b.dependencias.forEach(d => { pm.expect(d.estado).to.eql('UP'); pm.expect(d.latenciaMs).to.be.a('number'); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "9ff1ad7b-d647-5e18-a252-cae58f8ba5bf",
+      "name": "Equipos · MongoDB",
+      "description": "Base `fixture2030` (Hito 4): CU1 equipo, CU2 jugadores paginados por dorsal.",
+      "item": [
+        {
+          "id": "647746bd-b23c-5fd0-9a87-24647c9d69e0",
+          "name": "Equipo por código",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-mongo-equipo"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{equipoCodigo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{equipoCodigo}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fb84c40e-26ad-52ea-84b1-09b5e68dc4f7",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('equipo', b, {codigo: 'string', nombre: 'string', confederacion: 'string', rankingFifa: 'number', grupo: 'string'});",
+                  "pm.test('es el equipo pedido', () => pm.expect(b.codigo).to.eql(pm.variables.get('equipoCodigo')));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "6ac05ab6-63ae-5f3f-9ad2-4dba9fba71fa",
+          "name": "Jugadores · página 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-mongo-jugadores-1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{equipoCodigo}}/jugadores?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{equipoCodigo}}",
+                "jugadores"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b361dfcd-6478-5c23-9fc4-9d7a1e64819e",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('página de jugadores', b, {equipoCodigo: 'string', items: 'array', limit: 'number'});",
+                  "pm.test('como máximo 5, ordenados por dorsal', () => {",
+                  "  pm.expect(b.items.length).to.be.at.most(5);",
+                  "  const d = b.items.map(j => j.dorsal);",
+                  "  pm.expect(d).to.eql([...d].sort((x, y) => x - y));",
+                  "});",
+                  "if (b.items.length) forma('jugador', b.items[0], {dni: 'string', nombre: 'string', apellido: 'string', posicion: 'string', dorsal: 'number'});",
+                  "pm.test('hay nextCursor para seguir', () => pm.expect(b.nextCursor).to.be.a('string'));",
+                  "pm.collectionVariables.set('cursorJugadores', b.nextCursor || '');",
+                  "pm.collectionVariables.set('ultimoDorsal', b.items.length ? b.items[b.items.length - 1].dorsal : 0);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "5190cffd-9df7-54fc-b49f-4dfe44ea6483",
+          "name": "Jugadores · página 2 (cursor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-mongo-jugadores-2"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{equipoCodigo}}/jugadores?limit=5&cursor={{cursorJugadores}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{equipoCodigo}}",
+                "jugadores"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{cursorJugadores}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "436ef114-9cb2-5d36-a86d-1cd1186ca758",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('página de jugadores', b, {equipoCodigo: 'string', items: 'array', limit: 'number'});",
+                  "pm.test('continúa después del último dorsal de la página 1', () => {",
+                  "  const ultimo = Number(pm.collectionVariables.get('ultimoDorsal'));",
+                  "  b.items.forEach(j => pm.expect(j.dorsal).to.be.above(ultimo));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "10a82b4e-504d-58fe-83b9-c91e07a22b25",
+      "name": "Partidos · Neo4j",
+      "description": "Grafo del Hito 5: CU3 partidos de un equipo, CU4 detalle (con caché Redis), CU5 timeline.",
+      "item": [
+        {
+          "id": "7090e74a-b27b-5a22-8b0e-b0a5e915b62f",
+          "name": "Partidos de un equipo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-neo4j-partidos-equipo"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{equipoCodigo}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{equipoCodigo}}",
+                "partidos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "89ecd80b-e249-5a89-83fa-b5390ea304fa",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('partidos del equipo', b, {equipoCodigo: 'string', items: 'array', limit: 'number'});",
+                  "if (b.items.length) forma('partido del equipo', b.items[0], {partidoId: 'string', fase: 'string', fechaHora: 'string', estado: 'string', condicion: 'string', rivalCodigo: 'string'});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "7629e74d-d9b8-518c-9b0f-76bf0cf52273",
+          "name": "Detalle de partido (1ª lectura)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-neo4j-detalle-1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}"
+              ]
+            },
+            "description": "MISS si la copia no estaba en Redis (o HIT si quedó de una corrida de hace menos de 60 s)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f4eed385-4717-5835-a0d2-3d54dcd802d2",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('detalle', b, {partidoId: 'string', fase: 'string', fechaHora: 'string', estado: 'string', local: 'object', visitante: 'object', cantidadEventos: 'number'});",
+                  "pm.test('X-Cache informado', () => pm.expect(['HIT', 'MISS', 'BYPASS']).to.include(pm.response.headers.get('X-Cache')));",
+                  "pm.collectionVariables.set('detalleJson', JSON.stringify(b));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "c7bc6955-82d6-574c-a853-3569a2d72e38",
+          "name": "Detalle de partido (2ª lectura → HIT)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-neo4j-detalle-2"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "67ae0868-4a3a-51d5-9a2f-0953970c692a",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('detalle', b, {partidoId: 'string', fase: 'string', fechaHora: 'string', estado: 'string', local: 'object', visitante: 'object', cantidadEventos: 'number'});",
+                  "pm.test('X-Cache: HIT', () => pm.expect(pm.response.headers.get('X-Cache')).to.eql('HIT'));",
+                  "pm.test('mismo cuerpo que la 1ª lectura', () => pm.expect(b).to.eql(JSON.parse(pm.collectionVariables.get('detalleJson'))));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "01daafb2-e343-52df-ae72-65e5cb35ac7c",
+          "name": "Timeline de eventos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-neo4j-eventos"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/eventos?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "eventos"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fd0b4a5b-c50e-581a-a0d4-9d9cb9e932d8",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('página de eventos', b, {partidoId: 'string', items: 'array', limit: 'number'});",
+                  "pm.test('orden por secuencia ascendente', () => {",
+                  "  const s = b.items.map(e => e.secuencia);",
+                  "  pm.expect(s).to.eql([...s].sort((x, y) => x - y));",
+                  "});",
+                  "if (b.items.length) forma('evento', b.items[0], {eventoId: 'string', partidoId: 'string', secuencia: 'number', tipo: 'string', minuto: 'number'});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "c25dfb8b-52b6-51d6-b5af-36609c37d998",
+      "name": "Comentarios · Cassandra",
+      "description": "Keyspace `fixture2030_comentarios` (Hito 6): CU8 lectura paginada, CU9 publicación idempotente. `creadoEn` cae dentro del tramo de comentarios de PAR-A-1 (inicio 2030-06-09T13:00:00Z, −15′ a +125′).",
+      "item": [
+        {
+          "id": "676e354d-8591-5518-b584-2587b304802b",
+          "name": "Publicar comentario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-cass-publicar"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-com"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/comentarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "comentarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"USR-0000042\",\n  \"alias\": \"hincha42\",\n  \"contenido\": \"Prueba Postman del Hito 10\",\n  \"creadoEn\": \"2030-06-09T13:47:00Z\",\n  \"minutoPartido\": 47,\n  \"hinchada\": \"LOCAL\",\n  \"idioma\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9ceca24a-2243-51f8-a484-eff556c297d3",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const b = cuerpo();",
+                  "forma('comentario', b, {comentarioId: 'string', partidoId: 'string', usuarioId: 'string', contenido: 'string', creadoEn: 'string', estadoModeracion: 'string'});",
+                  "pm.test('sin cabecera de reintento', () => pm.expect(pm.response.headers.get('Idempotent-Replayed')).to.be.oneOf([undefined, null]));",
+                  "pm.collectionVariables.set('comentarioId', b.comentarioId);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "b0355f15-57f2-51d6-b92a-eb90cdb3c8a5",
+          "name": "Publicar comentario (reintento → 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-cass-publicar-replay"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-com"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/comentarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "comentarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"USR-0000042\",\n  \"alias\": \"hincha42\",\n  \"contenido\": \"Prueba Postman del Hito 10\",\n  \"creadoEn\": \"2030-06-09T13:47:00Z\",\n  \"minutoPartido\": 47,\n  \"hinchada\": \"LOCAL\",\n  \"idioma\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4132c7b4-c913-52a4-9686-90da3cf16d97",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('comentario', b, {comentarioId: 'string', partidoId: 'string', usuarioId: 'string', contenido: 'string', creadoEn: 'string', estadoModeracion: 'string'});",
+                  "pm.test('Idempotent-Replayed: true', () => pm.expect(pm.response.headers.get('Idempotent-Replayed')).to.eql('true'));",
+                  "pm.test('mismo comentario, sin duplicar', () => pm.expect(b.comentarioId).to.eql(pm.collectionVariables.get('comentarioId')));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "964568af-01cf-5d91-9564-a441191a51dc",
+          "name": "Comentarios · página 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-cass-listar-1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/comentarios?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "comentarios"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "95dca546-6341-5fd3-8c37-da46687799f7",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('página de comentarios', b, {partidoId: 'string', items: 'array', limit: 'number'});",
+                  "pm.test('creadoEn descendente', () => {",
+                  "  const t = b.items.map(c => Date.parse(c.creadoEn));",
+                  "  pm.expect(t).to.eql([...t].sort((x, y) => y - x));",
+                  "});",
+                  "if (b.items.length) forma('comentario', b.items[0], {comentarioId: 'string', partidoId: 'string', usuarioId: 'string', contenido: 'string', creadoEn: 'string', estadoModeracion: 'string'});",
+                  "pm.test('nextCursor para seguir', () => pm.expect(b.nextCursor).to.be.a('string'));",
+                  "pm.collectionVariables.set('cursorComentarios', b.nextCursor || '');",
+                  "pm.collectionVariables.set('idsPagina1', JSON.stringify(b.items.map(c => c.comentarioId)));",
+                  "pm.collectionVariables.set('ultimoCreadoEn', b.items.length ? b.items[b.items.length - 1].creadoEn : '');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "84375699-d652-5984-972a-788c592296d4",
+          "name": "Comentarios · página 2 (nextCursor encadenado)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-cass-listar-2"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/comentarios?limit=5&cursor={{cursorComentarios}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "comentarios"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{cursorComentarios}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "559b0e58-60d0-5a99-933f-f1ae136afcb1",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('página de comentarios', b, {partidoId: 'string', items: 'array', limit: 'number'});",
+                  "pm.test('sin repetidos respecto de la página 1', () => {",
+                  "  const p1 = JSON.parse(pm.collectionVariables.get('idsPagina1'));",
+                  "  b.items.forEach(c => pm.expect(p1).to.not.include(c.comentarioId));",
+                  "});",
+                  "pm.test('continúa hacia atrás en el tiempo', () => {",
+                  "  const ultimo = Date.parse(pm.collectionVariables.get('ultimoCreadoEn'));",
+                  "  b.items.forEach(c => pm.expect(Date.parse(c.creadoEn)).to.be.at.most(ultimo));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "87e00dbf-eb07-5427-b4bc-112c42751947",
+      "name": "Sesiones · Redis",
+      "description": "Hash `f30:ses:{id}` con TTL (Hito 7): CU10 validar, CU11 invalidar. Las sesiones de demo las crea la carga del Hito 7 con TTL de 30 minutos: pasado ese tiempo la sesión expira y la API responde 404 SESSION_NOT_FOUND. Para correr esta carpeta completa (incluido el DELETE 204), recargar las sesiones de demo de fixture2030-redis justo antes.",
+      "item": [
+        {
+          "id": "ac83f661-e410-5f23-9dce-2e72551c3134",
+          "name": "Sesión de demo (200, o 404 si expiró)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-redis-sesion"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sesiones/{{sesionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sesiones",
+                "{{sesionId}}"
+              ]
+            },
+            "description": "Única request de la colección que acepta dos estados. Las sesiones de demo las crea la carga del Hito 7 con TTL de 30 minutos: pasado ese tiempo la sesión expira y la API responde 404 SESSION_NOT_FOUND. Para correr esta carpeta completa (incluido el DELETE 204), recargar las sesiones de demo de fixture2030-redis justo antes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "58154f80-2263-579f-a8b5-42320d0763e6",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200 o 404 (TTL de 30 min de la carga)', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+                  "const b = cuerpo();",
+                  "if (pm.response.code === 200) {",
+                  "  forma('sesión', b, {sesionId: 'string', usuarioId: 'string', rol: 'string', region: 'string', dispositivo: 'string', estado: 'string', creadaEn: 'string', ultimaActividad: 'string', expiraAbsoluta: 'string', ttlSegundos: 'number'});",
+                  "  pm.test('sesión ACTIVA y TTL positivo', () => { pm.expect(b.estado).to.eql('ACTIVA'); pm.expect(b.ttlSegundos).to.be.above(0); });",
+                  "} else {",
+                  "  esError('SESSION_NOT_FOUND');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "e0ae78d8-4a18-5bec-bf55-8d6f06d96916",
+          "name": "Sesión inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-redis-sesion-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sesiones/demo-ses-no-existe-0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sesiones",
+                "demo-ses-no-existe-0"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b15d51c0-6e1a-543b-aa1c-ec4d8cb9f87f",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('SESSION_NOT_FOUND');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "a0d6e463-49dd-5a27-bfce-b65e430d10b4",
+          "name": "Sesión bloqueada → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-redis-sesion-403"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sesiones/{{sesionBloqueada}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sesiones",
+                "{{sesionBloqueada}}"
+              ]
+            },
+            "description": "Las sesiones de demo las crea la carga del Hito 7 con TTL de 30 minutos: pasado ese tiempo la sesión expira y la API responde 404 SESSION_NOT_FOUND. Para correr esta carpeta completa (incluido el DELETE 204), recargar las sesiones de demo de fixture2030-redis justo antes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b8153068-fd72-5815-99b4-51f8883e36e3",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "esError('SESSION_BLOCKED');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "79b30acd-3f90-5916-ae91-1bf0e05c8d32",
+          "name": "Invalidar sesión → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-redis-cerrar"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sesiones/demo-ses-0000002-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sesiones",
+                "demo-ses-0000002-1"
+              ]
+            },
+            "description": "Las sesiones de demo las crea la carga del Hito 7 con TTL de 30 minutos: pasado ese tiempo la sesión expira y la API responde 404 SESSION_NOT_FOUND. Para correr esta carpeta completa (incluido el DELETE 204), recargar las sesiones de demo de fixture2030-redis justo antes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "240674e5-0022-54d7-91db-2b80401253b8",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 204', () => pm.response.to.have.status(204));",
+                  "pm.test('sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "aea19e31-5a2e-5d65-b035-0e377afb5c5f",
+          "name": "Invalidar otra vez → 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-redis-cerrar-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sesiones/demo-ses-0000002-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sesiones",
+                "demo-ses-0000002-1"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "6e4911d3-c97f-5d0e-9f86-04b567663859",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('SESSION_NOT_FOUND');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "ee63248c-9662-58d4-a351-070268dbf6cc",
+      "name": "Estadísticas · InfluxDB",
+      "description": "Tabla `estadisticas_equipo` de `fixture2030_vivo` (Hito 8): CU12. Ventana [desde, hasta) ≤ 3 h.",
+      "item": [
+        {
+          "id": "6121083c-116d-55c1-82f0-e19aad4192f4",
+          "name": "Crudas (raw) con tope",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-influx-raw"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-09T13:00:00Z&hasta=2030-06-09T13:30:00Z&agregacion=raw&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-09T13:00:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-09T13:30:00Z"
+                },
+                {
+                  "key": "agregacion",
+                  "value": "raw"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "90d29007-1c7e-5847-980f-496d4a74fccd",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('estadísticas', b, {partidoId: 'string', desde: 'string', hasta: 'string', agregacion: 'string', puntos: 'array', cantidad: 'number', truncado: 'boolean'});",
+                  "pm.test('raw, tope de 50 alcanzado → truncado', () => {",
+                  "  pm.expect(b.agregacion).to.eql('raw');",
+                  "  pm.expect(b.cantidad).to.eql(b.puntos.length);",
+                  "  pm.expect(b.cantidad).to.eql(50);",
+                  "  pm.expect(b.truncado).to.eql(true);",
+                  "});",
+                  "if (b.puntos.length) forma('punto', b.puntos[0], {time: 'string', equipoCodigo: 'string'});",
+                  "pm.test('puntos dentro de la ventana, en orden', () => {",
+                  "  const t = b.puntos.map(p => Date.parse(p.time));",
+                  "  pm.expect(t).to.eql([...t].sort((x, y) => x - y));",
+                  "  t.forEach(x => { pm.expect(x).to.be.at.least(Date.parse(b.desde)); pm.expect(x).to.be.below(Date.parse(b.hasta)); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "204f2f2d-de2c-5e19-9a96-8c43d98f01d0",
+          "name": "Agregadas por minuto (1m)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-influx-1m"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-09T13:00:00Z&hasta=2030-06-09T13:30:00Z&agregacion=1m",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-09T13:00:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-09T13:30:00Z"
+                },
+                {
+                  "key": "agregacion",
+                  "value": "1m"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0732763b-4a59-5fc0-ae1b-cdf9f7a874fd",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('estadísticas', b, {partidoId: 'string', desde: 'string', hasta: 'string', agregacion: 'string', puntos: 'array', cantidad: 'number', truncado: 'boolean'});",
+                  "pm.test('1m: 30 tramos × 2 equipos, sin truncar', () => {",
+                  "  pm.expect(b.agregacion).to.eql('1m');",
+                  "  pm.expect(b.cantidad).to.eql(60);",
+                  "  pm.expect(b.truncado).to.eql(false);",
+                  "});",
+                  "pm.test('tramos alineados al minuto', () => b.puntos.forEach(p => pm.expect(Date.parse(p.time) % 60000).to.eql(0)));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "e23e7cff-f027-5578-87e9-11161561ec7d",
+          "name": "Ventana invertida → 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-influx-invertida"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-09T13:30:00Z&hasta=2030-06-09T13:00:00Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-09T13:30:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-09T13:00:00Z"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4cfa5e5d-fced-561e-8376-944cfa2edd40",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('INVALID_TIME_WINDOW');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "d783424d-90ec-5b23-a582-edab21a0232e",
+          "name": "Ventana de más de 3 h → 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-influx-grande"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-09T13:00:00Z&hasta=2030-06-09T16:30:00Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-09T13:00:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-09T16:30:00Z"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "73d3a8f5-af8c-5c1c-bd3b-eb918633ea1e",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('TIME_WINDOW_TOO_LARGE');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "7118dd76-13b8-560f-a3ef-b5c279c3db76",
+          "name": "Ventana sin datos → 200 vacío",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-influx-vacia"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-08T13:00:00Z&hasta=2030-06-08T14:00:00Z&agregacion=raw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-08T13:00:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-08T14:00:00Z"
+                },
+                {
+                  "key": "agregacion",
+                  "value": "raw"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c5d5e9c1-a37a-5c1c-a399-0b4f0235acfe",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('estadísticas', b, {partidoId: 'string', desde: 'string', hasta: 'string', agregacion: 'string', puntos: 'array', cantidad: 'number', truncado: 'boolean'});",
+                  "pm.test('puntos: [] (no 404, no 503)', () => { pm.expect(b.puntos).to.eql([]); pm.expect(b.cantidad).to.eql(0); pm.expect(b.truncado).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "1bdd1aba-930e-54b7-a13d-ec216a9c2273",
+      "name": "Escenarios de error",
+      "description": "Formato único `{code, message, requestId, details?}`; entrada inválida → 400 sin tocar la fuente.",
+      "item": [
+        {
+          "id": "8a1ddf8e-52ad-5a79-82bb-57e9a83b5e85",
+          "name": "Código de equipo inválido → 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-equipo-400"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/argentina",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "argentina"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "edef818f-73dc-59dc-b214-6ca3ec3bf142",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('VALIDATION_ERROR');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "33a319c2-daf8-50f6-aade-5c5b022b0d65",
+          "name": "Equipo inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-equipo-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/ZZZ",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "ZZZ"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c3638361-38b9-55df-bcc6-75c92ee538e2",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('TEAM_NOT_FOUND');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "7867d2f9-f2cb-54bd-b8ae-f0fa62139b40",
+          "name": "Partido inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-partido-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/PAR-X-9",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "PAR-X-9"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "99605d74-b8f5-5d3b-849e-7ab42c51b9ba",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('MATCH_NOT_FOUND');",
+                  "pm.test('la ausencia no se cachea', () => pm.expect(pm.response.headers.get('X-Cache')).to.be.oneOf([undefined, null]));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "78202868-6228-5a58-8f83-65ed3cebf731",
+          "name": "Eventos de partido inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-eventos-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/PAR-X-9/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "PAR-X-9",
+                "eventos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "7567a25d-6efd-5e84-8bf2-30034d564c73",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('MATCH_NOT_FOUND');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "59bf8bdb-5297-5b54-91e0-91c0f7c88bff",
+          "name": "Ruta inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-ruta-404"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "no-existe"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a29aaaf7-5e98-5204-b45b-7e28a1074cc6",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "esError('ROUTE_NOT_FOUND');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "ea56a8ee-5e2a-54ef-aceb-befb76e2c1d0",
+          "name": "Estadísticas sin zona horaria → 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-sin-tz"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/estadisticas?desde=2030-06-09T13:00:00&hasta=2030-06-09T13:30:00",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2030-06-09T13:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2030-06-09T13:30:00"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "bcf1a781-0315-5180-8bff-595899dfcb20",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('VALIDATION_ERROR');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "7df655b5-ad0e-58cc-b86a-d5e3abdd73a0",
+          "name": "limit fuera de rango → 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-limit"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoId}}/comentarios?limit=999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoId}}",
+                "comentarios"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "999"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "245c8e66-840e-5490-ad72-7a4527e41e3d",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('VALIDATION_ERROR');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "30a02e93-b0b1-5d83-89de-9d18a64b0a32",
+          "name": "Evento sin Idempotency-Key → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-sin-clave"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"GOL\",\n  \"minuto\": 50,\n  \"condicionEquipo\": \"LOCAL\",\n  \"dorsalProtagonista\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f6c6dee0-c4bc-588f-98f7-ec8f8b263218",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('VALIDATION_ERROR');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "dd80752d-215b-5026-8b39-bc20b8052181",
+          "name": "Evento que viola la regla del tipo → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-err-regla"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-regla"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "description": "GOL exige condicionEquipo y dorsalProtagonista: se rechaza antes de abrir la transacción.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"GOL\",\n  \"minuto\": 50,\n  \"condicionEquipo\": \"LOCAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "95098af8-d5f1-5165-b420-46ef0b134bfe",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "esError('EVENT_RULE_VIOLATION');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "id": "afcb15f3-ae12-56d2-8e11-b1cbb0fd6d8e",
+      "name": "Flujo de cierre (PAR-DEMO-API)",
+      "description": "Escrituras sobre el partido de demo (ARG–BRA, 1–0 de carga). Antes de cada corrida, re-sembrarlo: `docker exec -i fixture2030-neo4j cypher-shell -u neo4j -p \"$NEO4J_PASSWORD\" < scripts/sembrar_demo_neo4j.cypher`. El orden es parte de la prueba: no reordenar.",
+      "item": [
+        {
+          "id": "76335224-9409-50ec-8cbc-f980dde4b8e0",
+          "name": "1 · POST GOL VISITANTE → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-1-gol"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-gol"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"GOL\",\n  \"minuto\": 88,\n  \"condicionEquipo\": \"VISITANTE\",\n  \"dorsalProtagonista\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9f5df557-8adc-5f69-9ac5-40ef68790704",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const b = cuerpo();",
+                  "forma('evento', b, {eventoId: 'string', partidoId: 'string', secuencia: 'number', tipo: 'string', minuto: 'number'});",
+                  "pm.test('es el gol del visitante, origen API', () => { pm.expect(b.tipo).to.eql('GOL'); pm.expect(b.condicionEquipo).to.eql('VISITANTE'); pm.expect(b.origen).to.eql('API'); });",
+                  "pm.collectionVariables.set('eventoGolId', b.eventoId);",
+                  "pm.collectionVariables.set('eventoGolSecuencia', b.secuencia);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "cb95eab1-4739-5a6e-aa4d-50a34015ac27",
+          "name": "2 · mismo POST → 200 + Idempotent-Replayed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-2-replay"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-gol"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"GOL\",\n  \"minuto\": 88,\n  \"condicionEquipo\": \"VISITANTE\",\n  \"dorsalProtagonista\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1e2be1dc-c6d6-5a31-9847-bc5afbac8cd6",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('evento', b, {eventoId: 'string', partidoId: 'string', secuencia: 'number', tipo: 'string', minuto: 'number'});",
+                  "pm.test('Idempotent-Replayed: true', () => pm.expect(pm.response.headers.get('Idempotent-Replayed')).to.eql('true'));",
+                  "pm.test('mismo evento, misma secuencia', () => {",
+                  "  pm.expect(b.eventoId).to.eql(pm.collectionVariables.get('eventoGolId'));",
+                  "  pm.expect(b.secuencia).to.eql(Number(pm.collectionVariables.get('eventoGolSecuencia')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "0c21de60-fd7a-5323-a709-0accb9e1266a",
+          "name": "3 · PATCH estado sin FIN_PARTIDO → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-3-sin-fin"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"FINALIZADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4c92c479-9cd4-578b-9375-87c6e0fa1158",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "esError('MISSING_FIN_PARTIDO');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "a454efff-e87a-5124-8579-08743aa422af",
+          "name": "4 · POST FIN_PARTIDO → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-4-fin"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-fin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"FIN_PARTIDO\",\n  \"minuto\": 90\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "753b1d9c-6cb9-5571-a954-6de6c38adeb4",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const b = cuerpo();",
+                  "forma('evento', b, {eventoId: 'string', partidoId: 'string', secuencia: 'number', tipo: 'string', minuto: 'number'});",
+                  "pm.test('FIN_PARTIDO posterior al gol', () => {",
+                  "  pm.expect(b.tipo).to.eql('FIN_PARTIDO');",
+                  "  pm.expect(b.secuencia).to.be.above(Number(pm.collectionVariables.get('eventoGolSecuencia')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "5a9a46ba-e3eb-5894-9386-e2832f246309",
+          "name": "5 · PATCH estado → 200 FINALIZADO con marcador",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-5-cierre"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"FINALIZADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "63f6b101-5dfa-5b7f-8481-a2c44b1c7f9e",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = cuerpo();",
+                  "forma('detalle', b, {partidoId: 'string', fase: 'string', fechaHora: 'string', estado: 'string', local: 'object', visitante: 'object', cantidadEventos: 'number'});",
+                  "pm.test('FINALIZADO con marcador derivado de los GOL (1–1)', () => {",
+                  "  pm.expect(b.estado).to.eql('FINALIZADO');",
+                  "  pm.expect(b.marcador).to.eql({golesLocal: 1, golesVisitante: 1});",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "51028657-42e4-5fee-8182-fd48f82abc83",
+          "name": "6 · PATCH otra vez → 409 INVALID_TRANSITION",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-6-repetido"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"FINALIZADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a7027453-0b4c-5768-b5e1-efb9570bf891",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "esError('INVALID_TRANSITION');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "id": "9c99040c-a1ea-534e-b5de-bb9274adc611",
+          "name": "7 · POST evento en partido finalizado → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "pm-flujo-7-finalizado"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}-post"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{partidoDemo}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{partidoDemo}}",
+                "eventos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"CORNER\",\n  \"minuto\": 91,\n  \"condicionEquipo\": \"LOCAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1033f1b5-ab98-52e6-8a93-066dd1e6487e",
+                "type": "text/javascript",
+                "exec": [
+                  "const rid = pm.request.headers.get('X-Request-Id');",
+                  "pm.test('X-Request-Id de respuesta = el enviado', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.eql(rid));",
+                  "function cuerpo() { try { return pm.response.json(); } catch (e) { return null; } }",
+                  "function esError(code) {",
+                  "  const b = cuerpo();",
+                  "  pm.test('error con formato único y code ' + code, () => {",
+                  "    pm.expect(b).to.be.an('object');",
+                  "    pm.expect(b.code).to.eql(code);",
+                  "    pm.expect(b.message).to.be.a('string');",
+                  "    pm.expect(b.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+                  "    Object.keys(b).forEach(k => pm.expect(['code', 'message', 'requestId', 'details']).to.include(k));",
+                  "  });",
+                  "}",
+                  "function forma(nombre, obj, claves) {",
+                  "  pm.test('forma de ' + nombre, () => {",
+                  "    pm.expect(obj).to.be.an('object');",
+                  "    Object.entries(claves).forEach(([k, t]) => {",
+                  "      pm.expect(obj, k).to.have.property(k);",
+                  "      if (t === 'nullable-string') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('string'); }",
+                  "      else if (t === 'nullable-number') { if (obj[k] !== null) pm.expect(obj[k]).to.be.a('number'); }",
+                  "      else pm.expect(obj[k], k).to.be.a(t);",
+                  "    });",
+                  "  });",
+                  "}",
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "esError('MATCH_FINALIZED');",
+                  "// fin de la corrida: la próxima genera otra idemKey",
+                  "pm.collectionVariables.unset('idemKey');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

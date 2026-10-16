@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Centro de datos del Fixture Mundial 2030: equipos, partidos, eventos, comentarios, estadísticas y salud de las fuentes." />
+    <title>Fixture 2030 · Centro de datos</title>
+    <script>
+      // Aplica el tema guardado antes del primer pintado (evita el destello).
+      try {
+        var t = localStorage.getItem('f30-tema');
+        if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.theme = t === 'claro' ? 'light' : 'dark';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

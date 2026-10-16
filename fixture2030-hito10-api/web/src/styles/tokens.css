@@ -1,0 +1,170 @@
+/*
+ * Tokens de diseño — "centro de datos del torneo".
+ * Paleta de la recomendación ui-ux-pro-max para dashboards de datos en tiempo
+ * real (azul de datos + acento naranja), ajustada para WCAG AA en ambos temas:
+ * todos los pares texto/fondo ≥ 4.5:1; trazos de datos y bordes de controles ≥ 3:1.
+ */
+:root {
+  color-scheme: light;
+
+  /* Superficies */
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --surface-3: #e2e8f0;
+  --border: #d3dae5;
+  --border-strong: #8492a6;
+
+  /* Texto */
+  --text: #0f172a;
+  --text-2: #334155;
+  --muted: #4f5d73;
+
+  /* Marca y acciones */
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-soft: #dbe7ff;
+  --on-primary: #ffffff;
+  --accent: #c2410c;
+  --accent-soft: #ffedd5;
+  --focus: #1d4ed8;
+
+  /* Semánticos (texto sobre su fondo *-soft ≥ 4.5:1) */
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+  --warn: #92400e;
+  --warn-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --info: #075985;
+  --info-soft: #e0f2fe;
+  --conflict: #9a3412;
+  --conflict-soft: #ffedd5;
+
+  /* Series de gráficos: local / visitante (≥ 3:1 contra la superficie) */
+  --serie-0: #1d4ed8;
+  --serie-1: #c2410c;
+  --grid: #e2e8f0;
+
+  /* Fuentes de datos (puntos decorativos: el nombre siempre va en texto) */
+  --src-mongo: #16a34a;
+  --src-neo4j: #0e7490;
+  --src-cassandra: #4f46e5;
+  --src-redis: #dc2626;
+  --src-influx: #a21caf;
+
+  /* Tipografía */
+  --font-sans: 'Fira Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --fs-3xl: 2.25rem;
+
+  /* Espaciado (escala de 4 px) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-1: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.04);
+  --shadow-2: 0 10px 30px rgb(15 23 42 / 0.18);
+
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --z-sticky: 20;
+  --z-dialog: 100;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0a101d;
+    --surface: #111a2b;
+    --surface-2: #162238;
+    --surface-3: #1e2c47;
+    --border: #26344f;
+    --border-strong: #64748b;
+    --text: #e7ecf4;
+    --text-2: #c5cedb;
+    --muted: #9aa8bc;
+    --primary: #6aa8ff;
+    --primary-hover: #93c0ff;
+    --primary-soft: #16294a;
+    --on-primary: #08101f;
+    --accent: #fb923c;
+    --accent-soft: #3a2212;
+    --focus: #93c0ff;
+    --ok: #4ade80;
+    --ok-soft: #10301f;
+    --warn: #facc15;
+    --warn-soft: #33290a;
+    --danger: #f87171;
+    --danger-soft: #3a1518;
+    --info: #38bdf8;
+    --info-soft: #0c2a3d;
+    --conflict: #fdba74;
+    --conflict-soft: #3a2212;
+    --serie-0: #6aa8ff;
+    --serie-1: #fb923c;
+    --grid: #22304a;
+    --src-mongo: #4ade80;
+    --src-neo4j: #22d3ee;
+    --src-cassandra: #a5b4fc;
+    --src-redis: #f87171;
+    --src-influx: #e879f9;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 16px 40px rgb(0 0 0 / 0.55);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0a101d;
+  --surface: #111a2b;
+  --surface-2: #162238;
+  --surface-3: #1e2c47;
+  --border: #26344f;
+  --border-strong: #64748b;
+  --text: #e7ecf4;
+  --text-2: #c5cedb;
+  --muted: #9aa8bc;
+  --primary: #6aa8ff;
+  --primary-hover: #93c0ff;
+  --primary-soft: #16294a;
+  --on-primary: #08101f;
+  --accent: #fb923c;
+  --accent-soft: #3a2212;
+  --focus: #93c0ff;
+  --ok: #4ade80;
+  --ok-soft: #10301f;
+  --warn: #facc15;
+  --warn-soft: #33290a;
+  --danger: #f87171;
+  --danger-soft: #3a1518;
+  --info: #38bdf8;
+  --info-soft: #0c2a3d;
+  --conflict: #fdba74;
+  --conflict-soft: #3a2212;
+  --serie-0: #6aa8ff;
+  --serie-1: #fb923c;
+  --grid: #22304a;
+  --src-mongo: #4ade80;
+  --src-neo4j: #22d3ee;
+  --src-cassandra: #a5b4fc;
+  --src-redis: #f87171;
+  --src-influx: #e879f9;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 16px 40px rgb(0 0 0 / 0.55);
+}
