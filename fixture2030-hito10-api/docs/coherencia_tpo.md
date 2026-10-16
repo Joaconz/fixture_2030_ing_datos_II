@@ -37,7 +37,11 @@ Lo que el enunciado ubica en IRIS se resuelve sobre la fuente vigente:
 | Diferenciar entidad inexistente, transición inválida y dependencia caída | 404 `MATCH_NOT_FOUND`, 409 `INVALID_TRANSITION` / `MISSING_FIN_PARTIDO`, 503 |
 | Reglas de la entidad (antes, métodos de la clase) | Reglas por tipo de evento en el servicio + catálogo `:TipoEvento` |
 
-⚠️ **A confirmar con el profesor:** que el ok a la reentrega del Hito 3 cubra también no implementar RF8 con IRIS. Si no lo cubre, el adaptador se agregaría como sexto módulo sin tocar las rutas existentes (la arquitectura por puertos lo permite).
+**Confirmado por el profesor (15/10/2026).** Su mensaje de aprobación del trabajo:
+
+> "Podemos utilizar en el TPO lo que querramos: el objetivo es que para los hitos desarrolles y practiques cada modelo, luego el TPO elegís cuáles quedan definitivos."
+
+El objetivo de cada hito es practicar el modelo; qué módulos quedan en la arquitectura definitiva del TPO se decide después. Por eso el equipo no usa IRIS en la API y RF8 queda como fuente no cubierta, documentada. Si más adelante se quisiera incluirlo, el adaptador se agregaría como sexto módulo sin tocar las rutas existentes (la arquitectura por puertos lo permite).
 
 ## 3. Hallazgo H1 en la API: equipos de Mongo vs. equipos del grafo
 
@@ -61,3 +65,7 @@ Además, en esta sesión se corrió `load/seed.js` dos veces contra un Mongo rea
 | Caché del detalle de partido 60 s + invalidación al escribir | Hito 7, P5/P6 | Cache-aside en `GET /partidos/{id}`, `DEL` después de registrar un evento o cerrar |
 | Contadores acumulados: `max`/`last`, nunca `sum` | Hito 8 | Agregaciones `1m`/`5m` |
 | Sin Lua ni Redis Functions | PR #11 | Sólo comandos nativos y `MULTI/EXEC` |
+
+## 5. Alcance adicional al enunciado
+
+El enunciado no pide un front. El equipo lo agregó (`web/`, opcional) porque el profesor indicó que se puede hacer; el mensaje del §2 respalda también lo que el enunciado no exige, como el alta de eventos y la caché del detalle de partido. La API no depende del front: el contrato, Postman y las pruebas se ejecutan sin él.

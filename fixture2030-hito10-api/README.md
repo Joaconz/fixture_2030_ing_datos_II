@@ -105,7 +105,9 @@ fixture2030-hito10-api/
 
 ## Limitaciones conocidas
 
-- RF8 (IRIS) no se implementa: decisión de la reentrega del Hito 3 — ⚠️ a confirmar con el profesor.
+- RF8 (IRIS) no se implementa: IRIS queda fuera de la arquitectura desde la reentrega del Hito 3, y el profesor confirmó que cada hito sirve para practicar un modelo y que el TPO decide cuáles quedan ([`docs/coherencia_tpo.md`](docs/coherencia_tpo.md) §2).
+- El front `web/` es opcional: el enunciado no lo pide y el profesor indicó que se puede hacer. La API, el contrato y las pruebas no dependen de él.
+- `seed.js` de MongoDB hace upsert y no borra datos previos: partir de un Mongo vacío (o cargado sólo con la versión actual del seed) para que el plantel dé 23 jugadores por equipo.
 - Los equipos de Mongo y del grafo no son el mismo roster (Hallazgo H1): la API no los cruza por código.
 - Sin autenticación de usuarios: las escrituras quedan abiertas en `localhost` (laboratorio).
 - Cifras de rendimiento de un único cliente secuencial en una notebook ([`docs/rendimiento.md`](docs/rendimiento.md) §4).

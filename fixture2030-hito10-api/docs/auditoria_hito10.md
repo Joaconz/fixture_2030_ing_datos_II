@@ -1,5 +1,7 @@
 # Auditoría — Hito 10: API REST integrada (FastAPI)
 
+**Estado: cerrada el 15/10/2026**, con el mensaje de aprobación del profesor (ver §3).
+
 Auditoría posterior a la implementación con el método de `/auditar-hito` (generaliza `fixture2030-mongodb/docs/HITO4_AUDIT_SPEC.md`). Fecha: 2026-10-15. PR auditado: [Joaconz/fixture_2030_ing_datos_II#13](https://github.com/Joaconz/fixture_2030_ing_datos_II/pull/13), rama `claude/hito-10-api-rest-fixture-f1dca3`, commit `ccac21d`.
 
 **Insumos contra los que se auditó:** el PDF del enunciado (*Hito 10 — Requisitos Técnicos: API REST Integrada del Fixture 2030*, RF1–RF20, RNF1–RNF18, §5–§12) y la Clase 11 (*Acceso a BD NoSQL desde aplicaciones*). La numeración RF/RNF de abajo es la del enunciado.
@@ -8,8 +10,8 @@ Auditoría posterior a la implementación con el método de `/auditar-hito` (gen
 
 - **El hito está bien resuelto y la evidencia del PR se reprodujo.** Contra las 5 bases reales en Docker: 191 pruebas unitarias OK, 32 de integración OK (con contraste contra `mongosh`, `cypher-shell`, `cqlsh` y `redis-cli`), Newman 39 requests / 150 aserciones OK, schemathesis 641 casos / 0 fallas. Mismos números que declara el PR.
 - **Un incumplimiento objetivo, corregido:** un artefacto generado (`.schemathesis/…/manifest.json`) estaba versionado y cambia en cada corrida.
-- **Un faltante contra el enunciado, no corregible por nosotros:** RF8 (IRIS). Es una decisión de alcance que depende del profesor (H2 en el estado canónico).
-- **Cosas de más** respecto del enunciado y de la Clase 11: ver §4. La más grande es el front `web/` (60 archivos, ~8.000 líneas): el enunciado no pide ningún front. No se tocó nada de esto; queda señalado para que el equipo decida.
+- **Un faltante contra el enunciado, ya resuelto:** RF8 (IRIS) no se implementa. El equipo decidió no usar IRIS y el profesor lo aprobó (§3).
+- **Cosas de más** respecto del enunciado y de la Clase 11 (§4): el front `web/` (60 archivos, ~8.000 líneas), el alta de eventos y la caché. El profesor habilitó el front y aprobó que el TPO use lo que el equipo quiera, así que no hay nada que quitar.
 
 ## 1. Tabla de requisitos
 
@@ -24,7 +26,7 @@ Auditoría posterior a la implementación con el método de `/auditar-hito` (gen
 | RF5 | Comentarios en Cassandra respetando la partición del Hito 6 | `GET/POST /partidos/{id}/comentarios`; consulta siempre con `(partido_id, ventana, bucket)`; el único `f"…"` en CQL interpola el keyspace de configuración, no entrada del cliente | PASS |
 | RF6 | Sesión/dato temporal en Redis (ausente o expirada) | `GET /sesiones/{id}`: 200 / 404 `SESSION_NOT_FOUND` / 403 `SESSION_BLOCKED`; con Redis detenido: 503 en 22 ms (distinto de 404) | PASS |
 | RF7 | Estadísticas InfluxDB con intervalo/agregación acotados | `desde`/`hasta` con zona horaria, ventana ≤ 3 h, `raw/1m/5m`, `limit ≤ 2000`; SQL con `$param`; sin puntos → 200 `puntos: []` | PASS |
-| RF8 | Endpoint sobre IRIS | No implementado. Documentado como fuente no cubierta (`docs/coherencia_tpo.md` §2). Ver §3 | **No cubierto — pendiente de confirmar con el profesor** |
+| RF8 | Endpoint sobre IRIS | No implementado. Documentado como fuente no cubierta (`docs/coherencia_tpo.md` §2) y aprobado por el profesor. Ver §3 | **No implementado, aprobado por el profesor** |
 | RF9 | Separar HTTP, caso de uso y acceso a la base | `app/routes` → `app/services` (+`ports.py`) → `app/adapters`; `grep` de imports de drivers (`pymongo`, `neo4j`, `cassandra`, `redis`, `httpx`) fuera de `adapters/` → sin coincidencias | PASS |
 | RF10 | Validar ruta, query y cuerpo antes de consultar | `GET /equipos/arg` → 400 `VALIDATION_ERROR` sin tocar Mongo; patrones en `schemas/common.py`; `limit`, ventanas y cursores acotados | PASS |
 | RF11 | Respuestas de éxito, ausencia, validación, conflicto, dependencia caída y error interno | 200/201/204, 404, 400, 409 (`INVALID_TRANSITION`, `MISSING_FIN_PARTIDO`, `MATCH_FINALIZED`…), 503, 500 seguro (`test_core.py`) | PASS |
@@ -88,17 +90,22 @@ Entorno: Windows 11, Docker Desktop. Bases: MongoDB, Neo4j, Cassandra, Redis e I
 
 ### Decisiones **no tocadas**, para revisión humana
 
-1. **RF8 (IRIS) sin implementar.** El enunciado pide el endpoint y su restricción "Cobertura" dice que hay que cubrir los módulos que el equipo "haya desarrollado y pueda ejecutar". El equipo desarrolló IRIS en el Hito 9 (el volumen `fixture2030_iris_durable` sigue en esta máquina). El PR lo justifica con la reentrega del Hito 3, pero el ok del profesor no cubre explícitamente RF8. Registrado como **H2** en `docs/ESTADO-CANONICO-NECESIDADES.md`. Riesgo de nota: alto si el profesor no lo acepta. Camino de menor costo si hace falta: agregar el adaptador IRIS como sexto módulo (la arquitectura por puertos lo permite).
-2. **Cosas de más** (§4).
+1. **RF8 (IRIS) sin implementar — resuelto.** El enunciado pide el endpoint y su restricción "Cobertura" pide cubrir los módulos que el equipo desarrolló y puede ejecutar; el equipo desarrolló IRIS en el Hito 9. El equipo decidió no usarlo y el profesor dejó este mensaje de aprobación:
+
+   > "Podemos utilizar en el TPO lo que querramos: el objetivo es que para los hitos desarrolles y practiques cada modelo, luego el TPO elegís cuáles quedan definitivos."
+
+   Se registró en `docs/coherencia_tpo.md` §2, en el README y en el estado canónico (el hallazgo H2 pasó a "Resueltos").
+2. **Cosas de más** (§4): el profesor lo cubre con el mismo mensaje; sólo se documentó como alcance adicional.
 3. **Contraseña de desarrollo de Neo4j en el repo.** `fixture2030` aparece literal en comandos de `docs/` y como default de `NEO4J_PASSWORD` en `tests/integration/conftest.py` y los scripts. Es el mismo valor que ya publica `fixture2030-neo4j/.env.example` (Hito 5, aprobado) y el PR lo documenta (`pruebas_y_evidencia.md`). RNF7 dice "no publicar passwords": lo más estricto sería leerla siempre de `NEO4J_PASSWORD`. No se cambió porque toca varios archivos y es una decisión del equipo.
 4. **Mongo desactualizado en mi notebook.** El primer intento de integración dio 31/32: el Mongo local tenía 2.673 jugadores con DNI repetidos (carga vieja, anterior al seed determinístico). No es un defecto del PR; confirma que el seed hace upsert y no limpia, así que quien tenga datos viejos debe partir de un Mongo vacío. El README del PR no lo advierte.
 
 ### Gaps de documentación
 
-- Agregar al README una línea que diga que `seed.js` no borra datos previos (ver punto 4).
-- Confirmar con el profesor RF8 y, si lo acepta, citar la respuesta en `coherencia_tpo.md` §2 (hoy figura como "a confirmar").
+- Hecho al cerrar: el README avisa que `seed.js` no borra datos previos, y la respuesta del profesor sobre RF8 está citada en `coherencia_tpo.md` §2.
 
 ## 4. Qué hay de más (pedido: "que no haya hechas cosas de más")
+
+**Resolución:** el profesor indicó que el front se puede hacer y que el TPO puede usar lo que el equipo quiera. Las filas siguientes quedan como alcance adicional **aceptado**; se agregó `coherencia_tpo.md` §5 y una línea en el README para que quien corrija no lo lea como un exceso.
 
 Criterio: se compara con el enunciado y con lo visto en la Clase 11. Sólo se listan cosas que ninguno de los dos pide.
 
@@ -116,8 +123,8 @@ Criterio: se compara con el enunciado y con lo visto en la Clase 11. Sólo se li
 
 | Medida | Valor |
 |---|---|
-| RF cumplidos | 19 de 20 (RF8 pendiente) |
+| RF cumplidos | 19 de 20 (RF8 no implementado, aprobado por el profesor) |
 | RNF cumplidos | 16 de 18 (RNF11 y RNF16 no verificables literalmente) |
 | Pruebas | 191 unit + 32 integración + 150 aserciones Newman + 641 casos schemathesis, todos OK |
-| Cambios aplicados | 1 (artefacto generado) |
-| Decisiones señaladas | RF8 (H2), lo de más (§4), contraseña de desarrollo, advertencia del seed |
+| Cambios aplicados | 1 corrección (artefacto generado) y 3 actualizaciones de documentación (RF8, alcance adicional, advertencia del seed) |
+| Decisiones que siguen abiertas | La contraseña de desarrollo de Neo4j en el repo (§3, punto 3), a criterio del equipo |
