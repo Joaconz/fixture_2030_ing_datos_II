@@ -90,6 +90,11 @@ neo4j() {
   # contraseña: entorno o .env local del módulo (nunca se imprime)
   NEO4J_PASSWORD="$("$PY" -c "import sys; sys.path.insert(0,'$DIR'); import registro as r; print(r.neo4j_password(r.cargar_config())[0] or '')")"
   export NEO4J_USERNAME="$user" NEO4J_PASSWORD
+  if [ -z "$NEO4J_PASSWORD" ]; then
+    reg neo4j autenticacion "cypher-shell" "-" SKIP "" "NEO4J_PASSWORD no definida (entorno o NEO4J_ENV_FILE)" \
+      "SKIP = falta configuración; no se intenta sin credencial para no sumar intentos fallidos"
+    unset NEO4J_PASSWORD NEO4J_USERNAME; return
+  fi
   local cy="MATCH (p:Partido {partidoId: \$pid}) OPTIONAL MATCH (e:Evento)-[:OCURRE_EN]->(p) RETURN p.partidoId AS id, count(e) AS eventos"
   local addr="bolt://$(cfg NEO4J_HOST):$(cfg NEO4J_BOLT_PORT)"
   t0="$(ahora)"
@@ -107,7 +112,7 @@ neo4j() {
     reg neo4j operacion "cypher-shell lectura parametrizada (\$pid)" "$origen_txt database=$(cfg NEO4J_DATABASE)" OK "$ms" \
       "$out" "Bolt + autenticación + database + Cypher parametrizado con el cliente nativo" \
       "la ruta notebook→7687 si el origen es el contenedor"
-  elif printf '%s' "$out" | grep -qi "unauthorized\|authentication"; then
+  elif printf '%s' "$out" | grep -qi "unauthorized\|authentication\|access denied"; then
     reg neo4j autenticacion "cypher-shell" "$origen_txt" FAIL "$ms" "credencial rechazada" \
       "identidad inválida: revisar NEO4J_PASSWORD (no es un problema de red)"
   else
@@ -183,6 +188,11 @@ influxdb() {
   fi
   INFLUXDB3_AUTH_TOKEN="$("$PY" -c "import sys; sys.path.insert(0,'$DIR'); import registro as r; print(r.influx_token(r.cargar_config())[0] or '')")"
   export INFLUXDB3_AUTH_TOKEN
+  if [ -z "$INFLUXDB3_AUTH_TOKEN" ]; then
+    reg influxdb autenticacion "influxdb3 query" "-" SKIP "" "token no definido (INFLUX_TOKEN o INFLUX_TOKEN_FILE)" \
+      "SKIP = falta configuración, no 'producto caído'"
+    unset INFLUXDB3_AUTH_TOKEN; return
+  fi
   t0="$(ahora)"
   if tiene influxdb3; then
     out="$(con_timeout 15 influxdb3 query --host "$(cfg INFLUX_URL)" --database "$db" "SELECT 1 AS ok" 2>&1)"; origen_txt="notebook"
