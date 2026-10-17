@@ -169,7 +169,12 @@ def commit_actual() -> str:
     try:
         sha = subprocess.run(["git", "-C", str(HITO_DIR), "rev-parse", "--short", "HEAD"],
                              capture_output=True, text=True, timeout=5).stdout.strip()
-        sucio = subprocess.run(["git", "-C", str(HITO_DIR), "status", "--porcelain", "--", "."],
+        # cambios sin commitear en el CÓDIGO de la API o del hito (la evidencia que se
+        # está generando en docs/ no cuenta: si no, toda corrida saldría "sucia")
+        sucio = subprocess.run(["git", "-C", str(REPO_DIR), "status", "--porcelain", "--",
+                                "fixture2030-hito11-conectividad", "fixture2030-hito10-api",
+                                ":(exclude)fixture2030-hito11-conectividad/docs",
+                                ":(exclude)fixture2030-hito10-api/docs"],
                                capture_output=True, text=True, timeout=5).stdout.strip()
         return (sha or "sin-git") + ("+cambios-locales" if sucio else "")
     except (OSError, subprocess.SubprocessError):
