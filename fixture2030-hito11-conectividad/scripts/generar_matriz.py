@@ -82,12 +82,18 @@ def estado_de(filas: list[dict]) -> tuple[str, str, str | None]:
     return "DISPONIBLE", "todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento)", None
 
 
+CLIS = ("mongosh", "cypher-shell", "cqlsh", "redis-cli", "influxdb3")
+
+
 def latencia(filas: list[dict], capa: str) -> str:
+    """Rango de latencias OK de la capa. Excluye los CLI (incluyen el arranque del proceso)."""
     vals = [f["latencia_ms"] for f in filas if f["capa"] == capa and f.get("latencia_ms") is not None
-            and not es_control(f) and f["resultado"] == "OK"]
+            and not es_control(f) and f["resultado"] == "OK" and not str(f["prueba"]).startswith(CLIS)]
     if not vals:
         return "—"
-    return f"{min(vals):.0f}–{max(vals):.0f}" if len(vals) > 1 and round(min(vals)) != round(max(vals)) else f"{vals[0]:.0f}"
+    fmt = (lambda v: f"{v:.1f}" if v < 10 else f"{v:.0f}")  # noqa: E731
+    lo, hi = min(vals), max(vals)
+    return fmt(lo) if fmt(lo) == fmt(hi) else f"{fmt(lo)}–{fmt(hi)}"
 
 
 def main() -> int:
@@ -109,7 +115,7 @@ def main() -> int:
               f"- Archivos: " + ", ".join(f"[`{p.name}`]({p.name})" for p in sorted(d.glob('*.md')) if p.name != "matriz.md"),
               "- OK = esa prueba concreta funcionó en ese momento; no es garantía de rendimiento ni de disponibilidad permanente (RNF17).",
               "", "| Dependencia | Estado | Config | DNS | TCP | Protocolo | Autent. | Autoriz. | Contexto | Operación | API | "
-              "ms TCP | ms operación | ms API | Controles | Diagnóstico | Siguiente paso | Observaciones (no cambian el estado) |",
+              "ms TCP | ms operación (driver) | ms API | Controles | Diagnóstico | Siguiente paso | Observaciones (no cambian el estado) |",
               "|---|---|---|---|---|---|---|---|---|---|---|---:|---:|---:|---|---|---|---|"]
     resumen = []
     for prod in PRODUCTOS:
@@ -119,7 +125,8 @@ def main() -> int:
         estado, diag, capa = estado_de(fp)
         celdas = []
         for c in CAPAS:
-            celdas.append(SIMBOLO[peor([f["resultado"] for f in fp if f["capa"] == c and not es_control(f)])])
+            celdas.append(SIMBOLO[peor([f["resultado"] for f in fp if f["capa"] == c and not es_control(f)
+                                        and not f.get("observacion")])])
         ctrl = [f for f in fp if es_control(f)]
         obs = "; ".join(f"{f['prueba']}: {f['detalle']}" for f in fp
                         if f.get("observacion") and f["resultado"] == "WARN").replace("|", "/") or "—"

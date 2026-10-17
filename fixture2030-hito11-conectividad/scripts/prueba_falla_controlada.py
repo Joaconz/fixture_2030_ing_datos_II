@@ -181,7 +181,15 @@ class Escenario:
         texto.append("| Fase | Request | HTTP | Clasificación | ms | X-Request-Id | Respuesta (resumen) | Motivo en log | Aviso del adaptador |")
         texto.append("|---|---|---:|---|---:|---|---|---|---|")
         texto += self.filas
-        self.R.nota("\n".join(texto))
+        # Relato por escenario en un archivo aparte: resultados_falla_controlada.md queda
+        # como una sola tabla (una fila por prueba) y no se mezcla con estas secciones.
+        relato = self.R.dir / "fallas_controladas.md"
+        if not relato.exists():
+            relato.write_text("# Fallas controladas y recuperación — relato por escenario (§5.7)\n\n"
+                              "Tabla completa de pruebas: [`resultados_falla_controlada.md`](resultados_falla_controlada.md).\n",
+                              encoding="utf-8")
+        with relato.open("a", encoding="utf-8") as f:
+            f.write(redactar("\n".join(texto)) + "\n")
 
 
 # =========================================================================== detener / pausar
