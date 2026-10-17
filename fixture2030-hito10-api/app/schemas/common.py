@@ -52,7 +52,14 @@ def _err(descripcion: str, *codes: str) -> dict[str, Any]:
 
 # Respuestas de error reutilizables en la declaración de cada ruta.
 R400 = {400: _err("La request no cumple el contrato (parámetro, query o cuerpo inválido).", "VALIDATION_ERROR")}
-R503 = {503: _err("La fuente de datos no respondió (caída o timeout).", "DEPENDENCY_UNAVAILABLE")}
+# Falla de dependencia (Hito 11, RF18): 503 = la fuente no se pudo usar (caída, conexión
+# rechazada, credencial o contexto inválido); 504 = no respondió dentro del tiempo límite.
+R_DEPENDENCIA = {
+    503: _err("La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).",
+              "DEPENDENCY_UNAVAILABLE"),
+    504: _err("La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).",
+              "DEPENDENCY_TIMEOUT"),
+}
 R500 = {500: _err("Error interno; el detalle técnico queda sólo en los logs.", "INTERNAL_ERROR")}
 
 

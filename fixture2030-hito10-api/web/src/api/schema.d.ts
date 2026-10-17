@@ -170,8 +170,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** La API está viva (no consulta fuentes) */
+        /** Liveness: el proceso de la API responde (no consulta fuentes) */
         get: operations["health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness: las fuentes esenciales (READY_ESENCIALES) están UP */
+        get: operations["healthReady"];
         put?: never;
         post?: never;
         delete?: never;
@@ -187,7 +204,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ping con timeout a MongoDB, Neo4j, Cassandra, Redis e InfluxDB */
+        /** Chequeo por dependencia (ping + contexto, con timeout y caché de HEALTH_CACHE_S) */
         get: operations["healthDependencias"];
         put?: never;
         post?: never;
@@ -407,16 +424,21 @@ export interface components {
              * Nombre
              * @enum {string}
              */
-            nombre: "mongodb" | "neo4j" | "cassandra" | "redis" | "influxdb";
+            nombre: "mongodb" | "neo4j" | "cassandra" | "redis" | "influxdb" | "iris";
             /**
              * Estado
              * @enum {string}
              */
-            estado: "UP" | "DOWN";
+            estado: "UP" | "DOWN" | "NOT_CONFIGURED" | "UNKNOWN";
             /** Latenciams */
             latenciaMs?: number | null;
             /** Detalle */
             detalle?: string | null;
+            /**
+             * Enarquitectura
+             * @default true
+             */
+            enArquitectura?: boolean;
         };
         /** Evento */
         Evento: {
@@ -686,6 +708,25 @@ export interface components {
             /** Minutojuego */
             minutoJuego?: number | null;
         };
+        /** Readiness */
+        Readiness: {
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "LISTA" | "LISTA_DEGRADADA" | "NO_LISTA";
+            /** Esenciales */
+            esenciales: string[];
+            /** Nodisponibles */
+            noDisponibles: string[];
+            /** Verificadoen */
+            verificadoEn?: string | null;
+            /**
+             * Desdecache
+             * @default false
+             */
+            desdeCache?: boolean;
+        };
         /** SaludDependencias */
         SaludDependencias: {
             /**
@@ -695,6 +736,13 @@ export interface components {
             estado: "OK" | "DEGRADADO";
             /** Dependencias */
             dependencias: components["schemas"]["EstadoDependencia"][];
+            /** Verificadoen */
+            verificadoEn?: string | null;
+            /**
+             * Desdecache
+             * @default false
+             */
+            desdeCache?: boolean;
         };
         /** Sede */
         Sede: {
@@ -843,8 +891,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -919,8 +980,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -992,8 +1066,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1065,8 +1152,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1141,8 +1241,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1243,8 +1356,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1329,8 +1455,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1404,8 +1543,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1494,8 +1646,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1575,8 +1740,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1643,8 +1821,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1709,8 +1900,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`. */
+            /** @description La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos: `DEPENDENCY_UNAVAILABLE`. */
             503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`. */
+            504: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
                     "X-Request-Id"?: string;
@@ -1746,6 +1950,52 @@ export interface operations {
             };
         };
     };
+    healthReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`. */
+            500: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description NO_LISTA: alguna fuente esencial no está UP (mismo cuerpo) */
+            503: {
+                headers: {
+                    /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */
+                    "X-Request-Id"?: string;
+                    /** @description Segundos sugeridos antes de reintentar */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+        };
+    };
     healthDependencias: {
         parameters: {
             query?: never;
@@ -1777,7 +2027,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Al menos una fuente está DOWN (mismo cuerpo) */
+            /** @description Al menos una fuente de la arquitectura no está UP (mismo cuerpo) */
             503: {
                 headers: {
                     /** @description Identificador de la request (el enviado por el cliente si es seguro, o uno generado); el mismo valor está en `requestId` y en los logs */

@@ -26,7 +26,8 @@ from datetime import datetime
 from typing import Any, TypeVar
 
 from neo4j import AsyncGraphDatabase, AsyncManagedTransaction
-from neo4j.exceptions import AuthError, DatabaseUnavailable, ServiceUnavailable, SessionExpired
+from neo4j.exceptions import (AuthError, ClientError, DatabaseUnavailable, Forbidden, ServiceUnavailable,
+                              SessionExpired)
 
 from app.adapters.base import ejecutar
 from app.config.settings import Settings
@@ -38,7 +39,7 @@ from app.schemas.partidos import EquipoEnPartido, Marcador, PartidoDetalle, Sede
 T = TypeVar("T")
 
 ERRORES_DISPONIBILIDAD: tuple[type[BaseException], ...] = (
-    ServiceUnavailable, SessionExpired, AuthError, DatabaseUnavailable)
+    ServiceUnavailable, SessionExpired, AuthError, Forbidden, DatabaseUnavailable)
 
 TIPOS_UNICOS = ("INICIO_PARTIDO", "FIN_PARTIDO")
 
@@ -359,10 +360,19 @@ class Neo4jAdapter:
             await self.connect()
 
         async def _correr() -> T:
-            async with self._driver.session(database=self.settings.neo4j_database) as s:
-                if escritura:
-                    return await s.execute_write(fn, *args)
-                return await s.execute_read(fn, *args)
+            try:
+                async with self._driver.session(database=self.settings.neo4j_database) as s:
+                    if escritura:
+                        return await s.execute_write(fn, *args)
+                    return await s.execute_read(fn, *args)
+            except (AuthError, Forbidden):
+                raise   # los clasifica `ejecutar` (autenticacion / autorizacion)
+            except ClientError as exc:
+                # Hito 11 (RF17): database inexistente = contexto mal configurado → 503,
+                # no 500. Cualquier otro ClientError (Cypher inválido) sigue siendo 500.
+                if (exc.code or "").endswith("DatabaseNotFound"):
+                    raise DependencyUnavailableError(self.nombre, motivo="contexto") from exc
+                raise
 
         return await ejecutar(self.nombre, operacion, _correr(),
                               timeout_s=self.settings.dep_timeout_s,

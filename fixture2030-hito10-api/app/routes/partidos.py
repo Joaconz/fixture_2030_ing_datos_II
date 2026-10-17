@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.deps import eventos_service, partidos_service
-from app.schemas.common import R400, R500, R503, Cursor, IdempotencyKey, PartidoId, r400, r404, r409
+from app.schemas.common import R400, R500, R_DEPENDENCIA, Cursor, IdempotencyKey, PartidoId, r400, r404, r409
 from app.schemas.eventos import Evento, EventoNuevo, PaginaEventos, TipoEvento
 from app.schemas.partidos import CambioEstado, PartidoDetalle
 from app.services.eventos import EventosService
@@ -23,7 +23,7 @@ CABECERA_REPLAY = {"Idempotent-Replayed": {"description": "Presente con valor `t
 @router.get("/{partido_id}", operation_id="getPartido",
             summary="Detalle de un partido: equipos, sede, estado y marcador (Neo4j + caché Redis)",
             response_model=PartidoDetalle,
-            responses={200: {"headers": CABECERA_CACHE}, **R400, **R404_PARTIDO, **R503, **R500})
+            responses={200: {"headers": CABECERA_CACHE}, **R400, **R404_PARTIDO, **R_DEPENDENCIA, **R500})
 async def get_partido(partido_id: PartidoId, response: Response,
                       svc: Annotated[PartidosService, Depends(partidos_service)]) -> PartidoDetalle:
     detalle, estado_cache = await svc.get_detalle(partido_id)
@@ -34,7 +34,7 @@ async def get_partido(partido_id: PartidoId, response: Response,
 @router.get("/{partido_id}/eventos", operation_id="listEventosDePartido",
             summary="Timeline de eventos de un partido, en orden de secuencia (Cypher parametrizado)",
             response_model=PaginaEventos,
-            responses={**r400("Parámetro inválido o cursor que no corresponde.", "INVALID_CURSOR"), **R404_PARTIDO, **R503, **R500})
+            responses={**r400("Parámetro inválido o cursor que no corresponde.", "INVALID_CURSOR"), **R404_PARTIDO, **R_DEPENDENCIA, **R500})
 async def list_eventos(partido_id: PartidoId,
                        svc: Annotated[EventosService, Depends(eventos_service)],
                        tipo: Annotated[TipoEvento | None, Query()] = None,
@@ -52,7 +52,7 @@ async def list_eventos(partido_id: PartidoId,
                         **r409("El estado del partido impide el evento, o la clave ya se usó con otro cuerpo.",
                                "MATCH_FINALIZED", "EVENT_AFTER_FIN", "DUPLICATE_UNIQUE_EVENT", "EVENT_OUT_OF_ORDER",
                                "EVENT_TYPE_NOT_IN_CATALOG", "IDEMPOTENCY_KEY_REUSED"),
-                        **R503, **R500})
+                        **R_DEPENDENCIA, **R500})
 async def registrar_evento(partido_id: PartidoId, body: EventoNuevo, response: Response,
                            idempotency_key: IdempotencyKey,
                            svc: Annotated[EventosService, Depends(eventos_service)]) -> Evento:
@@ -69,7 +69,7 @@ async def registrar_evento(partido_id: PartidoId, body: EventoNuevo, response: R
               responses={**R400, **R404_PARTIDO,
                          **r409("Transición inválida: el partido ya está FINALIZADO o no tiene FIN_PARTIDO.",
                                 "INVALID_TRANSITION", "MISSING_FIN_PARTIDO"),
-                         **R503, **R500})
+                         **R_DEPENDENCIA, **R500})
 async def cerrar_partido(partido_id: PartidoId, body: CambioEstado,
                          svc: Annotated[EventosService, Depends(eventos_service)]) -> PartidoDetalle:
     return await svc.cerrar(partido_id, body)

@@ -1,6 +1,6 @@
 import { getHealth, getSaludDependencias } from '../api/endpoints'
 import { DEPENDENCIAS } from '../api/enums'
-import type { EstadoDependencia, NombreDependencia } from '../api/types'
+import { enArquitectura, type DependenciaEnArquitectura, type EstadoDependencia, type NombreDependencia } from '../api/types'
 import { HttpBadge, SourceBadge, type Fuente } from '../components/Badges'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { Icon } from '../components/Icon'
@@ -24,8 +24,8 @@ const MODULO: Record<NombreDependencia, string> = {
   influxdb: 'Estadísticas en vivo',
 }
 
-function ordenar(deps: EstadoDependencia[]): EstadoDependencia[] {
-  return [...deps].sort((a, b) => DEPENDENCIAS.indexOf(a.nombre) - DEPENDENCIAS.indexOf(b.nombre))
+function ordenar(deps: EstadoDependencia[]): DependenciaEnArquitectura[] {
+  return deps.filter(enArquitectura).sort((a, b) => DEPENDENCIAS.indexOf(a.nombre) - DEPENDENCIAS.indexOf(b.nombre))
 }
 
 export function SaludPage() {
@@ -78,7 +78,7 @@ export function SaludPage() {
               </p>
               <p className="help">
                 <code className="mono">GET /health/dependencias</code> responde 200 si las cinco están UP y 503 (con este
-                mismo detalle) si alguna está DOWN.
+                mismo detalle) si alguna no lo está. El resultado se reutiliza unos segundos (caché del chequeo).
               </p>
             </>
           ) : (

@@ -10,7 +10,7 @@ export type ErrorKind =
   | 'forbidden' // 403
   | 'not_found' // 404: el recurso no existe
   | 'conflict' // 409: el estado del recurso impide la operación
-  | 'unavailable' // 503: la fuente de datos está caída
+  | 'unavailable' // 503: la fuente de datos está caída · 504: no respondió a tiempo
   | 'server' // 500 y otros 5xx
   | 'network' // no hubo respuesta HTTP (API apagada, CORS, red local, mixed content)
   | 'unexpected' // cualquier otro status
@@ -23,9 +23,9 @@ export interface ApiFailure {
   message: string
   requestId: string | null
   details: ErrorDetalle[]
-  /** Fuente caída (sólo 503), p. ej. "mongodb". */
+  /** Fuente caída (503/504), p. ej. "mongodb". */
   dependency: string | null
-  /** Segundos sugeridos por `Retry-After` (sólo 503). */
+  /** Segundos sugeridos por `Retry-After` (503/504). */
   retryAfter: number | null
 }
 
@@ -46,7 +46,7 @@ export function kindFromStatus(status: number): ErrorKind {
   if (status === 403) return 'forbidden'
   if (status === 404) return 'not_found'
   if (status === 409) return 'conflict'
-  if (status === 503) return 'unavailable'
+  if (status === 503 || status === 504) return 'unavailable'
   if (status >= 500) return 'server'
   return 'unexpected'
 }

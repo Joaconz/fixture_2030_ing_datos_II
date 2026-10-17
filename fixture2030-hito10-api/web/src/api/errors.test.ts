@@ -47,6 +47,22 @@ describe('parseApiError', () => {
     expect(nombreFuente(e.dependency ?? '')).toBe('Cassandra')
   })
 
+  it('en 504 (timeout de la fuente, Hito 11) conserva el code y extrae la fuente', () => {
+    const e = parseApiError(
+      504,
+      {
+        code: 'DEPENDENCY_TIMEOUT',
+        message: "La fuente 'influxdb' no respondió dentro del tiempo límite. Reintentar más tarde.",
+        requestId: 'req-504',
+        details: [{ campo: 'dependencia', problema: 'influxdb' }],
+      },
+      h({ 'Retry-After': '5' }),
+    )
+    expect(e.kind).toBe('unavailable')
+    expect(e.code).toBe('DEPENDENCY_TIMEOUT')
+    expect(e.dependency).toBe('influxdb')
+  })
+
   it('si el cuerpo no cumple el formato usa X-Request-Id y un code sintético', () => {
     const e = parseApiError(502, '<html>Bad gateway</html>', h({ 'X-Request-Id': 'req-hdr' }))
     expect(e.kind).toBe('server')

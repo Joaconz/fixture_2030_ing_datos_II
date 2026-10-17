@@ -79,8 +79,13 @@ def test_partido_id_invalido_400_sin_tocar_neo4j(make_client):
 
 
 def test_timeline_neo4j_caido_503(make_client):
-    r = make_client(neo4j=FuenteCaida("neo4j", timeout=True)).get("/partidos/PAR-A-1/eventos")
+    r = make_client(neo4j=FuenteCaida("neo4j")).get("/partidos/PAR-A-1/eventos")
     assert r.status_code == 503 and r.json()["code"] == "DEPENDENCY_UNAVAILABLE"
+
+
+def test_timeline_neo4j_timeout_504(make_client):
+    r = make_client(neo4j=FuenteCaida("neo4j", timeout=True)).get("/partidos/PAR-A-1/eventos")
+    assert r.status_code == 504 and r.json()["code"] == "DEPENDENCY_TIMEOUT"
 
 
 # --------------------------------------------------------------------------- CU6 reglas por tipo (N8)
