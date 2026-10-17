@@ -35,6 +35,8 @@ Se cargan del entorno o de `fixture2030-hito10-api/.env` (ignorado por git; plan
 | `LOG_LEVEL` | `INFO` | Nivel de log |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Orígenes del front (agregar el dominio de Vercel) |
 | `DEP_TIMEOUT_S` | `2.0` | Timeout por operación contra una fuente (RNF8) |
+| `HEALTH_CACHE_S` | `5` | Hito 11: segundos que se reutiliza el chequeo profundo de `/health/dependencias` y `/health/ready` (0 = sin caché) |
+| `READY_ESENCIALES` | `mongodb,neo4j` | Hito 11: fuentes sin las cuales `/health/ready` responde 503 `NO_LISTA` |
 | `MONGO_URI` / `MONGO_DB` | `mongodb://localhost:27017` / `fixture2030` | MongoDB |
 | `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` / `NEO4J_DATABASE` | `bolt://localhost:7687` / `neo4j` / *(vacío)* / `neo4j` | Neo4j |
 | `CASSANDRA_HOSTS` / `CASSANDRA_PORT` / `CASSANDRA_KEYSPACE` / `CASSANDRA_DC` | `127.0.0.1` / `9042` / `fixture2030_comentarios` / `datacenter1` | Cassandra |
@@ -52,7 +54,9 @@ Se cargan del entorno o de `fixture2030-hito10-api/.env` (ignorado por git; plan
 | Redis | `socket_connect_timeout`, `socket_timeout` = `DEP_TIMEOUT_S` | `wait_for(DEP_TIMEOUT_S)` |
 | InfluxDB | `httpx.Timeout(DEP_TIMEOUT_S)` | `wait_for(DEP_TIMEOUT_S)` |
 
-Medido: con cada fuente detenida, 503 entre 2 ms (conexión rechazada) y 2,01 s (driver que reintenta); con la fuente colgada (`docker pause`), 503 a los 2,0 s. Ver `evidencia/dependencia_caida_*.md` y `evidencia/dependencia_lenta_pause_*.md`.
+Desde el Hito 11, un corte por timeout responde **504 `DEPENDENCY_TIMEOUT`** y el resto de las fallas 503 `DEPENDENCY_UNAVAILABLE`; el log de cada adaptador agrega `motivo` (`timeout`, `conexion`, `autenticacion`, `autorizacion`, `contexto`, `no_configurado`, `rechazo`). En MongoDB la selección de servidor usa el 80 % de `DEP_TIMEOUT_S` para que el error del driver (rechazo, DNS) llegue antes que el corte de la API. Evaluación completa: [`../../fixture2030-hito11-conectividad/`](../../fixture2030-hito11-conectividad/README.md).
+
+Medido en el Hito 10 (antes del 504): con cada fuente detenida, 503 entre 2 ms (conexión rechazada) y 2,01 s (driver que reintenta); con la fuente colgada (`docker pause`), 503 a los 2,0 s. Ver `evidencia/dependencia_caida_*.md` y `evidencia/dependencia_lenta_pause_*.md`.
 
 ## 5. Procedimiento: de cero a la API funcionando
 
@@ -95,6 +99,8 @@ Notas:
 - Las sesiones de muestra de Redis vencen 30 min después de la carga (TTL deslizante del Hito 7): recargar antes de una demo.
 
 ## 6. Verificar cada dependencia
+
+> **Hito 11:** la evaluación por capas (configuración → DNS → TCP → protocolo → identidad → contexto → operación → API), con matriz y fallas controladas, está en [`fixture2030-hito11-conectividad/`](../../fixture2030-hito11-conectividad/README.md). `verificar_conectividad.sh` queda como chequeo rápido.
 
 - `bash scripts/verificar_conectividad.sh`: por fuente, contenedor corriendo, puerto abierto y un comando nativo (`mongosh ping`, `cypher-shell 'RETURN 1'`, `cqlsh SELECT release_version`, `redis-cli PING`, `curl /health`), y al final `GET /health/dependencias` si la API está arriba. Sale con código ≠ 0 si algo falla.
 - `curl http://localhost:8000/health/dependencias`: estado y latencia por fuente (200 si todas `UP`, 503 si alguna `DOWN`).

@@ -102,6 +102,7 @@ fixture2030-hito10-api/
 | Seguridad | [`docs/seguridad.md`](docs/seguridad.md) |
 | Rendimiento básico | [`docs/rendimiento.md`](docs/rendimiento.md) |
 | Coherencia con el TPO | [`docs/coherencia_tpo.md`](docs/coherencia_tpo.md) |
+| **Hito 11 — evaluación de conectividad** (cambios en salud y errores: 504 `DEPENDENCY_TIMEOUT`, `/health/ready`, `motivo` en logs) | [`../fixture2030-hito11-conectividad/`](../fixture2030-hito11-conectividad/README.md) |
 
 ## Limitaciones conocidas
 

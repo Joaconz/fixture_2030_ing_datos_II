@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # tiene además su propio timeout de conexión, alineado con este valor.
     dep_timeout_s: float = Field(default=2.0, gt=0, le=30)
 
+    # --- Salud (Hito 11 §5.6) ----------------------------------------------
+    # Segundos que se reutiliza el resultado del chequeo profundo (0 = sin caché).
+    health_cache_s: float = Field(default=5.0, ge=0, le=300)
+    # Fuentes sin las cuales la API no está lista (/health/ready → 503 NO_LISTA).
+    ready_esenciales: str = "mongodb,neo4j"
+
     # --- MongoDB (Hito 4) --------------------------------------------------
     mongo_uri: SecretStr = SecretStr("mongodb://localhost:27017")
     mongo_db: str = "fixture2030"
@@ -65,6 +71,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def ready_esenciales_list(self) -> tuple[str, ...]:
+        return tuple(n.strip() for n in self.ready_esenciales.split(",") if n.strip())
 
     @property
     def cassandra_host_list(self) -> list[str]:

@@ -40,8 +40,14 @@ def test_entrada_invalida_da_400_sin_tocar_fuentes(make_client, ruta):
 
 
 def test_mongo_caido_da_503(make_client):
-    r = make_client(mongodb=FuenteCaida("mongodb", timeout=True)).get("/equipos/ARG")
+    r = make_client(mongodb=FuenteCaida("mongodb")).get("/equipos/ARG")
     assert r.status_code == 503 and r.json()["code"] == "DEPENDENCY_UNAVAILABLE"
+    assert r.headers["Retry-After"] == "5"
+
+
+def test_mongo_timeout_da_504_distinto_de_503(make_client):
+    r = make_client(mongodb=FuenteCaida("mongodb", timeout=True)).get("/equipos/ARG")
+    assert r.status_code == 504 and r.json()["code"] == "DEPENDENCY_TIMEOUT"
     assert r.headers["Retry-After"] == "5"
 
 

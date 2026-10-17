@@ -1,0 +1,9 @@
+# Configuración local con valores propios o secretos: nunca se versiona (RNF7)
+configuracion.env
+*.local.env
+*.token
+*.key
+*.pem
+
+# La plantilla de configuración SÍ se versiona (la raíz ignora *.env)
+!configuracion-ejemplo.env

@@ -71,10 +71,14 @@ def estadisticas_service(influx: Annotated[InfluxPort, Depends(get_influx)]) -> 
     return EstadisticasService(influx)
 
 
-def salud_service(mongo: Annotated[MongoPort, Depends(get_mongo)],
+def salud_service(request: Request,
+                  settings: SettingsDep,
+                  mongo: Annotated[MongoPort, Depends(get_mongo)],
                   neo4j: Annotated[Neo4jPort, Depends(get_neo4j)],
                   cassandra: Annotated[CassandraPort, Depends(get_cassandra)],
                   redis: Annotated[RedisPort, Depends(get_redis)],
                   influx: Annotated[InfluxPort, Depends(get_influx)]) -> SaludService:
     return SaludService({"mongodb": mongo, "neo4j": neo4j, "cassandra": cassandra,
-                         "redis": redis, "influxdb": influx})
+                         "redis": redis, "influxdb": influx},
+                        cache=getattr(request.app.state, "salud_cache", None),
+                        esenciales=settings.ready_esenciales_list)

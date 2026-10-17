@@ -144,11 +144,42 @@ async def test_sin_token_503_sin_llamar_a_influx(tmp_path, caplog):
     assert "token de InfluxDB no configurado" in caplog.text
 
 
-async def test_ping_health_sin_token():
-    g = Grabador(httpx.Response(200, json={"status": "pass"}))
-    a = _adaptador(g, token=None)
-    await a.ping()
+def _por_ruta(health: httpx.Response, query: httpx.Response) -> Grabador:
+
+    class _G(Grabador):
+        def __call__(self, request: httpx.Request) -> httpx.Response:
+            self.requests.append(request)
+            return health if request.url.path == "/health" else query
+    return _G()
+
+
+async def test_ping_health_sin_token_y_select_1_con_token():
+    g = _por_ruta(httpx.Response(200, text="OK"), httpx.Response(200, json=[{"ok": 1}]))
+    await _adaptador(g).ping()
     assert g.requests[0].url.path == "/health" and "Authorization" not in g.requests[0].headers
+    assert g.requests[1].url.path == "/api/v3/query_sql"
+    assert g.cuerpo["q"] == "SELECT 1 AS ok" and g.cuerpo["db"] == "fixture2030_vivo"
+    assert g.requests[1].headers["Authorization"] == f"Bearer {TOKEN}"
+
+
+async def test_ping_sin_token_es_no_configurado(tmp_path):
+    g = _por_ruta(httpx.Response(200, text="OK"), httpx.Response(200, json=[]))
+    with pytest.raises(DependencyUnavailableError) as e:
+        await _adaptador(g, token=None, tmp_path=tmp_path).ping()
+    assert e.value.motivo == "no_configurado" and len(g.requests) == 1
+
+
+@pytest.mark.parametrize("status,texto,motivo", [
+    (401, '{"error":"the request was not authenticated"}', "autenticacion"),
+    (403, '{"error":"forbidden"}', "autorizacion"),
+    (404, '{"error":"query error: database not found: fixture2030_vivo"}', "contexto"),
+    (500, '{"error":"boom"}', "rechazo"),
+])
+async def test_ping_clasifica_el_motivo(status, texto, motivo):
+    g = _por_ruta(httpx.Response(200, text="OK"), httpx.Response(status, text=texto))
+    with pytest.raises(DependencyUnavailableError) as e:
+        await _adaptador(g).ping()
+    assert e.value.motivo == motivo and e.value.status_code == 503
 
 
 async def test_ping_caido_es_503():

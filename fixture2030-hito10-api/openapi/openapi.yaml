@@ -95,7 +95,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -103,7 +104,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -245,7 +269,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -253,7 +278,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -365,7 +413,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -373,7 +422,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -485,7 +557,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -493,7 +566,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -643,7 +739,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -651,7 +748,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -844,7 +964,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -852,7 +973,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -987,7 +1131,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -995,7 +1140,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1125,7 +1293,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -1133,7 +1302,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1276,7 +1468,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -1284,7 +1477,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1404,7 +1620,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -1412,7 +1629,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1508,7 +1748,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -1516,7 +1757,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1662,7 +1926,8 @@ paths:
               schema:
                 type: string
         '503':
-          description: 'La fuente de datos no respondió (caída o timeout). Códigos: `DEPENDENCY_UNAVAILABLE`.'
+          description: 'La fuente de datos no está disponible (caída, conexión rechazada o mal configurada). Códigos:
+            `DEPENDENCY_UNAVAILABLE`.'
           content:
             application/json:
               examples:
@@ -1670,7 +1935,30 @@ paths:
                   summary: DEPENDENCY_UNAVAILABLE
                   value:
                     code: DEPENDENCY_UNAVAILABLE
-                    message: La fuente de datos no respondió (caída o timeout).
+                    message: La fuente de datos no está disponible (caída, conexión rechazada o mal configurada).
+                    requestId: req-3f9c2a1b7d4e5f60
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '504':
+          description: 'La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S). Códigos: `DEPENDENCY_TIMEOUT`.'
+          content:
+            application/json:
+              examples:
+                DEPENDENCY_TIMEOUT:
+                  summary: DEPENDENCY_TIMEOUT
+                  value:
+                    code: DEPENDENCY_TIMEOUT
+                    message: La fuente de datos no respondió dentro del tiempo límite (DEP_TIMEOUT_S).
                     requestId: req-3f9c2a1b7d4e5f60
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
@@ -1707,7 +1995,7 @@ paths:
     get:
       tags:
       - Salud
-      summary: La API está viva (no consulta fuentes)
+      summary: 'Liveness: el proceso de la API responde (no consulta fuentes)'
       operationId: health
       responses:
         '200':
@@ -1722,11 +2010,65 @@ paths:
                 el mismo valor está en `requestId` y en los logs
               schema:
                 type: string
+  /health/ready:
+    get:
+      tags:
+      - Salud
+      summary: 'Readiness: las fuentes esenciales (READY_ESENCIALES) están UP'
+      operationId: healthReady
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+        '503':
+          description: 'NO_LISTA: alguna fuente esencial no está UP (mismo cuerpo)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
+            Retry-After:
+              description: Segundos sugeridos antes de reintentar
+              schema:
+                type: integer
+        '500':
+          description: 'Error interno; el detalle técnico queda sólo en los logs. Códigos: `INTERNAL_ERROR`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                INTERNAL_ERROR:
+                  summary: INTERNAL_ERROR
+                  value:
+                    code: INTERNAL_ERROR
+                    message: Error interno; el detalle técnico queda sólo en los logs.
+                    requestId: req-3f9c2a1b7d4e5f60
+          headers:
+            X-Request-Id:
+              description: Identificador de la request (el enviado por el cliente si es seguro, o uno generado);
+                el mismo valor está en `requestId` y en los logs
+              schema:
+                type: string
   /health/dependencias:
     get:
       tags:
       - Salud
-      summary: Ping con timeout a MongoDB, Neo4j, Cassandra, Redis e InfluxDB
+      summary: Chequeo por dependencia (ping + contexto, con timeout y caché de HEALTH_CACHE_S)
       operationId: healthDependencias
       responses:
         '200':
@@ -1742,7 +2084,7 @@ paths:
               schema:
                 type: string
         '503':
-          description: Al menos una fuente está DOWN (mismo cuerpo)
+          description: Al menos una fuente de la arquitectura no está UP (mismo cuerpo)
           content:
             application/json:
               schema:
@@ -2128,12 +2470,15 @@ components:
           - cassandra
           - redis
           - influxdb
+          - iris
           title: Nombre
         estado:
           type: string
           enum:
           - UP
           - DOWN
+          - NOT_CONFIGURED
+          - UNKNOWN
           title: Estado
         latenciaMs:
           anyOf:
@@ -2145,6 +2490,10 @@ components:
           - type: string
           - type: 'null'
           title: Detalle
+        enArquitectura:
+          type: boolean
+          title: Enarquitectura
+          default: true
       additionalProperties: false
       type: object
       required:
@@ -2634,6 +2983,42 @@ components:
       - time
       - equipoCodigo
       title: PuntoEstadistica
+    Readiness:
+      properties:
+        estado:
+          type: string
+          enum:
+          - LISTA
+          - LISTA_DEGRADADA
+          - NO_LISTA
+          title: Estado
+        esenciales:
+          items:
+            type: string
+          type: array
+          title: Esenciales
+        noDisponibles:
+          items:
+            type: string
+          type: array
+          title: Nodisponibles
+        verificadoEn:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Verificadoen
+        desdeCache:
+          type: boolean
+          title: Desdecache
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+      - estado
+      - esenciales
+      - noDisponibles
+      title: Readiness
     SaludDependencias:
       properties:
         estado:
@@ -2647,6 +3032,16 @@ components:
             $ref: '#/components/schemas/EstadoDependencia'
           type: array
           title: Dependencias
+        verificadoEn:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Verificadoen
+        desdeCache:
+          type: boolean
+          title: Desdecache
+          default: false
       additionalProperties: false
       type: object
       required:

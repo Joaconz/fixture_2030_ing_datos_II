@@ -190,8 +190,13 @@
                   "forma('salud', b, {estado: 'string', dependencias: 'array'});",
                   "pm.test('las cinco fuentes UP', () => {",
                   "  pm.expect(b.estado).to.eql('OK');",
-                  "  pm.expect(b.dependencias.map(d => d.nombre).sort()).to.eql(['cassandra', 'influxdb', 'mongodb', 'neo4j', 'redis']);",
-                  "  b.dependencias.forEach(d => { pm.expect(d.estado).to.eql('UP'); pm.expect(d.latenciaMs).to.be.a('number'); });",
+                  "  const enArq = b.dependencias.filter(d => d.enArquitectura !== false);",
+                  "  pm.expect(enArq.map(d => d.nombre).sort()).to.eql(['cassandra', 'influxdb', 'mongodb', 'neo4j', 'redis']);",
+                  "  enArq.forEach(d => { pm.expect(d.estado).to.eql('UP'); pm.expect(d.latenciaMs).to.be.a('number'); });",
+                  "});",
+                  "pm.test('IRIS informada como NOT_CONFIGURED (Hito 11)', () => {",
+                  "  const iris = b.dependencias.find(d => d.nombre === 'iris');",
+                  "  pm.expect(iris.estado).to.eql('NOT_CONFIGURED'); pm.expect(iris.enArquitectura).to.eql(false);",
                   "});"
                 ]
               }

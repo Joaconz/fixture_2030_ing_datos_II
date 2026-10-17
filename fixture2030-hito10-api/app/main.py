@@ -24,6 +24,7 @@ from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
 from app.core.request_id import RequestIdMiddleware
 from app.routes import comentarios, equipos, estadisticas, partidos, salud, sesiones
+from app.services.salud import CacheSalud
 
 VERSION = "1.0.0"
 DESCRIPCION = """API REST integrada del **Fixture Mundial 2030** (Ingeniería de Datos II, Hito 10).
@@ -78,6 +79,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Fixture 2030 — API REST integrada", version=VERSION,
                   description=DESCRIPCION, openapi_tags=TAGS, lifespan=lifespan)
     install_error_handlers(app)
+    app.state.salud_cache = CacheSalud(settings.health_cache_s)
     for r in (equipos.router, partidos.router, comentarios.router, sesiones.router,
               estadisticas.router, salud.router):
         app.include_router(r)
@@ -109,7 +111,7 @@ def create_app() -> FastAPI:
                         "description": "Identificador de la request (el enviado por el cliente si es seguro, "
                                        "o uno generado); el mismo valor está en `requestId` y en los logs",
                         "schema": {"type": "string"}}
-                    if status == "503":
+                    if status in ("503", "504"):
                         cabeceras["Retry-After"] = {"description": "Segundos sugeridos antes de reintentar",
                                                     "schema": {"type": "integer"}}
         for nombre in ("HTTPValidationError", "ValidationError"):

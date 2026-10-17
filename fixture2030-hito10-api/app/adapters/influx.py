@@ -156,14 +156,20 @@ class InfluxAdapter:
         return self._cliente
 
     async def ping(self) -> None:
-        """GET /health (no requiere token: el servidor corre con --disable-authz=health,ping)."""
+        """GET /health y después `SELECT 1` con token sobre la database configurada.
+
+        /health no requiere token (el servidor corre con --disable-authz=health,ping):
+        sólo prueba que el servicio responde. El `SELECT 1` (Hito 11, RF13) prueba
+        además token, permiso y existencia de la database, sin leer datos del dominio.
+        """
         async def _ping() -> None:
             r = await self._http().get("/health")
             if r.status_code != 200:
                 log.warning("influxdb /health respondió distinto de 200", extra={
                     "evento": "dependencia", "dependencia": self.nombre, "operacion": "ping",
                     "status": r.status_code})
-                raise DependencyUnavailableError(self.nombre)
+                raise DependencyUnavailableError(self.nombre, motivo="rechazo")
+            await self._query("SELECT 1 AS ok", {})
 
         await ejecutar(self.nombre, "ping", _ping(), timeout_s=self.settings.dep_timeout_s,
                        errores_de_disponibilidad=ERRORES_DISPONIBILIDAD)
@@ -187,7 +193,7 @@ class InfluxAdapter:
                       "de INFLUX_TOKEN_FILE (fixture2030-influxdb/scripts/autorizacion_local.sh)",
                       extra={"evento": "dependencia", "dependencia": self.nombre,
                              "operacion": "query_sql", "resultado": "sin_token"})
-            raise DependencyUnavailableError(self.nombre)
+            raise DependencyUnavailableError(self.nombre, motivo="no_configurado")
 
         cuerpo = {"db": self.settings.influx_db, "q": sql, "format": "json", "params": params}
         r = await self._http().post("/api/v3/query_sql", json=cuerpo,
@@ -208,9 +214,14 @@ class InfluxAdapter:
         if r.status_code in (401, 403):
             self._token = None   # token rotado o recreado: releerlo en la próxima consulta
             self._log_rechazo(r.status_code, "token rechazado por InfluxDB")
+            motivo = "autenticacion" if r.status_code == 401 else "autorizacion"
+        elif r.status_code == 404 and "database not found" in r.text:
+            self._log_rechazo(r.status_code, "la database configurada no existe en InfluxDB")
+            motivo = "contexto"
         else:
             self._log_rechazo(r.status_code, "InfluxDB rechazó la consulta")
-        raise DependencyUnavailableError(self.nombre)
+            motivo = "rechazo"
+        raise DependencyUnavailableError(self.nombre, motivo=motivo)
 
     def _log_rechazo(self, status: int, motivo: str) -> None:
         # Sin cuerpo de la respuesta, sin SQL, sin parámetros y sin token (RNF7 / RNF10).

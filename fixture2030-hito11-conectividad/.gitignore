@@ -1,0 +1,15 @@
+# Secretos y configuración local (RNF7)
+.env
+.env.*
+config/configuracion.env
+secrets/
+*.token
+
+# Salidas crudas: se generan en docs/evidencia/crudo/ y NO se versionan.
+# Lo versionado en docs/evidencia/ ya pasó por la redacción de registro.py (RNF8).
+docs/evidencia/crudo/
+*.log
+
+# Python
+__pycache__/
+*.pyc

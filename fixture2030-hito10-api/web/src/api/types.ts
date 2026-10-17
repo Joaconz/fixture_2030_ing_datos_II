@@ -33,7 +33,13 @@ export type Condicion = NonNullable<EventoNuevo['condicionEquipo']>
 export type Agregacion = NonNullable<
   NonNullable<operations['getEstadisticasDePartido']['parameters']['query']>['agregacion']
 >
-export type NombreDependencia = EstadoDependencia['nombre']
+/** Fuentes de la arquitectura vigente. La API informa también IRIS como
+ *  NOT_CONFIGURED (`enArquitectura: false`, Hito 11); el front no la muestra. */
+export type NombreDependencia = Exclude<EstadoDependencia['nombre'], 'iris'>
+export type DependenciaEnArquitectura = EstadoDependencia & { nombre: NombreDependencia }
+export function enArquitectura(d: EstadoDependencia): d is DependenciaEnArquitectura {
+  return d.enArquitectura !== false && d.nombre !== 'iris'
+}
 export type CacheStatus = NonNullable<
   operations['getPartido']['responses'][200]['headers']['X-Cache']
 >
