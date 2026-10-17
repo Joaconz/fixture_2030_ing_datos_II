@@ -1,0 +1,10 @@
+# GET health/dependencias — 2026-10-17T00:24:34Z — API http://localhost:8001 (commit e1de5d6)
+HTTP/1.1 200 OK
+date: Sat, 17 Oct 2026 00:24:33 GMT
+server: uvicorn
+content-length: 692
+content-type: application/json
+vary: Origin
+x-request-id: h11-captura-health_dependencias
+
+{"estado":"OK","dependencias":[{"nombre":"mongodb","estado":"UP","latenciaMs":3.0,"detalle":null,"enArquitectura":true},{"nombre":"neo4j","estado":"UP","latenciaMs":3.6,"detalle":null,"enArquitectura":true},{"nombre":"cassandra","estado":"UP","latenciaMs":2.2,"detalle":null,"enArquitectura":true},{"nombre":"redis","estado":"UP","latenciaMs":0.8,"detalle":null,"enArquitectura":true},{"nombre":"influxdb","estado":"UP","latenciaMs":4.9,"detalle":null,"enArquitectura":true},{"nombre":"iris","estado":"NOT_CONFIGURED","latenciaMs":null,"detalle":"fuera de la arquitectura vigente (reentrega del Hito 3)","enArquitectura":false}],"verificadoEn":"2026-10-17T00:24:34.094557Z","desdeCache":true}

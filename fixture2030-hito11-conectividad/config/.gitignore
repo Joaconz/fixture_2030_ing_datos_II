@@ -4,3 +4,6 @@ configuracion.env
 *.token
 *.key
 *.pem
+
+# La plantilla de configuración SÍ se versiona (la raíz ignora *.env)
+!configuracion-ejemplo.env

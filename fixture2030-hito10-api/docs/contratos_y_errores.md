@@ -8,20 +8,21 @@ El contrato completo (paths, parámetros, cuerpos, schemas, ejemplos y códigos)
 
 | Método y ruta | Caso de uso | Fuente · operación | Éxito | Errores |
 |---|---|---|---|---|
-| `GET /equipos/{codigo}` | CU1 | MongoDB · `find_one` por `_id` con proyección | 200 | 400, 404 `TEAM_NOT_FOUND`, 503 |
-| `GET /equipos/{codigo}/jugadores` | CU2 | MongoDB · `find` por índice `{equipoId, posicion}`, cursor por dorsal | 200 | 400 (`INVALID_CURSOR`), 404, 503 |
-| `GET /equipos/{codigo}/partidos` | CU3 | Neo4j · recorrido `PARTICIPA_EN` | 200 | 400, 404, 503 |
-| `GET /partidos/{partidoId}` | CU4 | Neo4j + caché Redis (cache-aside, `X-Cache`) | 200 | 400, 404 `MATCH_NOT_FOUND`, 503 |
-| `GET /partidos/{partidoId}/eventos` | CU5 | Neo4j · Cypher por `(partidoId, secuencia)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503 |
-| `POST /partidos/{partidoId}/eventos` | CU6 | Neo4j · transacción de escritura + reglas N8 | 201 / 200 replay | 400 (`EVENT_RULE_VIOLATION`), 404, 409 (6 códigos), 503 |
-| `PATCH /partidos/{partidoId}/estado` | CU7 | Neo4j · transacción de escritura (cierre CP) | 200 | 400, 404, 409 (`INVALID_TRANSITION`, `MISSING_FIN_PARTIDO`), 503 |
-| `GET /partidos/{partidoId}/comentarios` | CU8 | Cassandra · Q0 + particiones `(partido, ventana, bucket)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503 |
-| `POST /partidos/{partidoId}/comentarios` | CU9 | Cassandra · `LOGGED BATCH` en dos tablas | 201 / 200 replay | 400 (`COMMENT_OUTSIDE_MATCH_WINDOW`), 404, 503 |
-| `GET /sesiones/{sesionId}` | CU10 | Redis · `HGETALL` + `TTL` | 200 | 400, 403 `SESSION_BLOCKED`, 404 `SESSION_NOT_FOUND`, 503 |
-| `DELETE /sesiones/{sesionId}` | CU11 | Redis · `MULTI` `SREM` + `DEL` `EXEC` | 204 | 400, 404, 503 |
-| `GET /partidos/{partidoId}/estadisticas` | CU12 | InfluxDB 3 · SQL parametrizado, `date_bin` | 200 (vacío válido) | 400 (`INVALID_TIME_WINDOW`, `TIME_WINDOW_TOO_LARGE`), 503 |
+| `GET /equipos/{codigo}` | CU1 | MongoDB · `find_one` por `_id` con proyección | 200 | 400, 404 `TEAM_NOT_FOUND`, 503, 504 |
+| `GET /equipos/{codigo}/jugadores` | CU2 | MongoDB · `find` por índice `{equipoId, posicion}`, cursor por dorsal | 200 | 400 (`INVALID_CURSOR`), 404, 503, 504 |
+| `GET /equipos/{codigo}/partidos` | CU3 | Neo4j · recorrido `PARTICIPA_EN` | 200 | 400, 404, 503, 504 |
+| `GET /partidos/{partidoId}` | CU4 | Neo4j + caché Redis (cache-aside, `X-Cache`) | 200 | 400, 404 `MATCH_NOT_FOUND`, 503, 504 |
+| `GET /partidos/{partidoId}/eventos` | CU5 | Neo4j · Cypher por `(partidoId, secuencia)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503, 504 |
+| `POST /partidos/{partidoId}/eventos` | CU6 | Neo4j · transacción de escritura + reglas N8 | 201 / 200 replay | 400 (`EVENT_RULE_VIOLATION`), 404, 409 (6 códigos), 503, 504 |
+| `PATCH /partidos/{partidoId}/estado` | CU7 | Neo4j · transacción de escritura (cierre CP) | 200 | 400, 404, 409 (`INVALID_TRANSITION`, `MISSING_FIN_PARTIDO`), 503, 504 |
+| `GET /partidos/{partidoId}/comentarios` | CU8 | Cassandra · Q0 + particiones `(partido, ventana, bucket)` | 200 (vacío válido) | 400 (`INVALID_CURSOR`), 404, 503, 504 |
+| `POST /partidos/{partidoId}/comentarios` | CU9 | Cassandra · `LOGGED BATCH` en dos tablas | 201 / 200 replay | 400 (`COMMENT_OUTSIDE_MATCH_WINDOW`), 404, 503, 504 |
+| `GET /sesiones/{sesionId}` | CU10 | Redis · `HGETALL` + `TTL` | 200 | 400, 403 `SESSION_BLOCKED`, 404 `SESSION_NOT_FOUND`, 503, 504 |
+| `DELETE /sesiones/{sesionId}` | CU11 | Redis · `MULTI` `SREM` + `DEL` `EXEC` | 204 | 400, 404, 503, 504 |
+| `GET /partidos/{partidoId}/estadisticas` | CU12 | InfluxDB 3 · SQL parametrizado, `date_bin` | 200 (vacío válido) | 400 (`INVALID_TIME_WINDOW`, `TIME_WINDOW_TOO_LARGE`), 503, 504 |
 | `GET /health` | — | ninguna | 200 | — |
-| `GET /health/dependencias` | CU13 | las cinco · ping con timeout | 200 | 503 (mismo cuerpo, alguna `DOWN`) |
+| `GET /health/ready` | Hito 11 | readiness: `READY_ESENCIALES` (mongodb, neo4j) sobre el chequeo cacheado | 200 `LISTA` / `LISTA_DEGRADADA` | 503 `NO_LISTA` (mismo cuerpo) |
+| `GET /health/dependencias` | CU13 | las cinco · ping + contexto con timeout, caché `HEALTH_CACHE_S`; IRIS como `NOT_CONFIGURED` | 200 | 503 (mismo cuerpo, alguna fuente no `UP`) |
 
 Tags de OpenAPI por módulo: `Equipos · MongoDB`, `Partidos · Neo4j`, `Comentarios · Cassandra`, `Sesiones · Redis`, `Estadísticas · InfluxDB`, `Salud`. No hay autenticación en este hito (la sesión se consulta como recurso, no se usa como credencial): ver [`seguridad.md`](./seguridad.md).
 
@@ -96,7 +97,8 @@ Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PART
 | 409 | `IDEMPOTENCY_KEY_REUSED` | Misma clave con otro cuerpo | POST eventos |
 | 409 | `INVALID_TRANSITION` | El partido no está `PROGRAMADO` (p. ej. cierre repetido) | PATCH estado |
 | 409 | `MISSING_FIN_PARTIDO` | Cierre sin el evento `FIN_PARTIDO` | PATCH estado |
-| 503 | `DEPENDENCY_UNAVAILABLE` | Fuente caída, rechazo de conexión o timeout; incluye `Retry-After: 5` | todas las que consultan una fuente |
+| 503 | `DEPENDENCY_UNAVAILABLE` | Fuente caída, conexión rechazada, host no resuelto, credencial o permiso rechazado, contexto (database/keyspace) inexistente o configuración faltante; incluye `Retry-After: 5`. El motivo exacto va sólo al log (`motivo`) | todas las que consultan una fuente |
+| 504 | `DEPENDENCY_TIMEOUT` | **Hito 11:** la fuente no respondió dentro de `DEP_TIMEOUT_S` (antes era 503 con el mismo `code` que una caída); incluye `Retry-After: 5` | todas las que consultan una fuente |
 | 500 | `INTERNAL_ERROR` | Error inesperado; detalle sólo en logs | todas |
 
 ## 5. Ausencia, vacío y caída: cómo se distinguen (preguntas guía 4–6, 12)
@@ -105,7 +107,8 @@ Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PART
 |---|---|
 | Recurso que no existe | 404 con `code` de dominio |
 | Recurso que existe y no tiene elementos (partido sin eventos, sin comentarios, ventana sin puntos) | 200 con lista vacía |
-| La fuente no responde | 503 `DEPENDENCY_UNAVAILABLE` — nunca 200 vacío |
+| La fuente no está disponible (caída, rechazo, credencial, contexto) | 503 `DEPENDENCY_UNAVAILABLE` — nunca 200 vacío |
+| La fuente no contesta a tiempo (colgada, lenta) | 504 `DEPENDENCY_TIMEOUT` (Hito 11) |
 | Clave Redis inexistente | 404 `SESSION_NOT_FOUND` (Redis respondió que no está) |
 | Redis no disponible | 503 (Redis no respondió) |
 | Estadísticas de un `partidoId` que InfluxDB no conoce | 200 vacío: InfluxDB no es la fuente de verdad de la existencia del partido (lo es Neo4j); se documenta en lugar de agregar una segunda consulta |
@@ -118,7 +121,7 @@ Las reglas que dependen del **estado** del partido (finalizado, ya hay `FIN_PART
 | `Idempotency-Key` | request (POST) | Idempotencia de altas — ver [`idempotencia.md`](./idempotencia.md) |
 | `Idempotent-Replayed: true` | response | El POST era un reintento: 200 con el recurso ya existente |
 | `X-Cache` | response (`GET /partidos/{id}`) | `HIT`, `MISS` o `BYPASS` |
-| `Retry-After: 5` | response (503) | Sugerencia de reintento |
+| `Retry-After: 5` | response (503, 504) | Sugerencia de reintento |
 
 ## 7. Paginación y límites (RNF12)
 
