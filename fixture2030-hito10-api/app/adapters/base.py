@@ -69,7 +69,8 @@ def motivo_de(exc: BaseException) -> str:
 
     Se mira el tipo y el texto del error sólo para clasificar: el texto nunca
     se loguea ni se devuelve (puede traer hosts). "Connection refused" gana
-    sobre "timeout" porque pymongo envuelve un rechazo en ServerSelectionTimeoutError.
+    sobre "timeout" porque pymongo envuelve un rechazo en ServerSelectionTimeoutError
+    (con el cliente async el texto es "[Errno 61] Connect call failed").
     """
     nombre = type(exc).__name__.lower()
     texto = str(exc).lower()
@@ -80,8 +81,9 @@ def motivo_de(exc: BaseException) -> str:
     if ("does not exist" in texto or "not found" in texto or "databasenotfound" in texto
             or "unknown keyspace" in texto):
         return "contexto"       # keyspace/tabla/database inexistente
-    if "refused" in texto or "nodename nor servname" in texto or "name or service not known" in texto:
-        return "conexion"
+    if any(m in texto for m in ("refused", "connect call failed", "errno 61", "errno 111",
+                                "nodename nor servname", "name or service not known")):
+        return "conexion"       # rechazo del puerto (ECONNREFUSED 61 macOS / 111 Linux) o DNS
     if isinstance(exc, TimeoutError) or "timeout" in nombre or "timedout" in nombre:
         return "timeout"
     return "conexion"

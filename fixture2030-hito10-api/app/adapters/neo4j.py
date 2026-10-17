@@ -370,8 +370,13 @@ class Neo4jAdapter:
             except ClientError as exc:
                 # Hito 11 (RF17): database inexistente = contexto mal configurado → 503,
                 # no 500. Cualquier otro ClientError (Cypher inválido) sigue siendo 500.
-                if (exc.code or "").endswith("DatabaseNotFound"):
+                codigo = exc.code or ""
+                if codigo.endswith("DatabaseNotFound"):
                     raise DependencyUnavailableError(self.nombre, motivo="contexto") from exc
+                # p. ej. Neo.ClientError.Security.AuthenticationRateLimit: tras varios intentos
+                # fallidos Neo4j bloquea el usuario unos segundos (no es un AuthError).
+                if ".Security." in codigo:
+                    raise DependencyUnavailableError(self.nombre, motivo="autenticacion") from exc
                 raise
 
         return await ejecutar(self.nombre, operacion, _correr(),

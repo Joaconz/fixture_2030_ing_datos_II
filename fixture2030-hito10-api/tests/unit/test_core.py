@@ -88,6 +88,8 @@ def test_motivo_de_distingue_rechazo_timeout_credencial_y_contexto():
     from app.adapters.base import motivo_de
 
     assert motivo_de(ServerSelectionTimeoutError("localhost:27017: [Errno 61] Connection refused")) == "conexion"
+    assert motivo_de(ServerSelectionTimeoutError(
+        "localhost:27017: [Errno 61] Connect call failed ('127.0.0.1', 27017), Timeout: 1.6s")) == "conexion"
     assert motivo_de(ServerSelectionTimeoutError("localhost:27017: timed out")) == "timeout"
     assert motivo_de(httpx.ReadTimeout("x")) == "timeout"
     assert motivo_de(RedisTimeout("Timeout reading from socket")) == "timeout"

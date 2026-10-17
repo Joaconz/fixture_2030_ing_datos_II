@@ -67,7 +67,13 @@ def conteo_datos(fuente: str) -> str:
     c = CONTENEDOR[fuente]
     try:
         if fuente == "redis":
-            return "DBSIZE=" + sh("docker", "exec", c, "redis-cli", "DBSIZE").stdout.strip()
+            # Las sesiones vencen solas (TTL de 30 min del Hito 7): DBSIZE baja aunque no se pierda
+            # nada. Se comparan las claves PERSISTENTES (sin TTL) y se informan las volátiles aparte.
+            ks = sh("docker", "exec", c, "redis-cli", "INFO", "keyspace").stdout
+            linea = next((ln for ln in ks.splitlines() if ln.startswith("db0:")), "db0:keys=0,expires=0")
+            campos = dict(kv.split("=") for kv in linea.split(":", 1)[1].split(","))
+            persistentes = int(campos["keys"]) - int(campos["expires"])
+            return f"persistentes={persistentes} (con TTL: {campos['expires']}, vencen solas)"
         if fuente == "mongodb":
             return "jugadores=" + sh("docker", "exec", c, "mongosh", CFG["MONGO_DB"], "--quiet", "--eval",
                                      "db.jugadores.estimatedDocumentCount()").stdout.strip().splitlines()[-1]
@@ -225,7 +231,7 @@ def detener_o_pausar(fuente: str, modo: str, log: Path | None) -> int:
     time.sleep(float(cargar_api_setting("HEALTH_CACHE_S", "5")) + 0.5)
     e.pedir("3. recuperada", "api", "/health/dependencias", esperado={"exito"})
     despues_datos, despues_vol = conteo_datos(fuente), volumen_creado(fuente)
-    conservado = antes_datos == despues_datos and antes_vol == despues_vol
+    conservado = antes_vol == despues_vol and antes_datos.split(" (")[0] == despues_datos.split(" (")[0]
     e.R.agregar(producto=fuente, capa="operacion", prueba=f"[{titulo}] datos y volumen conservados",
                 objetivo=VOLUMEN[fuente], resultado="OK" if conservado else "WARN",
                 detalle=f"antes: {antes_datos} · después: {despues_datos} · {despues_vol}",
