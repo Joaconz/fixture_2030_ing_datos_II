@@ -138,7 +138,7 @@ Están en `../fixture2030-hito10-api/`, con pruebas (207 unitarias, 33 de integr
 | RF17 comportamiento ante fallas · RF18 respuestas distintas | [`docs/diagnostico_de_fallas.md`](docs/diagnostico_de_fallas.md) · cambios en la API |
 | RF20 repetir tras recuperar · RF21 detención temporal | `fallas_controladas.md` (fase 3 de cada escenario) · [`docs/matriz_de_conectividad.md`](docs/matriz_de_conectividad.md) §3 |
 | RF22 / RNF16 GitHub | este directorio, con historial de commits |
-| RNF1 reproducibilidad | este README · configuración por archivo |
+| RNF1 reproducibilidad | este README · configuración por archivo · verificado desde un clon limpio de la rama (sin secretos ni `.venv`): la capa 0 marca FAIL con el motivo (`NEO4J_PASSWORD` y token de InfluxDB «no definido»), las pruebas que dependen de esas credenciales quedan SKIP (los CLI de Neo4j e InfluxDB, con la variable que falta) y el driver de Cassandra queda SKIP indicando qué `.venv` usar; MongoDB y Redis, que no piden secretos, se evalúan igual |
 | RNF2 capas · RNF4 clientes adecuados | una fila por capa y producto, con el cliente nativo o el driver (nunca HTTP genérico para Bolt, CQL ni RESP) |
 | RNF3 origen | campo `origen` en cada fila · escenarios "dentro del contenedor" |
 | RNF5 timeouts · RNF12 degradación | `CONNECT_TIMEOUT`, `OPERACION_TIMEOUT`, `API_TIMEOUT` · `DEP_TIMEOUT_S` de la API, sin reintentos ilimitados |

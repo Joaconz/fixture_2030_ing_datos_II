@@ -10,7 +10,8 @@ Cada fila de cada `.jsonl` / `.md` tiene: fecha (UTC), commit, entorno, origen d
 |---|---|---|---|
 | [`20261017-001129_completa`](corridas/20261017-001129_completa/matriz.md) | `71a1625` | `--config --tcp --escenarios --nativos --api --matriz` contra la API en `:8001`, con su log | 148 pruebas: 128 OK · 2 WARN (observaciones) · 0 FAIL · 0 SKIP · 18 N/C |
 | [`20261017-001625_fallas-controladas`](corridas/20261017-001625_fallas-controladas/fallas_controladas.md) | `e1de5d6` | stop/start de Redis y MongoDB, pause/unpause de InfluxDB y 10 configuraciones incorrectas | 81/81 como se esperaba |
-| [`…_nativos-api-redis`](corridas/) (ver [`../matriz_de_conectividad.md`](../matriz_de_conectividad.md) §3) | — | repetición de Redis después de que venciera la sesión de demo (RF20) | ver la matriz consolidada |
+| [`20261017-003523_redis-sesion-vigente`](corridas/20261017-003523_redis-sesion-vigente/matriz.md) | `ea51b8f` | RF20, antes: `--nativos --api --matriz --producto redis` con la sesión de demo recién cargada | 14 OK · 2 N/C · `EXISTS 1`, TTL > 0, `GET /sesiones/demo-ses-0000001-1` = 200 |
+| [`20261019-192936_redis-sesion-vencida`](corridas/20261019-192936_redis-sesion-vencida/matriz.md) | `ea51b8f` | RF20, después: la misma corrida con la sesión ya vencida (ver [`../matriz_de_conectividad.md`](../matriz_de_conectividad.md) §3) | 14 OK · 2 N/C · `EXISTS 0`, TTL -2, API 404 `SESSION_NOT_FOUND`; Redis sigue DISPONIBLE |
 
 Archivos por corrida:
 

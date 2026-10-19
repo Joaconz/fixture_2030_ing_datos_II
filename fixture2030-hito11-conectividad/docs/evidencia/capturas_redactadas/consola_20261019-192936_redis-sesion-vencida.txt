@@ -1,0 +1,46 @@
+Fixture 2030 — Hito 11 · evaluación de conectividad
+Inicio (UTC): 2026-10-19T19:29:38Z · modos: nativos api matriz · productos: redis
+Origen: notebook (mismo entorno que la API) · API: http://localhost:8001 · evidencia: docs/evidencia/corridas/20261019-192936_redis-sesion-vencida
+
+=== Capas 3-6 · drivers de la API ===
+[OK  ] redis     protocolo     PING (RESP)                                      PONG
+[OK  ] redis     protocolo     INFO server                                      Redis 8.10.2 · modo standalone
+[N/C ] redis     autenticacion ACL WHOAMI                                       usuario 'default' sin contraseña (requirepass vacío, publicado sólo en
+[N/C ] redis     autorizacion  ACL del usuario                                  usuario default con todos los comandos
+[OK  ] redis     contexto      INFO keyspace db0                                keys=3 · expires=0
+[OK  ] redis     operacion     EXISTS + TYPE + HLEN + TTL (sin leer valores)    ausente: EXISTS 0 · TTL -2
+[OK  ] redis     operacion     control: clave inexistente                       EXISTS 0 · TTL -2
+[OK  ] redis     operacion     control: Redis no disponible (puerto sin listene ConnectionError: Error 10061 connecting to 127.0.0.1:6380. No se puede
+Evidencia: fixture2030-hito11-conectividad\docs\evidencia\corridas\20261019-192936_redis-sesion-vencida\resultados_clientes.md
+
+=== Capas 3-6 · clientes nativos (CLI) ===
+[OK  ] redis     protocolo     redis-cli PING                                   PONG
+[OK  ] redis     operacion     redis-cli EXISTS/TYPE/TTL                        EXISTS 0 · TYPE none · TTL -2
+
+=== Capa API · rutas del Hito 10 ===
+[OK  ] api       api           GET /health                                      HTTP 200 · exito · estado=OK · requestId=h11-20261019-193007-01
+[OK  ] api       api           GET /health/ready                                HTTP 200 · exito · estado=LISTA · noDisponibles=[] · requestId=h11-202
+[OK  ] api       api           GET /health/dependencias                         HTTP 200 · exito · estado=OK · mongodb=UP, neo4j=UP, cassandra=UP, red
+[OK  ] redis     api           GET /sesiones/demo-ses-0000001-1                 HTTP 404 · inexistente · code=SESSION_NOT_FOUND · requestId=h11-202610
+[OK  ] redis     api           GET /sesiones/diag-no-existe-h11                 HTTP 404 · inexistente · code=SESSION_NOT_FOUND · requestId=h11-202610
+[OK  ] api       api           control: API no alcanzable (puerto sin listener) api_no_alcanzable · ConnectionRefusedError: [WinError 10061] No se pue
+Evidencia: fixture2030-hito11-conectividad\docs\evidencia\corridas\20261019-192936_redis-sesion-vencida\resultados_api.md
+
+=== Matriz de conectividad ===
+mongodb    NO_PROBADO      no incluido en esta corrida (filtro --producto o modo parcial)
+neo4j      NO_PROBADO      no incluido en esta corrida (filtro --producto o modo parcial)
+cassandra  NO_PROBADO      no incluido en esta corrida (filtro --producto o modo parcial)
+redis      DISPONIBLE      todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento)
+influxdb   NO_PROBADO      no incluido en esta corrida (filtro --producto o modo parcial)
+iris       NO_PROBADO      no incluido en esta corrida (filtro --producto o modo parcial)
+api        DISPONIBLE      todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento)
+Totales: OK 14 · WARN 0 · FAIL 0 · SKIP 0 · N/C 2
+Matriz: fixture2030-hito11-conectividad\docs\evidencia\corridas\20261019-192936_redis-sesion-vencida\matriz.md
+
+=== Resumen ===
+Total: 16 | OK: 14 | WARN: 0 | FAIL: 0 | SKIP: 0 | N/C: 2
+Fin (UTC): 2026-10-19T19:30:17Z
+
+Interpretación: OK = esa prueba concreta funcionó ahora; no garantiza rendimiento ni disponibilidad
+permanente (RNF17). SKIP = no se ejecutó por falta de herramienta o configuración: NO es "producto caído".
+N/C = la capa no aplica en este entorno o el producto no está configurado (IRIS).
