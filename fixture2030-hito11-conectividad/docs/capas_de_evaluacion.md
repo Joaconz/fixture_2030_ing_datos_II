@@ -103,3 +103,5 @@ IRIS **no forma parte de la arquitectura vigente** desde la reentrega del Hito 3
 | `/health/dependencias` | la API informa `iris: NOT_CONFIGURED`, `enArquitectura: false` | no degrada el estado global |
 
 Si IRIS volviera, `IRIS_HABILITADO=1` activa: portal HTTP (`/csp/sys/UtilHome.csp`), Superserver por TCP y, con la terminal del contenedor (`iris session IRIS -U USER`), el namespace activo y `%Dictionary.CompiledClass.%ExistsId("Fixture.Partido")`. Así se distinguirían "portal accesible", "Superserver inaccesible", "namespace incorrecto" y "objeto inexistente". **Ese camino no se ejecutó en este hito** (ver limitaciones).
+
+**Resultado real (22/10/2026, `IRIS_HABILITADO=1`, corrida `20261022-203113`):** resolución y TCP OK en el Superserver (1972) y el portal (52773); portal HTTP 200; namespace activo `USER`; `%ExistsId("Fixture.Partido")` = 1. Autenticación y autorización quedan N/C porque la terminal del contenedor entra sin contraseña. La ruta de la API devuelve 404 `ROUTE_NOT_FOUND`, porque la API no tiene endpoint de IRIS.
