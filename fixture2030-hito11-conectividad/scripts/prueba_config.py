@@ -73,10 +73,19 @@ def chequear_variables(producto: str) -> None:
                   no_demuestra="que el servidor exista en ese host/puerto")
 
 
-def ignorado_por_git(ruta: Path) -> bool:
-    r = subprocess.run(["git", "-C", str(REPO_DIR), "check-ignore", "-q", str(ruta)],
-                       capture_output=True, timeout=5)
-    return r.returncode == 0
+def ignorado_por_git(ruta: Path) -> bool | None:
+    """True = ignorada; False = NO ignorada; None = no se puede verificar (la carpeta no es un
+    repositorio git, p. ej. una copia bajada como ZIP, o git no está instalado)."""
+    try:
+        r = subprocess.run(["git", "-C", str(REPO_DIR), "check-ignore", "-q", str(ruta)],
+                           capture_output=True, timeout=5)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode == 0:
+        return True
+    if r.returncode == 1:
+        return False
+    return None  # 128: no es un repositorio git
 
 
 def versionado(ruta: Path) -> bool:
@@ -197,10 +206,14 @@ def main() -> int:
         chequear_api_efectiva()
     for ruta in ("config/configuracion.env",):
         archivo = Path(__file__).resolve().parents[1] / ruta
+        ignorada = ignorado_por_git(archivo)
         R.agregar(producto="api", capa="configuracion", prueba="config local ignorada por git",
-                  objetivo=ruta, resultado="OK" if ignorado_por_git(archivo) else "FAIL",
-                  detalle="cubierta por .gitignore" if ignorado_por_git(archivo) else "NO está ignorada",
-                  interpretacion="valores propios o secretos no se versionan")
+                  objetivo=ruta,
+                  resultado="OK" if ignorada else "FAIL" if ignorada is False else "SKIP",
+                  detalle=("cubierta por .gitignore" if ignorada else "NO está ignorada" if ignorada is False
+                           else "no se pudo verificar: la carpeta no es un repositorio git (copia ZIP) o falta git"),
+                  interpretacion="valores propios o secretos no se versionan" if ignorada is not None
+                  else "SKIP = verificación no ejecutada; NO significa que el archivo esté versionado")
     print(f"Evidencia: {ruta_publica(R.md)}")
     return 0
 

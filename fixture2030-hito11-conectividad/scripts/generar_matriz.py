@@ -61,6 +61,11 @@ def estado_de(filas: list[dict]) -> tuple[str, str, str | None]:
     base = [f for f in filas if not es_control(f)]
     if not base:
         return "NO_PROBADO", "no incluido en esta corrida (filtro --producto o modo parcial)", None
+    if all(f["capa"] == "configuracion" for f in base) and any(
+            f["prueba"].startswith("API vs hito") for f in base):
+        # En una corrida filtrada (--producto X) los demás productos sólo aparecen por la
+        # comparación de configuración API vs. hito: no se probó red, protocolo ni operación.
+        return "NO_PROBADO", "sólo se comparó su configuración (corrida filtrada con --producto)", None
     roto = next((f for f in base if f["prueba"] == "ejecución del diagnóstico"), None)
     if roto:
         return "DESCONOCIDO", f"el diagnóstico no pudo terminar: {roto['detalle']}", None
