@@ -36,7 +36,7 @@ VARIABLES = {
                   ("CASSANDRA_DC", "nombre")],
     "redis": [("REDIS_HOST", "host"), ("REDIS_PORT", "puerto"), ("REDIS_DB", "entero")],
     "influxdb": [("INFLUX_URL", "url"), ("INFLUX_DB", "nombre")],
-    "iris": [("IRIS_HOST", "host"), ("IRIS_PORT", "puerto"), ("IRIS_PORTAL_URL", "url"), ("IRIS_NAMESPACE", "nombre")],
+    "iris": [("IRIS_HOST", "host"), ("IRIS_PORT", "puerto"), ("IRIS_PORTAL_URL", "url")],
 }
 
 
@@ -198,8 +198,8 @@ def main() -> int:
             R.agregar(producto=prod, capa="configuracion", prueba="credencial", objetivo="sin usuario",
                       resultado="N/C", detalle=f"laboratorio sin autenticación: {nota}",
                       interpretacion="la capa de autenticación se informa como N/C, no como OK")
-    if "iris" in productos and CFG.get("IRIS_HABILITADO", "0") != "1":
-        R.agregar(producto="iris", capa="configuracion", prueba="IRIS_HABILITADO", objetivo="IRIS_HABILITADO=0",
+    if "iris" in productos:
+        R.agregar(producto="iris", capa="configuracion", prueba="producto fuera de la arquitectura", objetivo="IRIS",
                   resultado="N/C", detalle="fuera de la arquitectura vigente desde la reentrega del Hito 3",
                   interpretacion="se declara NOT_CONFIGURED: no se inventan resultados")
     if "api" in productos:

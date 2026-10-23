@@ -213,12 +213,8 @@ influxdb() {
 
 # ------------------------------------------------------------------ IRIS
 iris() {
-  if [ "$(cfg IRIS_HABILITADO)" != "1" ]; then
-    reg iris protocolo "iris session (terminal)" "$(cfg IRIS_CONTAINER)" N/C "" \
-      "no evaluado: IRIS fuera de la arquitectura vigente; contenedor no levantado" "NOT_CONFIGURED: no se inventan resultados"
-    return
-  fi
-  "${PY_API:-$PY}" "$DIR/prueba_drivers.py" --producto iris
+  reg iris protocolo "iris session (terminal)" "IRIS" N/C "" \
+    "no evaluado: IRIS fuera de la arquitectura vigente; contenedor no levantado" "NOT_CONFIGURED: no se inventan resultados"
 }
 
 PRODUCTOS=("$@"); [ "${#PRODUCTOS[@]}" -eq 0 ] && PRODUCTOS=(mongodb neo4j cassandra redis influxdb iris)

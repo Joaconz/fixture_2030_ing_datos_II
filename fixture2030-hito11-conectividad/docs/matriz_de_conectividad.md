@@ -28,10 +28,8 @@ Corrida [`20261017-001129_completa`](evidencia/corridas/20261017-001129_completa
 | **cassandra** | **DISPONIBLE** | OK | OK | OK | OK | N/C | N/C | OK | OK | OK | 0.2 | 1.6–1.8 | 2.6–8.5 | 3/3 | todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento) | — | — |
 | **redis** | **DISPONIBLE** | OK | OK | OK | OK | N/C | N/C | OK | OK | OK | 0.2 | 3.0 | 2.0–2.3 | 3/3 | todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento) | — | — |
 | **influxdb** | **DISPONIBLE** | OK | OK | OK | OK | OK | OK | OK | OK | OK | 0.2 | 19 | 1.3–9.9 | 5/5 | todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento) | — | — |
-| **iris** | **DISPONIBLE** | OK | OK | OK | OK | N/C | N/C | OK | OK | OK | 2.0–3.1 | 67–80 | 4.6 | 0/0 | todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento) | — | — |
+| **iris** | **NO_CONFIGURADO** | OK | OK | N/C | N/C | N/C | N/C | N/C | N/C | OK | — | — | 1.0 | 0/0 | fuera del entorno de prueba: no se inventan resultados | ninguno: IRIS está fuera de la arquitectura vigente | — |
 | **api** | **DISPONIBLE** | OK | — | — | — | — | — | — | — | OK | — | — | 1.7–49 | 1/1 | todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento) | — | — |
-
-La fila de **iris** sale de la evaluación específica del 22/10/2026 ([`matriz.md`](evidencia/corridas/20261022-203113_config-tcp-nativos-api-matriz-iris/matriz.md)), con el módulo del Hito 9 levantado y `IRIS_HABILITADO=1`; las demás filas son de la corrida completa del 17/10.
 
 Pruebas ejecutadas por capa (archivo → capa): [`resultados_config.md`](evidencia/corridas/20261017-001129_completa/resultados_config.md) (0) · [`resultados_tcp.md`](evidencia/corridas/20261017-001129_completa/resultados_tcp.md) (1–2 y 7/7 escenarios de §5.3) · [`resultados_clientes.md`](evidencia/corridas/20261017-001129_completa/resultados_clientes.md) (3–6, drivers + CLI) · [`resultados_api.md`](evidencia/corridas/20261017-001129_completa/resultados_api.md) (API, 19 rutas + "API no alcanzable", con la tabla de log por request-id).
 

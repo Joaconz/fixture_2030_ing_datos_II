@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
 from collections.abc import Callable
@@ -121,6 +120,16 @@ def mongodb() -> None:
             "Mongo NO falla con una database mal escrita: crea el contexto al vuelo y devuelve vacío. "
             "Por eso la API verifica la colección en /health/dependencias (no basta con ping)",
             "que la API lo detecte en cada request (la API respondería 404 TEAM_NOT_FOUND)")
+
+        falsa = "coleccion_inexistente"
+        doc_f, ms, err = medir(lambda: cli[db][falsa].find_one({}, {"_id": 1}, max_time_ms=int(TOP * 1000)))
+        existe_f = falsa in (cli[db].list_collection_names(filter={"name": falsa}) if not err else [falsa])
+        reg("mongodb", "contexto", "control: colección inexistente", f"{db}.{falsa}",
+            err is None and doc_f is None and not existe_f, ms,
+            "sin error y sin documento: la colección no existe y Mongo no la reclama" if not err else nombre_error(err),
+            "Mongo NO falla con una colección mal escrita: la lectura devuelve vacío, igual que una colección sin datos. "
+            "Por eso /health/dependencias verifica que `equipos` exista",
+            "que la API lo detecte en cada request (respondería 404 TEAM_NOT_FOUND)")
 
         cod = CFG["MONGO_EQUIPO_DEMO"]
         doc, ms, err = medir(lambda: cli[db]["equipos"].find_one({"_id": cod}, {"_id": 1, "nombre": 1}, max_time_ms=int(TOP * 1000)))
@@ -307,6 +316,19 @@ def cassandra() -> None:
             isinstance(err, SyntaxException), ms, nombre_error(err) if err else "¡aceptada!",
             "SyntaxException responde al instante: no es un timeout de conexión (que tardaría CONNECT_TIMEOUT)")
 
+        perfil_ciego = ExecutionProfile(load_balancing_policy=DCAwareRoundRobinPolicy(local_dc=CFG["CASSANDRA_DC"]),
+                                        request_timeout=TOP)    # propio: la política del perfil guarda los hosts vistos
+        ciego = Cluster(["192.0.2.1"], port=puerto, connect_timeout=T, control_connection_timeout=T,
+                        execution_profiles={EXEC_PROFILE_DEFAULT: perfil_ciego})   # TEST-NET-1: nadie responde ni rechaza
+        _, ms_t, err_t = medir(ciego.connect)
+        ciego.shutdown()
+        reg("cassandra", "protocolo", "control: timeout de conexión (IP sin respuesta)", f"192.0.2.1:{puerto}",
+            isinstance(err_t, NoHostAvailable) and ms_t >= T * 800, ms_t,
+            f"{nombre_error(err_t)} tras {ms_t / 1000:.1f} s (límite {T:g} s)" if err_t else "¡conectó!",
+            "timeout de conexión = NoHostAvailable tras CONNECT_TIMEOUT (la API lo informa como dependencia no disponible), "
+            "distinto de una consulta inválida (SyntaxException al instante, fila anterior)",
+            "que el servidor real esté sano: el destino es una IP que no existe")
+
         pid = CFG["CASSANDRA_PARTIDO_DEMO"]
         cfgp, ms, err = medir(lambda: ses.execute(
             f"SELECT buckets, ventana_minutos, inicio FROM {ks}.config_particion_partido WHERE partido_id = %s", (pid,)).one())
@@ -489,42 +511,12 @@ def influxdb() -> None:
 # =========================================================================== IRIS
 def iris() -> None:
     capas = [("protocolo", "Superserver / portal"), ("autenticacion", "usuario IRIS"),
-             ("autorizacion", "roles del namespace"), ("contexto", f"namespace {CFG['IRIS_NAMESPACE']}"),
-             ("operacion", f"lectura de {CFG['IRIS_CLASE']}")]
-    if CFG.get("IRIS_HABILITADO", "0") != "1":
-        for capa, prueba in capas:
-            nc("iris", capa, prueba, f"{CFG['IRIS_HOST']}:{CFG['IRIS_PORT']}",
-               "no evaluado: IRIS está fuera de la arquitectura vigente (reentrega del Hito 3) y la API no tiene adaptador",
-               "NOT_CONFIGURED: no se inventan resultados (Restricción 'Productos')")
-        return
-    # Camino habilitado (IRIS_HABILITADO=1): portal HTTP + namespace/clase con la terminal del contenedor.
-    import httpx
-    url = CFG["IRIS_PORTAL_URL"].rstrip("/") + "/csp/sys/UtilHome.csp"
-    r, ms, err = medir(lambda: httpx.get(url, timeout=T, follow_redirects=False))
-    reg("iris", "protocolo", "Management Portal (HTTP)", url, r is not None and r.status_code < 500, ms,
-        f"HTTP {r.status_code}" if r is not None else nombre_error(err),
-        "el portal web responde", "que el Superserver ni el namespace estén disponibles")
-    nc("iris", "autenticacion", "usuario IRIS", "docker exec iris session",
-       "la terminal del contenedor entra como irisowner (sin contraseña): no prueba la credencial de un cliente externo",
-       "un cliente SQL/Native API externo exigiría usuario y contraseña")
-    nc("iris", "autorizacion", "roles del namespace", CFG["IRIS_NAMESPACE"], "no evaluado (no hay cliente externo)", "")
-    script = (f'write ##class(%SYSTEM.Process).NameSpace(),"|",'
-              f'##class(%Dictionary.CompiledClass).%ExistsId("{CFG["IRIS_CLASE"]}"),!\nhalt\n')
-    t0 = time.perf_counter()
-    try:
-        p = subprocess.run(["docker", "exec", "-i", CFG["IRIS_CONTAINER"], "iris", "session", "IRIS", "-U",
-                            CFG["IRIS_NAMESPACE"]], input=script, capture_output=True, text=True, timeout=TOP + 10)
-        salida = [ln for ln in p.stdout.splitlines() if "|" in ln]
-        ns, existe = (salida[-1].split("|") + ["", ""])[:2] if salida else ("", "")
-    except (OSError, subprocess.SubprocessError) as exc:
-        ns, existe, p = "", "", None
-        salida = [str(exc)]
-    ms = (time.perf_counter() - t0) * 1000
-    reg("iris", "contexto", f"namespace {CFG['IRIS_NAMESPACE']}", CFG["IRIS_CONTAINER"],
-        ns.strip().upper() == CFG["IRIS_NAMESPACE"].upper(), ms, f"namespace activo: {ns or '-'}",
-        "namespace correcto (origen: dentro del contenedor)")
-    reg("iris", "operacion", f"%Dictionary.CompiledClass.%ExistsId({CFG['IRIS_CLASE']})", CFG["IRIS_NAMESPACE"],
-        existe.strip() == "1", ms, f"existe={existe or '-'}", "lectura de metadato de la clase persistente")
+             ("autorizacion", "roles del namespace"), ("contexto", "namespace"),
+             ("operacion", "lectura de la clase de Partido")]
+    for capa, prueba in capas:
+        nc("iris", capa, prueba, f"{CFG['IRIS_HOST']}:{CFG['IRIS_PORT']}",
+           "no evaluado: IRIS está fuera de la arquitectura vigente (reentrega del Hito 3) y la API no tiene adaptador",
+           "NOT_CONFIGURED: no se inventan resultados (Restricción 'Productos')")
 
 
 PRODUCTOS: dict[str, Callable[[], None]] = {"mongodb": mongodb, "neo4j": neo4j, "cassandra": cassandra,

@@ -91,7 +91,6 @@ NO_DEMUESTRA_TCP = "protocolo, autenticación, contexto ni consulta (solo hay un
 
 
 def probar_destinos(productos: list[str]) -> None:
-    iris_activo = CFG.get("IRIS_HABILITADO", "0") == "1"
     for producto, etiqueta, host, puerto, protocolo in destinos():
         if producto not in productos:
             continue
@@ -105,10 +104,10 @@ def probar_destinos(productos: list[str]) -> None:
         if not ip:
             continue
         clase, ms, detalle = conectar(host, puerto)
-        if producto == "iris" and not iris_activo:
+        if producto == "iris":
             resultado = "N/C"
             detalle += " — coherente con IRIS fuera de la arquitectura (NOT_CONFIGURED)" if clase != "ok" else \
-                " — hay listener aunque IRIS está deshabilitado en la configuración"
+                " — hay listener aunque IRIS está fuera de la arquitectura"
         else:
             resultado = "OK" if clase == "ok" else "FAIL"
         R.agregar(producto=producto, capa="tcp", prueba=f"TCP {etiqueta}", objetivo=objetivo, resultado=resultado,

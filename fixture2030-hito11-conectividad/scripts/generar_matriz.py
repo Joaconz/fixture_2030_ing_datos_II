@@ -137,7 +137,7 @@ def main() -> int:
                         if f.get("observacion") and f["resultado"] == "WARN").replace("|", "/") or "—"
         ctrl_ok = sum(1 for f in ctrl if f["resultado"] == "OK")
         paso = SIGUIENTE_PASO.get(capa or "", "—") if estado in ("NO_DISPONIBLE", "DEGRADADO") else (
-            "levantar el módulo y poner IRIS_HABILITADO=1 sólo si vuelve a la arquitectura" if estado == "NO_CONFIGURADO"
+            "ninguno: IRIS está fuera de la arquitectura vigente" if estado == "NO_CONFIGURADO"
             else "instalar la herramienta o completar la configuración y repetir" if estado == "NO_PROBADO" else "—")
         salida.append(f"| **{prod}** | **{estado}** | " + " | ".join(celdas) +
                       f" | {latencia(fp, 'tcp')} | {latencia(fp, 'operacion')} | {latencia(fp, 'api')} | "

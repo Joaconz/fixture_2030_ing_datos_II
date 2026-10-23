@@ -21,7 +21,7 @@ Corrida [`20261017-001129_completa`](docs/evidencia/corridas/20261017-001129_com
 | Cassandra 5.0.9 | Comentarios (6) | **DISPONIBLE** | AllowAllAuthenticator (N/C) |
 | Redis 8.10.2 | Sesiones y caché (7) | **DISPONIBLE** | Sin contraseña, sólo en 127.0.0.1 (N/C) |
 | InfluxDB 3 Core 3.12.0 | Estadísticas en vivo (8) | **DISPONIBLE** | Se probaron token, permiso, database y una ventana acotada |
-| InterSystems IRIS | Entidades complejas (9) | **DISPONIBLE** (clientes nativos) | Evaluado el 22/10/2026 con `IRIS_HABILITADO=1` (corrida `20261022-203113`): TCP del Superserver y del portal, portal HTTP 200, namespace `USER` y clase `Fixture.Partido` OK. Autenticación y autorización N/C (la terminal del contenedor no usa credencial). La API no tiene endpoint de IRIS |
+| InterSystems IRIS | Entidades complejas (9) | **NO_CONFIGURADO** | Fuera de la arquitectura vigente desde la reentrega del Hito 3. No se inventan resultados |
 
 148 pruebas: 128 OK · 2 WARN (las dos son observaciones sobre la credencial de desarrollo de Neo4j) · 0 FAIL · 0 SKIP · 18 N/C. Las fallas controladas ([`20261017-001625_fallas-controladas`](docs/evidencia/corridas/20261017-001625_fallas-controladas/fallas_controladas.md), commit `e1de5d6`) dieron 81/81 resultados como se esperaba. **OK significa que esa prueba concreta funcionó en ese momento.** No es una garantía de rendimiento ni de disponibilidad permanente (RNF17). La carga masiva corresponde al Hito 12.
 
@@ -48,7 +48,7 @@ Se leen en este orden: [`config/configuracion-ejemplo.env`](config/configuracion
 | Cassandra | `CASSANDRA_HOST`, `CASSANDRA_PORT`, `CASSANDRA_KEYSPACE`, `CASSANDRA_TABLA`, `CASSANDRA_DC` | `127.0.0.1`, `9042`, `fixture2030_comentarios`, `comentarios_por_partido`, `datacenter1` |
 | Redis | `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_SESION_DEMO` | `127.0.0.1`, `6379`, `0`, `demo-ses-0000001-1` |
 | InfluxDB | `INFLUX_URL`, `INFLUX_DB`, `INFLUX_TABLA`, `INFLUX_TOKEN_FILE`, `INFLUX_DESDE`/`HASTA` | `http://127.0.0.1:8181`, `fixture2030_vivo`, `estadisticas_equipo`, `../fixture2030-influxdb/secrets/admin-token.json` |
-| IRIS | `IRIS_HABILITADO`, `IRIS_HOST`, `IRIS_PORT`, `IRIS_PORTAL_URL`, `IRIS_NAMESPACE` | `0`, `127.0.0.1`, `1972`, `http://127.0.0.1:52773`, `USER` |
+| IRIS (sólo sondeo de puertos) | `IRIS_HOST`, `IRIS_PORT`, `IRIS_PORTAL_URL` | `127.0.0.1`, `1972`, `http://127.0.0.1:52773` |
 
 Los **secretos no van en ningún archivo de este hito**. La contraseña de Neo4j sale de `NEO4J_PASSWORD` (entorno) o del `.env` local del módulo Neo4j. El token de InfluxDB sale de `INFLUX_TOKEN` o del archivo local del Hito 8. Ningún script los imprime: `prueba_config.py` informa sólo si están definidos, cuántos caracteres tienen y si su archivo está fuera de git. Toda salida pasa por `registro.redactar()`, que borra los valores secretos, los tokens `apiv3_…`, las cabeceras `Authorization`, las URI con usuario y contraseña y la ruta del home (RNF7/RNF8). Las diferencias entre la notebook y un contenedor se explican en [`docs/topologia_y_entornos.md`](docs/topologia_y_entornos.md).
 

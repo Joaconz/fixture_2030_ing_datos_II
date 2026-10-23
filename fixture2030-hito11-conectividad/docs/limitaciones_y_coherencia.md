@@ -4,8 +4,7 @@
 
 | Limitación | Efecto en la evaluación | Cómo se informa |
 |---|---|---|
-| **IRIS fuera de la arquitectura** (reentrega del Hito 3, 13/10/2026) | la API no tiene adaptador de IRIS: la cadena API → IRIS no se puede evaluar | Evaluado igual con clientes nativos el 22/10/2026: TCP, portal, namespace y clase OK (corrida `20261022-203113`) |
-| Autenticación y autorización de IRIS **no probadas** | el camino `IRIS_HABILITADO=1` usa la terminal del contenedor (`irisowner`, sin contraseña), que no prueba la credencial de un cliente externo | N/C en la matriz; se probaría con un cliente por el Superserver y un usuario de laboratorio |
+| **IRIS fuera de la arquitectura** (reentrega del Hito 3, 13/10/2026) | no se evalúan protocolo, identidad, namespace ni operación; la API no tiene adaptador | `NO_CONFIGURADO` en la matriz y `NOT_CONFIGURED` en `/health/dependencias`. Sólo se sondeó el puerto (refused) |
 | Laboratorio sin autenticación en MongoDB, Cassandra y Redis | las capas de autenticación y autorización no se pueden probar ahí | **N/C**, nunca OK. Se documenta qué error daría con autenticación y cómo lo clasificaría la API (motivos `autenticacion`/`autorizacion`) |
 | Neo4j Community sin RBAC fino | la autorización se reduce a "la identidad puede leer su perfil y la database" | fila `SHOW CURRENT USER` |
 | Token de InfluxDB de **administración** | la autorización probada es la de un admin. No se probó un token de sólo lectura | fila "permiso de consulta" |

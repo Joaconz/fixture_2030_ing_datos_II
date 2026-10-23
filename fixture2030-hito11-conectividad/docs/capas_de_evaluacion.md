@@ -96,12 +96,8 @@ IRIS **no forma parte de la arquitectura vigente** desde la reentrega del Hito 3
 
 | Capa | Qué se hizo | Resultado |
 |---|---|---|
-| configuración | `IRIS_HABILITADO=0` | N/C |
+| configuración | se declara fuera de la arquitectura | N/C |
 | TCP | sondeo de `127.0.0.1:1972` (Superserver) y `127.0.0.1:52773` (portal) | **connection refused**: no hay listener, coherente con el contenedor sin levantar |
 | protocolo, identidad, namespace, operación | no se ejecutan | N/C ("no evaluado: fuera de la arquitectura") |
 | API | `GET /partidos/PAR-A-1/detalle` (la ruta de IRIS del script de la Clase 12) | 404 `ROUTE_NOT_FOUND`: la ruta no existe en esta API |
 | `/health/dependencias` | la API informa `iris: NOT_CONFIGURED`, `enArquitectura: false` | no degrada el estado global |
-
-Si IRIS volviera, `IRIS_HABILITADO=1` activa: portal HTTP (`/csp/sys/UtilHome.csp`), Superserver por TCP y, con la terminal del contenedor (`iris session IRIS -U USER`), el namespace activo y `%Dictionary.CompiledClass.%ExistsId("Fixture.Partido")`. Así se distinguirían "portal accesible", "Superserver inaccesible", "namespace incorrecto" y "objeto inexistente". **Ese camino no se ejecutó en este hito** (ver limitaciones).
-
-**Resultado real (22/10/2026, `IRIS_HABILITADO=1`, corrida `20261022-203113`):** resolución y TCP OK en el Superserver (1972) y el portal (52773); portal HTTP 200; namespace activo `USER`; `%ExistsId("Fixture.Partido")` = 1. Autenticación y autorización quedan N/C porque la terminal del contenedor entra sin contraseña. La ruta de la API devuelve 404 `ROUTE_NOT_FOUND`, porque la API no tiene endpoint de IRIS.
