@@ -16,14 +16,17 @@ operación falla con 503 (timeouts de conexión y de socket = `dep_timeout_s`).
 from __future__ import annotations
 
 from redis.asyncio import Redis
-from redis.exceptions import BusyLoadingError, ConnectionError, RedisError, TimeoutError, WatchError
+from redis.exceptions import (BusyLoadingError, ConnectionError, NoPermissionError, RedisError, TimeoutError,
+                              WatchError)
 
 from app.adapters.base import ejecutar
 from app.config.settings import Settings
 from app.core.errors import DependencyUnavailableError
 from app.services.ports import SesionCruda
 
-ERRORES_DISPONIBILIDAD: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, BusyLoadingError)
+# NoPermissionError (ACL NOPERM): identidad válida sin permiso → 503 con motivo autorizacion (Hito 11).
+ERRORES_DISPONIBILIDAD: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, BusyLoadingError,
+                                                         NoPermissionError)
 # La caché es una optimización: CUALQUIER error de Redis en sus comandos (también un
 # WRONGTYPE si otra herramienta dejó otro tipo en la clave) se trata como "caché no
 # disponible" y el detalle se sirve desde Neo4j (BYPASS), nunca como 500.

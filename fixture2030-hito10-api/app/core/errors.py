@@ -56,19 +56,39 @@ class ConflictError(ApiError):
     code = "CONFLICT"
 
 
+# Motivos internos de una falla de dependencia (Hito 11, RF17). Van al log y a
+# /health/dependencias; la respuesta pública sólo distingue timeout (504) del
+# resto (503), sin revelar si fue la credencial o el contexto.
+MOTIVOS_DEPENDENCIA = ("timeout", "conexion", "autenticacion", "autorizacion", "contexto",
+                       "no_configurado", "rechazo")
+
+
 class DependencyUnavailableError(ApiError):
-    """La fuente no respondió (caída, rechazo de conexión o timeout). Nunca 200."""
+    """La fuente no se pudo usar. Nunca 200.
+
+    - `timeout` → 504 `DEPENDENCY_TIMEOUT`: la fuente no contestó dentro del límite.
+    - cualquier otro motivo → 503 `DEPENDENCY_UNAVAILABLE`: conexión rechazada,
+      credencial o permiso rechazado, contexto (database/keyspace/colección)
+      inexistente, configuración faltante o respuesta inválida.
+    """
     status_code = 503
     code = "DEPENDENCY_UNAVAILABLE"
 
-    def __init__(self, dependency: str, *, timeout: bool = False) -> None:
-        motivo = "no respondió dentro del tiempo límite" if timeout else "no está disponible"
+    def __init__(self, dependency: str, *, timeout: bool = False, motivo: str | None = None) -> None:
+        motivo = motivo or ("timeout" if timeout else "conexion")
+        if motivo not in MOTIVOS_DEPENDENCIA:
+            motivo = "conexion"
+        timeout = motivo == "timeout"
+        texto = "no respondió dentro del tiempo límite" if timeout else "no está disponible"
         super().__init__(
-            f"La fuente '{dependency}' {motivo}. Reintentar más tarde.",
+            f"La fuente '{dependency}' {texto}. Reintentar más tarde.",
+            code="DEPENDENCY_TIMEOUT" if timeout else None,
             details=[{"campo": "dependencia", "problema": dependency}],
         )
+        self.status_code = 504 if timeout else 503
         self.dependency = dependency
         self.timeout = timeout
+        self.motivo = motivo
 
 
 def error_body(code: str, message: str, details: list[dict[str, Any]] | None = None) -> dict[str, Any]:

@@ -35,7 +35,14 @@ def test_health_dependencias_todas_up(api):
     r = api.get("/health/dependencias")
     assert r.status_code == 200, r.text
     estados = {d["nombre"]: d["estado"] for d in r.json()["dependencias"]}
-    assert estados == dict.fromkeys(["mongodb", "neo4j", "cassandra", "redis", "influxdb"], "UP")
+    assert estados == {**dict.fromkeys(["mongodb", "neo4j", "cassandra", "redis", "influxdb"], "UP"),
+                       "iris": "NOT_CONFIGURED"}   # Hito 11: IRIS se informa, fuera de la arquitectura
+
+
+def test_health_ready_lista(api):
+    r = api.get("/health/ready")
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "LISTA" and r.json()["noDisponibles"] == []
 
 
 # ------------------------------------------------------------------ MongoDB

@@ -15,7 +15,7 @@ from app.core.request_id import get_request_id
 
 _CAMPOS_EXTRA = (
     "evento", "metodo", "ruta", "path", "status", "duracion_ms",
-    "dependencia", "operacion", "resultado", "tipo", "cache",
+    "dependencia", "operacion", "resultado", "motivo", "tipo", "cache",
 )
 
 

@@ -1,0 +1,10 @@
+# GET health — 2026-10-17T00:24:34Z — API http://localhost:8001 (commit e1de5d6)
+HTTP/1.1 200 OK
+date: Sat, 17 Oct 2026 00:24:33 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+vary: Origin
+x-request-id: h11-captura-health
+
+{"estado":"OK"}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { getHealth, getSaludDependencias } from '../api/endpoints'
+import { enArquitectura } from '../api/types'
 import { HEALTH_POLL_MS } from '../config'
 import { Icon } from './Icon'
 
@@ -31,7 +32,7 @@ export function ConnectionIndicator() {
       const deps = await getSaludDependencias(ctrl.signal)
       if (!vivo) return
       if (deps.ok) {
-        const lista = deps.data.dependencias
+        const lista = deps.data.dependencias.filter(enArquitectura)
         const caidas = lista.filter((d) => d.estado !== 'UP').map((d) => d.nombre)
         setEstado({ tipo: 'online', up: lista.length - caidas.length, total: lista.length, caidas })
       } else if (deps.error.kind !== 'aborted') {
