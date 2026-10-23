@@ -1,0 +1,128 @@
+{
+  "corrida": "20261023-181555_controles-5-4",
+  "commit": "ae58c26",
+  "desde": "2026-10-23T18:15:56Z",
+  "dependencias": [
+    {
+      "producto": "mongodb",
+      "estado": "DISPONIBLE",
+      "diagnostico": "todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "OK",
+        "autenticacion": "N/C",
+        "autorizacion": "N/C",
+        "contexto": "OK",
+        "operacion": "OK",
+        "api": "—"
+      },
+      "controles_ok": 3,
+      "controles": 3
+    },
+    {
+      "producto": "neo4j",
+      "estado": "NO_PROBADO",
+      "diagnostico": "no incluido en esta corrida (filtro --producto o modo parcial)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "—",
+        "autenticacion": "—",
+        "autorizacion": "—",
+        "contexto": "—",
+        "operacion": "—",
+        "api": "—"
+      },
+      "controles_ok": 0,
+      "controles": 0
+    },
+    {
+      "producto": "cassandra",
+      "estado": "DISPONIBLE",
+      "diagnostico": "todas las pruebas ejecutadas terminaron bien en esta corrida (no garantiza rendimiento)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "OK",
+        "autenticacion": "N/C",
+        "autorizacion": "N/C",
+        "contexto": "OK",
+        "operacion": "OK",
+        "api": "—"
+      },
+      "controles_ok": 4,
+      "controles": 4
+    },
+    {
+      "producto": "redis",
+      "estado": "NO_PROBADO",
+      "diagnostico": "no incluido en esta corrida (filtro --producto o modo parcial)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "—",
+        "autenticacion": "—",
+        "autorizacion": "—",
+        "contexto": "—",
+        "operacion": "—",
+        "api": "—"
+      },
+      "controles_ok": 0,
+      "controles": 0
+    },
+    {
+      "producto": "influxdb",
+      "estado": "NO_PROBADO",
+      "diagnostico": "no incluido en esta corrida (filtro --producto o modo parcial)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "—",
+        "autenticacion": "—",
+        "autorizacion": "—",
+        "contexto": "—",
+        "operacion": "—",
+        "api": "—"
+      },
+      "controles_ok": 0,
+      "controles": 0
+    },
+    {
+      "producto": "iris",
+      "estado": "NO_PROBADO",
+      "diagnostico": "no incluido en esta corrida (filtro --producto o modo parcial)",
+      "capa": null,
+      "capas": {
+        "configuracion": "—",
+        "resolucion": "—",
+        "tcp": "—",
+        "protocolo": "—",
+        "autenticacion": "—",
+        "autorizacion": "—",
+        "contexto": "—",
+        "operacion": "—",
+        "api": "—"
+      },
+      "controles_ok": 0,
+      "controles": 0
+    }
+  ],
+  "totales": {
+    "OK": 20,
+    "WARN": 0,
+    "FAIL": 0,
+    "SKIP": 0,
+    "N/C": 4
+  }
+}

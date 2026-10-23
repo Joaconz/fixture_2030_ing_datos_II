@@ -12,6 +12,7 @@ Cada fila de cada `.jsonl` / `.md` tiene: fecha (UTC), commit, entorno, origen d
 | [`20261017-001625_fallas-controladas`](corridas/20261017-001625_fallas-controladas/fallas_controladas.md) | `e1de5d6` | stop/start de Redis y MongoDB, pause/unpause de InfluxDB y 10 configuraciones incorrectas | 81/81 como se esperaba |
 | [`20261017-003523_redis-sesion-vigente`](corridas/20261017-003523_redis-sesion-vigente/matriz.md) | `ea51b8f` | RF20, antes: `--nativos --api --matriz --producto redis` con la sesión de demo recién cargada | 14 OK · 2 N/C · `EXISTS 1`, TTL > 0, `GET /sesiones/demo-ses-0000001-1` = 200 |
 | [`20261019-192936_redis-sesion-vencida`](corridas/20261019-192936_redis-sesion-vencida/matriz.md) | `ea51b8f` | RF20, después: la misma corrida con la sesión ya vencida (ver [`../matriz_de_conectividad.md`](../matriz_de_conectividad.md) §3) | 14 OK · 2 N/C · `EXISTS 0`, TTL -2, API 404 `SESSION_NOT_FOUND`; Redis sigue DISPONIBLE |
+| [`20261023-181555_controles-5-4`](corridas/20261023-181555_controles-5-4/matriz.md) | `ae58c26` | §5.4: `--nativos --matriz --producto mongodb --producto cassandra`, con los controles de colección inexistente (Mongo) y timeout de conexión (Cassandra). Se corrió en Windows | 24 pruebas: 20 OK · 4 N/C |
 
 Archivos por corrida:
 
