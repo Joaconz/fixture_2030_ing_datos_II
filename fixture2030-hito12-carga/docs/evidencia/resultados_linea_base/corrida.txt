@@ -1,0 +1,2 @@
+corrida=2049
+vus=20
