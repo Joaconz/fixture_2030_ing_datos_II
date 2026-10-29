@@ -20,10 +20,12 @@ import base64
 import binascii
 import hashlib
 import json
+import time
 import zlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from app.config.settings import get_settings
 from app.core.errors import NotFoundError, ValidationApiError
 from app.schemas.comentarios import Comentario, ComentarioNuevo, PaginaComentarios
 from app.services.ports import CassandraPort, ConfigParticion, PosicionLectura
@@ -153,13 +155,30 @@ def decodificar_cursor(cursor: str, partido_id: str, cfg: ConfigParticion,
     return ventanas.index(ventana), PosicionLectura(creado_en=creado, comentario_id=cid)
 
 
+# --------------------------------------------------------------------------- caché de Q0 (Hito 12)
+# La configuración de partición (buckets, ventana, inicio) se fija ANTES del partido (Hito 6)
+# y no cambia durante él; sin embargo, el Hito 10 la leía de Cassandra en CADA request
+# (GET y POST). Con COMENTARIOS_CONFIG_CACHE_S > 0 se reutiliza en memoria del proceso
+# durante esos segundos. Sólo se guardan configuraciones existentes (un 404 no se cachea).
+# Es a nivel de módulo porque el servicio se construye en cada request.
+_CACHE_CONFIG: dict[str, tuple[float, ConfigParticion]] = {}
+
+
 # --------------------------------------------------------------------------- servicio
 class ComentariosService:
-    def __init__(self, cassandra: CassandraPort) -> None:
+    def __init__(self, cassandra: CassandraPort, config_cache_s: float | None = None) -> None:
         self.cassandra = cassandra
+        self.config_cache_s = (get_settings().comentarios_config_cache_s
+                               if config_cache_s is None else config_cache_s)
 
     async def _config(self, partido_id: str) -> ConfigParticion:
+        if self.config_cache_s > 0:
+            guardado = _CACHE_CONFIG.get(partido_id)
+            if guardado and time.monotonic() < guardado[0]:
+                return guardado[1]
         cfg = await self.cassandra.get_config(partido_id)
+        if cfg is not None and self.config_cache_s > 0:
+            _CACHE_CONFIG[partido_id] = (time.monotonic() + self.config_cache_s, cfg)
         if cfg is None:
             raise NotFoundError(f"El partido '{partido_id}' no tiene configuración de comentarios.",
                                 code="MATCH_NOT_FOUND")
