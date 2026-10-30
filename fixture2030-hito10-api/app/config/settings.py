@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # --- Cassandra (Hito 6) ------------------------------------------------
     cassandra_hosts: str = "127.0.0.1"
     cassandra_port: int = 9042
+    # Hito 12 · optimización medida: segundos que se reutiliza la configuración de partición
+    # (Q0) de un partido. 0 = desactivada (comportamiento del Hito 10, línea base).
+    comentarios_config_cache_s: float = Field(default=0, ge=0, le=3600)
     cassandra_keyspace: str = "fixture2030_comentarios"
     cassandra_dc: str = "datacenter1"
 

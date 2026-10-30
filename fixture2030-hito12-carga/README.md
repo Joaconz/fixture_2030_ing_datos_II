@@ -55,7 +55,9 @@ bash scripts/ejecutar_prueba_optimizada.sh  # 3. misma prueba optimizada (~3 min
 bash scripts/limpiar_datos_de_prueba.sh   # 4. opcional: borra solo los comentarios de prueba
 ```
 
-Cada corrida deja en `docs/evidencia/resultados_<etiqueta>/`: `ambiente.md` (fecha, commit, versiones, recursos), `k6_resumen.json` y `k6_salida.txt` (latencias, percentiles, throughput, errores), `recursos.csv` (CPU y memoria de Cassandra y de la API cada 2 s), `lecturas_q0.txt` (lecturas de la tabla de configuración: la prueba de la hipótesis) e `integridad.md/.json`.
+Cada corrida deja en `docs/evidencia/resultados_<etiqueta>/`: `ambiente.md` (fecha, commit, versiones, recursos), `k6_resumen.json` y `k6_salida.txt` (latencias, percentiles, throughput, errores), `recursos.csv` (CPU y memoria de Cassandra, de la API y del generador k6 cada 2 s), `lecturas_q0.txt` (lecturas de la tabla de configuración: la prueba de la hipótesis) e `integridad.md/.json`. Si ya había una corrida con la misma etiqueta, no se borra: se archiva en `docs/evidencia/anteriores/` (ignorado por git), y la limpieza también borra sus comentarios de prueba.
+
+**Las corridas tienen que hacerse desde un clon de git** (no desde un ZIP): `ambiente.md` registra el commit con el que se midió.
 
 Para cambiar el escenario (por ejemplo, más usuarios virtuales): copiar `config/configuracion-ejemplo.env` como `config/configuracion.env` y editarlo. Las dos corridas tienen que usar los mismos valores.
 

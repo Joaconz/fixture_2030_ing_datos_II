@@ -3,7 +3,8 @@ Fixture 2030 — Hito 12 · limpieza SEGURA de los datos de prueba (RNF7, RNF11)
 ARCHIVO: scripts/limpiar_datos_de_prueba.py
 
 Borra SOLO los comentarios escritos por las corridas registradas en
-docs/evidencia/resultados_*/corrida.txt (usuarios USR-LT<CORRIDA><VU>), de las
+docs/evidencia/resultados_*/corrida.txt y docs/evidencia/anteriores/*/corrida.txt
+(usuarios USR-LT<CORRIDA><VU>), de las
 dos tablas, por clave primaria completa. No toca los 1.050.000 comentarios del
 Hito 6, ni volúmenes, ni configuración. La evidencia NO se borra.
 
@@ -21,7 +22,8 @@ KS = "fixture2030_comentarios"
 BASE = os.path.join(os.path.dirname(__file__), "..", "docs", "evidencia")
 
 corridas = []
-for f in glob.glob(os.path.join(BASE, "resultados_*", "corrida.txt")):
+for f in glob.glob(os.path.join(BASE, "resultados_*", "corrida.txt")) + \
+        glob.glob(os.path.join(BASE, "anteriores", "*", "corrida.txt")):
     d = dict(l.strip().split("=", 1) for l in open(f) if "=" in l)
     corridas.append((d["corrida"].upper(), int(d["vus"])))
 if not corridas:

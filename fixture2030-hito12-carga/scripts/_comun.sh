@@ -8,6 +8,7 @@ REPO_DIR="$(cd "$H12_DIR/.." && pwd)"
 API_DIR="$REPO_DIR/fixture2030-hito10-api"
 CAS_DIR="$REPO_DIR/fixture2030-cassandra"
 CONTENEDOR_CAS="fixture2030-cassandra"
+CONTENEDOR_K6="fixture2030-k6"          # nombre fijo del generador, para medir su consumo (RF6)
 EVID="$H12_DIR/docs/evidencia"
 
 # Configuración del escenario: config/configuracion-ejemplo.env y, si existe, config/configuracion.env (ignorado por git)
@@ -47,15 +48,20 @@ detener_api() {
   sleep 1
 }
 
+uso_contenedor() {  # $1 = contenedor → "cpu_pct,memoria" (vacío si no está corriendo)
+  docker stats --no-stream --format '{{.CPUPerc}},{{.MemUsage}}' "$1" 2>/dev/null | sed 's/%//' | awk -F'[,/]' '{gsub(/ /,"",$2); print $1","$2}'
+}
+
 muestrear_recursos() {  # $1 = CSV de salida · corre hasta que lo maten
   set +e +o pipefail                # el muestreo nunca debe cortar la prueba
-  echo "momento_utc,cassandra_cpu_pct,cassandra_mem,api_cpu_pct,api_rss_mb" > "$1"
+  echo "momento_utc,cassandra_cpu_pct,cassandra_mem,api_cpu_pct,api_rss_mb,k6_cpu_pct,k6_mem" > "$1"
   while true; do
-    local cs api pid
-    cs=$(docker stats --no-stream --format '{{.CPUPerc}},{{.MemUsage}}' "$CONTENEDOR_CAS" 2>/dev/null | sed 's/%//' | awk -F'[,/]' '{gsub(/ /,"",$2); print $1","$2}')
+    local cs api k6 pid
+    cs=$(uso_contenedor "$CONTENEDOR_CAS")
+    k6=$(uso_contenedor "$CONTENEDOR_K6")
     pid=$(lsof -ti tcp:"$API_PORT" -sTCP:LISTEN 2>/dev/null | head -1 || true)
     api=$([ -n "$pid" ] && ps -o %cpu=,rss= -p "$pid" | awk '{printf "%s,%.1f", $1, $2/1024}' || echo ",")
-    echo "$(ahora_utc),${cs:-,},${api}" >> "$1"
+    echo "$(ahora_utc),${cs:-,},${api},${k6:-,}" >> "$1"
     sleep 2
   done
 }

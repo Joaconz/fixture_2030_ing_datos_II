@@ -36,7 +36,8 @@ def recursos(d: Path) -> dict:
                 pass
         return out
     r = {}
-    for c, n in (("cassandra_cpu_pct", "cas_cpu"), ("api_cpu_pct", "api_cpu"), ("api_rss_mb", "api_mb")):
+    for c, n in (("cassandra_cpu_pct", "cas_cpu"), ("api_cpu_pct", "api_cpu"), ("api_rss_mb", "api_mb"),
+                 ("k6_cpu_pct", "k6_cpu")):
         s = serie(c)
         r[n + "_prom"] = sum(s) / len(s) if s else None
         r[n + "_max"] = max(s) if s else None
@@ -82,13 +83,13 @@ filas = [
     ("POST p50 (ms)", "post_med", 1, True), ("POST p95 (ms)", "post_p(95)", 1, True),
     ("POST p99 (ms)", "post_p(99)", 1, True), ("POST 201 confirmados", "post_201", 0, False),
     ("CPU Cassandra prom / máx (%)", "cas_cpu", 1, True), ("CPU API prom / máx (%)", "api_cpu", 1, True),
-    ("Memoria API máx (MB)", "api_mb_max", 1, True),
+    ("CPU generador k6 prom / máx (%)", "k6_cpu", 1, True), ("Memoria API máx (MB)", "api_mb_max", 1, True),
 ]
 print("# Comparación línea base vs. optimizada\n")
 print("Generado por `scripts/comparar.py` a partir de los archivos de cada corrida (sin cifras a mano).\n")
 print("| Métrica | Línea base | Optimizada | Variación |\n|---|---:|---:|---:|")
 for nombre, k, dec, menor in filas:
-    if k in ("cas_cpu", "api_cpu"):
+    if k in ("cas_cpu", "api_cpu", "k6_cpu"):
         print(f"| {nombre} | {fmt(b[k+'_prom'])} / {fmt(b[k+'_max'])} | {fmt(o[k+'_prom'])} / {fmt(o[k+'_max'])} | "
               f"{delta(b[k+'_prom'], o[k+'_prom'])} |")
     else:
