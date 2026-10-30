@@ -1,0 +1,2 @@
+lecturas_q0_antes=186990
+lecturas_q0_despues=187003

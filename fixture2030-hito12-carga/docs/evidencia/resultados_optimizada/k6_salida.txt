@@ -1,0 +1,5 @@
+
+Requests: 62557 · 391.0 req/s · fallidas: 0.00 %
+GET  ms: p50 41.6 · p95 72.6 · p99 87.9
+POST ms: p50 50.3 · p95 86.6 · p99 102.7
+POST 201: 12402 · 200 reintento: 0 · error: 0

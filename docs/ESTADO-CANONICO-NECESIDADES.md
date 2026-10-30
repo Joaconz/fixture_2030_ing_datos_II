@@ -35,6 +35,8 @@ Necesidades sin implementar hoy (actualizado 13/10/2026): **N4 (Usuarios, MongoD
 
 > **Auditoría del Hito 10 (15/10/2026):** [`../fixture2030-hito10-api/docs/auditoria_hito10.md`](../fixture2030-hito10-api/docs/auditoria_hito10.md). La API cubre 5 de las 6 fuentes del enunciado; RF8 (IRIS) no se implementa y el profesor lo aprobó (ver "Resueltos").
 
+> **Hito 12 — pruebas de carga y optimización (30/10/2026):** [`../fixture2030-hito12-carga/`](../fixture2030-hito12-carga/README.md). Carga la API del Hito 10 sobre N6 (Cassandra, comentarios) con k6 y optimiza con una caché de la configuración de partición (Q0), activable por `COMENTARIOS_CONFIG_CACHE_S` (0 = comportamiento del Hito 10). No cambia la asignación de ninguna necesidad. Auditoría: [`../fixture2030-hito12-carga/docs/auditoria_hito12.md`](../fixture2030-hito12-carga/docs/auditoria_hito12.md). El PR original subió `settings.py` y su test a la raíz del repo, lo que rompía GET y POST de comentarios; el equipo lo corrigió. Abierto: evidencia cruda de los 2 pares sin limpiar fuera del repo, y latencia propia de Cassandra sin medir (RF6).
+
 > ⚠️ Esta lista salió de leer la matriz real y el estado del repo, y ya se le preguntó al equipo si coincide con lo que tienen planeado — la respuesta fue "es distinto" sin precisar en qué. **Falta esa aclaración** para saber, por ejemplo, si estas cinco necesidades son 5 hitos separados, se agrupan en menos entregas, o alguna tiene un alcance distinto al de la matriz. Actualizar esta sección en cuanto se confirme.
 
 ---
