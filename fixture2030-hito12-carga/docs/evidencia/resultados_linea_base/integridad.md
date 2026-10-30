@@ -1,10 +1,10 @@
-# Integridad — corrida 2049
+# Integridad — corrida 301647
 
-Validado leyendo Cassandra directo el 2026-10-29T20:52:34+00:00.
+Validado leyendo Cassandra directo el 2026-10-30T16:50:22+00:00.
 
 | Verificación | Resultado | Detalle |
 |---|:-:|---|
-| I1 escritos en Cassandra = POST 201 de k6 | ✅ | 12913 filas únicas · 12913 POST 201 · 0 reintentos 200 · 0 POST con error |
+| I1 escritos en Cassandra = POST 201 de k6 | ✅ | 11732 filas únicas · 11732 POST 201 · 0 reintentos 200 · 0 POST con error |
 | I2 sin comentario_id duplicados | ✅ | 0 duplicados |
 | I3 vista por usuario = vista por partido | ✅ | 0 filas sin su par |
 | I4 contenido sin alterar | ✅ | 0 alterados |

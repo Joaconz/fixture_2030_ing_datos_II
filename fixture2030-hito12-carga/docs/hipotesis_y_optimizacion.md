@@ -26,28 +26,30 @@
 | Activación | Variable de entorno; por defecto **0** = comportamiento del Hito 10. Las dos corridas usan el mismo código |
 | Costo o riesgo (trade-off, RF11) | **Frescura:** si se cambiara la configuración de un partido en curso (por ejemplo, más buckets por un pico imprevisto), la API seguiría usando la anterior hasta 60 s, y en ese lapso podría leer o escribir en el bucket viejo. **Memoria:** una entrada pequeña por partido (≤ 112). **Varios procesos:** cada proceso de la API tiene su propia copia: no hay invalidación entre procesos |
 | Prueba ejecutada después | Mismo escenario (`ejecutar_prueba_optimizada.sh`) |
-| Resultado medido | Ver la tabla de abajo y `evidencia/comparacion.md` (corridas `2049` y `2053`) |
-| Decisión del equipo | **Se mantiene** la caché (60 s): elimina el 99,9 % de las lecturas de Q0 y baja la CPU de Cassandra un 10 %, con un costo bajo. **No** se presenta como mejora de latencia: en este ambiente no la hubo. El siguiente paso es atacar el límite real (H2): varias instancias o *workers* de la API |
+| Resultado medido | Ver la tabla de abajo y `evidencia/comparacion.md` (corridas `301647` y `301650`, commit `ef271d9`) |
+| Decisión del equipo | **Se mantiene** la caché (60 s): elimina prácticamente todas las lecturas de Q0 y baja algo la CPU de Cassandra, con un costo bajo. **No** se presenta como mejora de latencia demostrada: la diferencia medida es del mismo tamaño que la variación entre pares de corridas (ver punto 3). El siguiente paso es atacar el límite real (H2): varias instancias o *workers* de la API |
 
-## Resultado medido (línea base `2049` contra optimizada `2053`, mismo escenario)
+## Resultado medido (línea base `301647` contra optimizada `301650`, mismo escenario)
+
+Las dos corridas arrancaron con la ventana pico en las **64.640 filas** del Hito 6: antes de cada una se borraron los comentarios de prueba anteriores (ver README, orden de ejecución).
 
 | Métrica | Línea base | Optimizada | Variación |
 |---|---:|---:|---:|
-| **Lecturas de Q0** | **64.567** | **39** | **−99,9 %** |
-| CPU de Cassandra · prom / máx | 84,2 % / 221,2 % | 76,0 % / 126,0 % | −9,8 % (prom) |
-| CPU de la API · prom / máx | 93,0 % / 98,8 % | 93,2 % / 98,9 % | ≈ |
-| Throughput | 403,5 req/s | 413,0 req/s | +2,3 % |
-| GET p50 / p95 / p99 | 42,9 / 68,2 / 75,9 ms | 39,9 / 67,7 / 78,6 ms | −7,1 % / −0,7 % / +3,6 % |
-| GET máx | 115,7 ms | 388,7 ms | un único caso aislado |
-| POST p50 / p95 / p99 | 46,1 / 72,5 / 82,1 ms | 49,7 / 82,7 / 95,3 ms | +8,0 % / +14,1 % / +16,0 % |
+| **Lecturas de Q0** | **58.281** | **13** | **−99,98 %** |
+| CPU de Cassandra · prom / máx | 104,3 % / 192,6 % | 97,3 % / 201,4 % | −6,7 % (prom) |
+| CPU de la API · prom / máx | 95,0 % / 99,5 % | 94,6 % / 100,6 % | ≈ |
+| CPU del generador k6 · prom / máx | 18,0 % / 21,1 % | 18,0 % / 26,6 % | ≈ |
+| Throughput | 364,3 req/s | 391,0 req/s | +7,3 % |
+| GET p50 / p95 / p99 | 46,3 / 82,4 / 100,6 ms | 41,6 / 72,6 / 87,9 ms | −10,1 % / −11,9 % / −12,6 % |
+| POST p50 / p95 / p99 | 50,3 / 87,4 / 109,4 ms | 50,3 / 86,6 / 102,7 ms | 0 % / −1,0 % / −6,1 % |
 | Errores | 0 % | 0 % | — |
-| Integridad | ✅ 12.913 filas | ✅ 13.314 filas | sin duplicados ni filas sin par en ninguna |
+| Integridad | ✅ 11.732 filas | ✅ 12.402 filas | sin duplicados ni filas sin par en ninguna |
 
 ## Interpretación
 
-1. **H1 se confirma como mecanismo y se refuta como cuello de botella.** La caché elimina casi todas las lecturas de Q0 (de una por request a 39 en toda la corrida) y Cassandra trabaja menos. Las 39 se explican por los vencimientos de los 60 s: en cada vencimiento, las requests que llegan juntas encuentran la entrada vencida y la releen a la vez (con 20 usuarios concurrentes, ~13 por vencimiento en 3 vencimientos). Es un efecto "estampida" acotado; si molestara, se evitaría con un bloqueo por partido al refrescar. Pero la latencia de punta a punta **casi no cambia**: ahorrar una ida y vuelta a la base no acelera la respuesta cuando lo que tarda es otra cosa.
-2. **H2 queda respaldada por la evidencia:** la CPU de la API está en **93 % promedio y 99 % de máximo en las dos corridas**, un único proceso de Python saturado. Con la API al límite, lo que se ahorra en Cassandra se convierte en un poco más de throughput (+2,3 %, más requests atendidas en el mismo tiempo), no en menos latencia.
-3. **El empeoramiento del POST tiene una causa identificada, que impide la comparación directa (RNF3):** la corrida optimizada escribió en la **misma partición caliente**, que ya tenía las 12.913 filas de la línea base: ~64.640 → ~77.550 filas (+20 %). El POST lee por clave primaria antes de escribir, en esa partición más grande y con más datos en memoria por compactar. El GET lee las ventanas más recientes del partido, no la 17:30, por eso no se ve afectado igual.
-4. **Ruido:** con una sola corrida por configuración, variaciones de este tamaño (±10 %) no alcanzan para afirmar una mejora o un empeoramiento; el GET máximo de 388,7 ms es un único valor aislado.
+1. **H1 se confirma como mecanismo.** La caché elimina casi todas las lecturas de Q0 (de una por request a 13 en toda la corrida) y la CPU de Cassandra baja un 6,7 % en promedio. Las 13 se explican por los vencimientos de los 60 s: la corrida dura ~160 s, así que la entrada vence 2 veces, y en cada vencimiento las requests que llegan juntas la encuentran vencida y la releen a la vez (efecto "estampida" acotado; si molestara, se evitaría con un bloqueo por partido al refrescar).
+2. **H2 queda respaldada por la evidencia:** la CPU de la API está en **~95 % promedio y ~100 % de máximo en las dos corridas**, un único proceso de Python saturado. Cassandra usa ~1 de los 10 núcleos disponibles y el generador k6 un 18 %: ninguno de los dos es el límite.
+3. **La mejora de latencia y throughput de este par no alcanza para afirmarla.** Antes de este par corrimos dos pares sin limpiar entre corridas (con la optimizada escribiendo sobre ~13.000 filas más). El throughput de la optimizada dio **+3,2 %** en uno y **−7,8 %** en el otro (`evidencia/pares_sin_limpieza.md`). Una diferencia de ±8 % aparece entre pares con el mismo código, y este par da +7,3 % y −10 % en el GET p50: está dentro de esa variación. Lo coherente con H2 es que ahorrar una ida y vuelta a Cassandra casi no cambia la respuesta cuando lo que tarda es la CPU de la API.
+4. **Diferencia de condiciones declarada (RNF3):** la limpieza borra por clave y deja *tombstones* (marcas de borrado) en la ventana pico. La línea base corrió con ~51.000 y la optimizada con ~63.000. Si eso influye, juega **en contra** de la optimizada.
 
 **Próximo paso (no ejecutado):** probar la API con varios *workers* de `uvicorn`, que es lo que ataca H2. Con la caché, cada *worker* lee Q0 una vez por minuto; sin ella, la carga sobre Cassandra crecería con cada *worker*. Ahí la caché pasa a importar de verdad.

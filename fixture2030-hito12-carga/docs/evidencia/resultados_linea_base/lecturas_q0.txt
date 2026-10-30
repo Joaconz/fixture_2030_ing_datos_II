@@ -1,2 +1,2 @@
-lecturas_q0_antes=44
-lecturas_q0_despues=64611
+lecturas_q0_antes=128708
+lecturas_q0_despues=186989

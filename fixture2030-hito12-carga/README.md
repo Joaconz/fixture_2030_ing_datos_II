@@ -6,7 +6,7 @@
 **Flujo bajo carga:** pico de comentarios después de un gol en `PAR-D16-01` (ARG–BEL, el partido de audiencia MÁXIMA de los Hitos 6 y 8), **a través de la API del Hito 10** hacia **Cassandra** (Hito 6): 80 % lecturas de los últimos comentarios, 20 % publicaciones.
 **Optimización medida:** reutilizar en memoria la configuración de partición del partido (Q0), que la API leía de Cassandra en **cada** request. Se activa con una variable (`COMENTARIOS_CONFIG_CACHE_S`), así la línea base y la prueba optimizada corren **el mismo código** cambiando solo eso.
 
-**Resultado (29/10/2026):** línea base de **403,5 req/s**, GET p50 42,9 ms y POST p50 46,1 ms, con 0 % de errores. La caché elimina el **99,9 %** de las lecturas de Q0 y baja la CPU de Cassandra un 10 %, pero la latencia casi no cambia: **el límite medido es la CPU del proceso de la API** (93–99 %). Integridad verificada en las dos corridas (12.913 y 13.314 filas, sin duplicados). Detalle en `docs/hipotesis_y_optimizacion.md`.
+**Resultado (30/10/2026, commit `ef271d9`):** línea base de **364,3 req/s**, GET p50 46,3 ms y POST p50 50,3 ms, con 0 % de errores. La caché elimina el **99,98 %** de las lecturas de Q0 (58.281 → 13) y baja la CPU de Cassandra un 7 %. La mejora de latencia del par (+7 % throughput, −10 % GET p50) está dentro de la variación entre corridas, así que no se da por demostrada: **el límite medido es la CPU del proceso de la API** (~95 %), con el generador k6 al 18 %. Integridad verificada en las dos corridas (11.732 y 12.402 filas, sin duplicados). Detalle en `docs/hipotesis_y_optimizacion.md`.
 
 > Alcance deliberadamente acotado (corrección del Hito 10): un flujo, una optimización, sin funcionalidades nuevas. El Data Mart y la alternativa relacional son de **diseño**, como pide la consigna.
 
@@ -36,7 +36,7 @@ fixture2030-hito12-carga/
     ├── integracion_data_mart.md
     ├── comparacion_relacional.md
     ├── integridad_y_limitaciones.md
-    └── evidencia/                            resultados_linea_base/, resultados_optimizada/, comparacion.md
+    └── evidencia/                            resultados_linea_base/, resultados_optimizada/, comparacion.md, pares_sin_limpieza.md
 ```
 
 La optimización vive en la API: `fixture2030-hito10-api/app/services/comentarios.py` (caché de Q0), `app/config/settings.py` (`comentarios_config_cache_s`, por defecto 0 = comportamiento del Hito 10) y `tests/unit/test_cache_config_comentarios.py`.
@@ -50,10 +50,13 @@ La optimización vive en la API: `fixture2030-hito10-api/app/services/comentario
 
 ```bash
 bash scripts/preparar_datos.sh            # 1. ambiente y datos (repetible, no borra nada)
-bash scripts/ejecutar_linea_base.sh       # 2. línea base (~3 min)
-bash scripts/ejecutar_prueba_optimizada.sh  # 3. misma prueba optimizada (~3 min) + docs/evidencia/comparacion.md
-bash scripts/limpiar_datos_de_prueba.sh   # 4. opcional: borra solo los comentarios de prueba
+bash scripts/limpiar_datos_de_prueba.sh   # 2. borra solo los comentarios de corridas anteriores
+bash scripts/ejecutar_linea_base.sh       # 3. línea base (~3 min)
+bash scripts/limpiar_datos_de_prueba.sh   # 4. borra lo que escribió la línea base
+bash scripts/ejecutar_prueba_optimizada.sh  # 5. misma prueba optimizada (~3 min) + docs/evidencia/comparacion.md
 ```
+
+**Por qué limpiar antes de cada corrida (RNF3):** cada corrida escribe ~12.000 comentarios en la ventana pico. Sin limpiar, la segunda corrida trabaja sobre una partición un 20 % más grande que la primera, y la comparación deja de ser justa. Lo comprobamos: en dos pares de corridas sin limpieza, la diferencia de latencia entre línea base y optimizada cambió de signo de un par a otro.
 
 Cada corrida deja en `docs/evidencia/resultados_<etiqueta>/`: `ambiente.md` (fecha, commit, versiones, recursos), `k6_resumen.json` y `k6_salida.txt` (latencias, percentiles, throughput, errores), `recursos.csv` (CPU y memoria de Cassandra, de la API y del generador k6 cada 2 s), `lecturas_q0.txt` (lecturas de la tabla de configuración: la prueba de la hipótesis) e `integridad.md/.json`. Si ya había una corrida con la misma etiqueta, no se borra: se archiva en `docs/evidencia/anteriores/` (ignorado por git), y la limpieza también borra sus comentarios de prueba.
 
