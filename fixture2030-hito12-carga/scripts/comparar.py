@@ -65,12 +65,20 @@ def fmt(x, dec=1):
     return "—" if x is None else f"{x:,.{dec}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+# Entre pares de corridas con el mismo código se vieron variaciones de ±8 % en throughput y de hasta ~20 % en latencias
+# (docs/evidencia/pares_sin_limpieza.md):
+# una diferencia menor al 15 % no se considera ni mejora ni empeoramiento.
+RUIDO_PCT = 15
+
+
 def delta(a, b, menor_es_mejor=True):
     if a in (None, 0) or b is None:
         return "—"
     p = 100 * (b - a) / a
     mejora = (p < 0) if menor_es_mejor else (p > 0)
-    return f"{p:+.1f} % {'✅' if mejora else '⚠️' if abs(p) >= 5 else '≈'}"
+    if abs(p) < RUIDO_PCT:
+        return f"{p:+.1f} % ≈"
+    return f"{p:+.1f} % {'✅' if mejora else '⚠️'}"
 
 
 base_d, opt_d = Path(sys.argv[1]), Path(sys.argv[2])
@@ -98,4 +106,4 @@ qb, qo = q0(base_d), q0(opt_d)
 print(f"| Lecturas de `config_particion_partido` (Q0) | {fmt(qb, 0)} | {fmt(qo, 0)} | {delta(qb, qo)} |")
 print(f"| Integridad | {integ(base_d)} | {integ(opt_d)} | |")
 print(f"\nMuestras de recursos: {b['muestras']} (base) / {o['muestras']} (optimizada), cada 2 s.")
-print("\n✅ mejora · ⚠️ empeora 5 % o más · ≈ variación menor al 5 % (dentro del ruido de una sola corrida).")
+print(f"\n✅ mejora · ⚠️ empeora · ≈ variación menor al {RUIDO_PCT} % (dentro del ruido entre corridas con el mismo código).")

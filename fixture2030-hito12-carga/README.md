@@ -42,6 +42,7 @@ fixture2030-hito12-carga/
 La optimización vive en la API: `fixture2030-hito10-api/app/services/comentarios.py` (caché de Q0), `app/config/settings.py` (`comentarios_config_cache_s`, por defecto 0 = comportamiento del Hito 10) y `tests/unit/test_cache_config_comentarios.py`.
 
 ## 2. Requisitos
+- macOS o Linux con `bash`, `curl` y `lsof` (los scripts usan `.venv/bin/python` y `lsof`; en Windows, desde WSL).
 - Docker Desktop (k6 y Cassandra corren en contenedores). Recomendado: ≥ 4 GB para Docker.
 - `uv` para el entorno de la API (`curl -LsSf https://astral.sh/uv/install.sh | sh`).
 - Puerto 8000 libre: **la prueba levanta y apaga la API sola**, con la configuración de cada corrida. No tiene que haber otra API corriendo.

@@ -22,6 +22,9 @@ Sirve para dimensionar la moderación (Hito 6) y la capacidad de la plataforma e
 3. InfluxDB: `usuarios_max` del resumen de 1 minuto, sumado entre regiones.
 4. Unión por `(partido_id, minuto)`; los minutos sin goles quedan con 0, y los minutos sin audiencia con nulo (no con 0).
 
+## Procedencia (RNF12)
+Cada fila del Data Mart lleva `fuente_comentarios`, `fuente_eventos`, `fuente_audiencia` (producto de origen), `extraido_en` (cuándo se leyó), `lote_carga` (identificador del lote que la escribió) y `version_transformacion` (versión de las reglas de la sección anterior). Con esas columnas se contesta de dónde vino un dato, cuándo, con qué transformación y en qué lote, y se puede reconstruir la vista si cambia una regla o se corrige una fuente.
+
 ## Actualización
 | Aspecto | Decisión |
 |---|---|
@@ -29,6 +32,7 @@ Sirve para dimensionar la moderación (Hito 6) y la capacidad de la plataforma e
 | Retraso aceptable | Hasta 15 minutos después del final: la pregunta es de análisis, no de la pantalla en vivo |
 | Datos tardíos | Un comentario que llega después del cierre se toma en el recálculo nocturno |
 | Duplicados | La carga **reemplaza** la partición `(partido_id)` del Data Mart (borrar y escribir), así repetirla no duplica: el mismo patrón que la V8 del Hito 8 |
+| Punto de control | Por partido: el último `lote_carga` publicado y su `extraido_en`; una carga interrumpida se reanuda desde el primer partido sin publicar |
 | Fallas parciales | Si una fuente no responde, no se publica ese partido y queda marcado como pendiente (nunca filas a medias) |
 | Validación | Suma de `comentarios` por partido = conteo del partido en Cassandra; cantidad de minutos con gol = goles del partido en Neo4j |
 
