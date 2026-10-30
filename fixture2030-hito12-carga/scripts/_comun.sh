@@ -48,20 +48,24 @@ detener_api() {
   sleep 1
 }
 
-uso_contenedor() {  # $1 = contenedor → "cpu_pct,memoria" (vacío si no está corriendo)
-  docker stats --no-stream --format '{{.CPUPerc}},{{.MemUsage}}' "$1" 2>/dev/null | sed 's/%//' | awk -F'[,/]' '{gsub(/ /,"",$2); print $1","$2}'
+uso_contenedores() {  # → "nombre,cpu_pct,memoria" por línea, de Cassandra y k6 en una sola lectura
+  # k6 se pide solo si ya está corriendo: docker stats no devuelve nada si un nombre no existe
+  docker stats --no-stream --format '{{.Name}},{{.CPUPerc}},{{.MemUsage}}' "$CONTENEDOR_CAS" \
+    $(docker ps -q --filter "name=^${CONTENEDOR_K6}$") 2>/dev/null \
+    | sed 's/%//' | awk -F'[,/]' '{gsub(/ /,"",$3); print $1","$2","$3}'
 }
 
 muestrear_recursos() {  # $1 = CSV de salida · corre hasta que lo maten
   set +e +o pipefail                # el muestreo nunca debe cortar la prueba
   echo "momento_utc,cassandra_cpu_pct,cassandra_mem,api_cpu_pct,api_rss_mb,k6_cpu_pct,k6_mem" > "$1"
   while true; do
-    local cs api k6 pid
-    cs=$(uso_contenedor "$CONTENEDOR_CAS")
-    k6=$(uso_contenedor "$CONTENEDOR_K6")
+    local stats cs api k6 pid
+    # docker stats --no-stream ya tarda ~2 s (promedia CPU entre dos lecturas): marca el intervalo, sin sleep extra
+    stats=$(uso_contenedores)
+    cs=$(echo "$stats" | sed -n "s/^$CONTENEDOR_CAS,//p")
+    k6=$(echo "$stats" | sed -n "s/^$CONTENEDOR_K6,//p")   # docker stats muestra el nombre aunque se pida por id
     pid=$(lsof -ti tcp:"$API_PORT" -sTCP:LISTEN 2>/dev/null | head -1 || true)
     api=$([ -n "$pid" ] && ps -o %cpu=,rss= -p "$pid" | awk '{printf "%s,%.1f", $1, $2/1024}' || echo ",")
     echo "$(ahora_utc),${cs:-,},${api},${k6:-,}" >> "$1"
-    sleep 2
   done
 }
