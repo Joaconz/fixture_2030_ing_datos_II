@@ -32,10 +32,11 @@ T0=$(date +%s); A0="$(ahora_utc)"
     docker stats --no-stream --format '{{.CPUPerc}}' fixture2030-cassandra 2>/dev/null | tr -d '%' | sed "s/^/$(date +%s) /" >> "$SAL/cpu_cas"
     sleep 2
   done ) &
+MUESTREO_PID=$!
 docker run --rm -e VUS="$VUS" -e RAMPA_S="$RAMPA_S" -e SOSTEN_S="$SOSTEN_S" \
   -v "$H13_DIR/scripts:/scripts:ro" "$K6_IMAGEN" run --quiet /scripts/carga_lectura_k6.js > "$SAL/k6.txt" 2>&1 || true
 T_FIN_SOSTEN=$(( T0 + RAMPA_S + SOSTEN_S )); T1=$(date +%s); A1="$(ahora_utc)"
-kill %1 2>/dev/null || true
+kill "$MUESTREO_PID" 2>/dev/null; wait "$MUESTREO_PID" 2>/dev/null || true
 
 # Ventana de análisis: el sostenimiento (sin rampa). Se evalúa en su último instante.
 VENT="${SOSTEN_S}s"

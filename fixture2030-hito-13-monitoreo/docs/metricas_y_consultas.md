@@ -52,16 +52,17 @@ Las consultas que usan el dashboard y las alertas. "Período" es la ventana del 
 
 - **Q3 sube y Q5 no:** el tiempo extra está en la API (CPU del proceso, serialización, validación). La base responde igual de rápido.
 - **Q3 y Q5 suben juntas para una `dependencia`:** el cuello está en esa base. Para Cassandra se confirma con Q7 (latencia interna) y Q9 (cola de escrituras).
-- **Q5 alta pero Q7 baja (Cassandra):** el tiempo se va entre el driver y el nodo (red, pool de conexiones), no en el motor.
+- **Q5 alta pero Q7 baja (Cassandra):** el motor responde rápido y el tiempo se pierde entre el nodo y el código que espera la respuesta: red, pool de conexiones o **la propia API saturada** (la respuesta llega, pero el *event loop* de Python está ocupado y tarda en atenderla). Para separarlos, mirar la CPU del proceso de la API: es lo que pasó en la [carga observada](../evidencia/carga_observada_20261030-212441.md) (Cassandra p99 1,1 ms por dentro, 17 / 44 ms p50 / p95 desde la API, API al 97 % de CPU).
 - **Q4 sube:** Q6 dice qué base pasó a `no_disponible` o `timeout`; Q1 confirma si la base está caída o solo lenta.
 
 ## 3. Valores observados en el laboratorio
 
-Mediciones de esta notebook (Apple Silicon, Docker Desktop), no de producción (RNF8):
+Mediciones de esta notebook (Apple Silicon, Docker Desktop), no de producción (RNF8). **Prometheus y k6 no dan el mismo p95:** Prometheus lo estima interpolando dentro del bucket del histograma (entre 50 y 100 ms acá), k6 lo calcula con cada request. Para comparar entre sí, usar siempre la misma fuente.
 
 | Observación | Valor | Fuente |
 |---|---|---|
 | Lecturas de Cassandra con carga de solo lectura (`cqlsh -f`, 3.000 SELECT por ronda) | ~400 req/s; p99 de lectura 4,8 ms en frío → ~0,3 ms en caliente; 0 errores | Q7/Q8 en Grafana durante la prueba, 30/10/2026 |
 | p95 de cada base vista desde la API, ~250 req/s de GET mixtos | ≤ 5 ms para Cassandra, MongoDB y Redis (bucket más bajo del histograma) | Q5, 30/10/2026 |
 | Detección de una base caída | 10 s desde `docker stop` hasta `probe_success = 0`; alerta en firing a los 72 s | [`evidencia/prueba_de_falla_redis_20261030-211553.md`](../evidencia/prueba_de_falla_redis_20261030-211553.md) |
+| **Carga de lectura observada** (k6, 20 usuarios, solo GET de comentarios del partido caliente, 90 s) | 399 req/s, 0 errores. API p50 / p95 = 42 / 91 ms (Prometheus) y 45 / 71 ms (k6). Cassandra desde la API 17 / 44 ms; Cassandra por dentro p99 1,1 ms. CPU de la API 97 % (máx 100 %), Cassandra 90 % de un núcleo. 5 llamadas a Cassandra por GET | [`evidencia/carga_observada_20261030-212441.md`](../evidencia/carga_observada_20261030-212441.md) |
 | Latencia de la API bajo carga (Hito 12) | p95 82,4 ms, p99 100,6 ms, 364 req/s, 0 errores (k6, 20 usuarios) | [`../../fixture2030-hito12-carga/docs/linea_base.md`](../../fixture2030-hito12-carga/docs/linea_base.md) — medido con k6, **no** con Prometheus |

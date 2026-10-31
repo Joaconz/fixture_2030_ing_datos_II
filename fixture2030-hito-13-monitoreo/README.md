@@ -96,6 +96,13 @@ Esperado con todo arriba: 11 targets UP y las 5 bases con `probe_success = 1`.
    ```
 
    Durante la prueba: la base pasa a CAÍDA en ~10 s, la alerta `BaseNoResponde` a firing en ~70 s, y la API responde 503 solo en las rutas de esa base. Deja el informe en `evidencia/prueba_de_falla_<base>_<fecha>.md`.
+4. **Carga observada** (≈ 2 minutos; k6 en Docker, solo lecturas):
+
+   ```bash
+   bash fixture2030-hito-13-monitoreo/scripts/ejecutar_carga_observada.sh
+   ```
+
+   Compara la latencia de la API con la de Cassandra (desde la API y por dentro) y la CPU de cada uno. Deja el informe en `evidencia/carga_observada_<fecha>.md`.
 
 Guion completo y plan B si algo falla en vivo: [`defensa/demo.md`](defensa/demo.md).
 
