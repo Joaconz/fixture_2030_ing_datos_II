@@ -2,6 +2,9 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - /etc/prometheus/reglas-o-alertas.yml
+
 scrape_configs:
   - job_name: prometheus
     static_configs:
@@ -62,9 +65,12 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
-  # Cuando la API integrada (Hito 10) exponga /metrics,
-  # descomentar y adaptar el target:
-  # - job_name: fixture-api
-  #   metrics_path: /metrics
-  #   static_configs:
-  #     - targets: ['host.docker.internal:8000']
+  # API integrada (Hito 10): uvicorn en la notebook, puerto 8000.
+  # Métricas de APLICACIÓN (fixture2030_http_*) y de DEPENDENCIA
+  # (fixture2030_dependencia_*), ver fixture2030-hito10-api/app/core/metricas.py.
+  - job_name: fixture-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+        labels:
+          capa: aplicacion

@@ -1,0 +1,66 @@
+# ============================================================
+#  Fixture 2030 — Hito 13 · Reglas de alerta (RF9)
+#  Prometheus las evalúa cada 15 s (evaluation_interval). No hay
+#  Alertmanager: el estado se ve en http://localhost:9090/alerts y en
+#  Grafana. Justificación de cada umbral: docs/alertas_y_umbral.md.
+# ============================================================
+groups:
+  - name: fixture2030-disponibilidad
+    rules:
+      - alert: BaseNoResponde
+        expr: probe_success{job="salud-bases"} == 0
+        for: 1m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "{{ $labels.base }} no responde en {{ $labels.instance }}"
+          impacto: "Las rutas de la API que usan {{ $labels.base }} devuelven 503 mientras dure la caída."
+          accion: "docker ps / docker logs del contenedor de {{ $labels.base }}; ver GET /health/dependencias de la API."
+
+      - alert: TargetSinScrape
+        expr: up == 0
+        for: 2m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Prometheus no puede leer el target {{ $labels.job }} ({{ $labels.instance }})"
+          impacto: "Se pierde visibilidad de ese componente: los paneles que dependen de él quedan vacíos."
+          accion: "Abrir http://localhost:9090/targets y revisar el error del scrape; ver docs/limitaciones_y_evidencia.md."
+
+  - name: fixture2030-api
+    rules:
+      - alert: ApiErroresAltos
+        expr: |
+          100 * sum(rate(fixture2030_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(fixture2030_http_requests_total[5m])), 1e-9) > 1
+        for: 5m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "Más del 1 % de las respuestas de la API son 5xx ({{ $value | printf \"%.1f\" }} %)"
+          impacto: "Usuarios del Fixture reciben errores: comentarios, partidos o sesiones no disponibles."
+          accion: "Panel 'Llamadas por segundo a cada base, por resultado' para ver qué base devuelve no_disponible o timeout."
+
+      - alert: ApiLatenciaAlta
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(fixture2030_http_request_duration_seconds_bucket[5m]))) > 0.15
+        for: 5m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "p95 de la API en {{ $value | humanizeDuration }} (umbral 150 ms)"
+          impacto: "La experiencia en vivo (comentarios durante el partido) se vuelve lenta antes de que haya errores."
+          accion: "Comparar con 'Latencia p95 de cada base': si la base no subió, el cuello está en la API."
+
+  - name: fixture2030-cassandra
+    rules:
+      - alert: CassandraEscriturasEncoladas
+        expr: cassandra_threadpool_pendingtasks{pool="MutationStage"} > 100
+        for: 2m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Cassandra tiene {{ $value }} escrituras esperando en MutationStage"
+          impacto: "Pico de comentarios (p. ej. un gol): las escrituras se encolan y la latencia de POST sube."
+          accion: "Mirar tareas pendientes y compactaciones; con un solo nodo la salida es escalar (más nodos) o limitar la carga."

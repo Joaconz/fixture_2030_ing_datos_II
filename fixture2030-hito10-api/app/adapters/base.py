@@ -20,6 +20,7 @@ from collections.abc import Awaitable
 from typing import TypeVar
 
 from app.core.errors import ApiError, DependencyUnavailableError
+from app.core.metricas import registrar_dependencia
 
 T = TypeVar("T")
 log = logging.getLogger("fixture2030.adaptador")
@@ -56,9 +57,11 @@ async def ejecutar(
             "resultado": resultado, "motivo": motivo, "tipo": type(exc).__name__})
         raise DependencyUnavailableError(dependencia, motivo=motivo) from exc
     finally:
+        duracion_s = time.perf_counter() - inicio
+        registrar_dependencia(dependencia, operacion, resultado, duracion_s)
         extra = {"evento": "dependencia", "dependencia": dependencia, "operacion": operacion,
                  "resultado": resultado,
-                 "duracion_ms": round((time.perf_counter() - inicio) * 1000, 1)}
+                 "duracion_ms": round(duracion_s * 1000, 1)}
         if motivo:
             extra["motivo"] = motivo
         log.info("dependencia", extra=extra)

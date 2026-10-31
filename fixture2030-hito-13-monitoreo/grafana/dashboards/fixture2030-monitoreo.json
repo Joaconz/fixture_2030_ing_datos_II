@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 5,
   "editable": true,
   "refresh": "10s",
   "time": {
@@ -165,7 +165,7 @@
       "gridPos": {
         "x": 0,
         "y": 6,
-        "w": 24,
+        "w": 16,
         "h": 5
       },
       "targets": [
@@ -230,13 +230,425 @@
       "description": "Sonda del blackbox-exporter contra el puerto publicado de cada base: TCP para MongoDB, Redis y Cassandra; HTTP para Neo4j (7474) e InfluxDB (/health)."
     },
     {
+      "id": 34,
+      "title": "Alertas activas",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 6,
+        "w": 8,
+        "h": 5
+      },
+      "description": "Reglas de prometheus/reglas-o-alertas.yml que están en pending (condición cumplida, esperando el 'for') o firing. Vacío = sin alertas.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "ALERTS",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "alertname": true,
+              "alertstate": true,
+              "severidad": true,
+              "base": true,
+              "job": true
+            },
+            "renameByName": {
+              "alertname": "alerta",
+              "alertstate": "estado",
+              "severidad": "severidad",
+              "base": "base",
+              "job": "job"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "estado"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "firing": {
+                        "color": "red",
+                        "text": "FIRING"
+                      },
+                      "pending": {
+                        "color": "orange",
+                        "text": "pending"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "API integrada (Hito 10) — métricas de aplicación",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 28,
+      "title": "Requests por segundo según status",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (status) (rate(fixture2030_http_requests_total[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Volumen de la API (RF6). Ventana: rate de 1 minuto. 2xx = OK, 4xx = error del cliente, 503/504 = una base no respondió."
+    },
+    {
+      "id": 29,
+      "title": "Latencia p95 por ruta",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, ruta) (rate(fixture2030_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{ruta}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.15
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Tiempo de respuesta medido en la API, incluida la espera a las bases. p95 sobre una ventana de 5 minutos. Línea roja: 150 ms, umbral de la alerta ApiLatenciaAlta (el Hito 12 midió p95 = 82,4 ms bajo carga)."
+    },
+    {
+      "id": 30,
+      "title": "Porcentaje de respuestas 5xx",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "100 * sum(rate(fixture2030_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(fixture2030_http_requests_total[5m])), 1e-9)",
+          "legendFormat": "5xx %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Errores del lado del servidor sobre el total, ventana de 5 minutos. Línea roja: 1 %, umbral de la alerta ApiErroresAltos."
+    },
+    {
+      "id": 31,
+      "type": "row",
+      "title": "Comparación entre bases (tiempo de cada llamada desde la API)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "title": "Latencia p95 de cada base",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, dependencia) (rate(fixture2030_dependencia_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{dependencia}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Medido en adapters/base.py alrededor de cada llamada al driver (RF7). Si la latencia de la API sube y esta no, el cuello está en la API; si suben las dos, en la base."
+    },
+    {
+      "id": 33,
+      "title": "Llamadas por segundo a cada base, por resultado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (dependencia, resultado) (rate(fixture2030_dependencia_duration_seconds_count[1m]))",
+          "legendFormat": "{{dependencia}} {{resultado}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "ok = respondió; no_disponible / timeout = la API devolvió 503/504 por esa base; dominio:* = error de negocio (p. ej. no encontrado)."
+    },
+    {
       "id": 14,
       "type": "row",
       "title": "MongoDB (Hito 4)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 11,
+        "y": 29,
         "w": 24,
         "h": 1
       },
@@ -252,7 +664,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 12,
+        "y": 30,
         "w": 12,
         "h": 8
       },
@@ -299,7 +711,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 12,
+        "y": 30,
         "w": 12,
         "h": 8
       },
@@ -343,7 +755,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 38,
         "w": 24,
         "h": 1
       },
@@ -359,7 +771,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 39,
         "w": 8,
         "h": 8
       },
@@ -406,7 +818,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 21,
+        "y": 39,
         "w": 8,
         "h": 8
       },
@@ -455,7 +867,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 21,
+        "y": 39,
         "w": 8,
         "h": 8
       },
@@ -525,7 +937,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 29,
+        "y": 47,
         "w": 24,
         "h": 1
       },
@@ -541,7 +953,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 30,
+        "y": 48,
         "w": 8,
         "h": 8
       },
@@ -614,7 +1026,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 30,
+        "y": 48,
         "w": 8,
         "h": 8
       },
@@ -661,7 +1073,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 30,
+        "y": 48,
         "w": 8,
         "h": 8
       },
@@ -709,7 +1121,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 38,
+        "y": 56,
         "w": 12,
         "h": 8
       },
@@ -756,7 +1168,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 38,
+        "y": 56,
         "w": 12,
         "h": 8
       },
@@ -819,7 +1231,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 46,
+        "y": 64,
         "w": 24,
         "h": 1
       },
@@ -835,7 +1247,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 47,
+        "y": 65,
         "w": 8,
         "h": 8
       },
@@ -901,7 +1313,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 47,
+        "y": 65,
         "w": 8,
         "h": 8
       },
@@ -950,7 +1362,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 47,
+        "y": 65,
         "w": 8,
         "h": 8
       },
@@ -1011,7 +1423,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 55,
+        "y": 73,
         "w": 12,
         "h": 8
       },
@@ -1067,7 +1479,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 55,
+        "y": 73,
         "w": 12,
         "h": 8
       },
@@ -1128,7 +1540,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 63,
+        "y": 81,
         "w": 24,
         "h": 1
       },
@@ -1144,7 +1556,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 64,
+        "y": 82,
         "w": 12,
         "h": 8
       },
@@ -1191,7 +1603,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 64,
+        "y": 82,
         "w": 12,
         "h": 8
       },
