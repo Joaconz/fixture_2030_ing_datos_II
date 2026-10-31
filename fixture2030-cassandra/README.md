@@ -147,6 +147,14 @@ docker compose down -v && rm -rf ~/docker/data/cassandra && mkdir -p ~/docker/da
 
 **Empezar de cero (borra todo).** `down -v` borra el volumen nombrado pero **no** los archivos de la carpeta del host, por eso hacen falta los tres pasos de arriba (mismo patrón que Redis, Hito 7).
 
+**Métricas para Prometheus (Hito 13).** Para que el monitoreo de [`fixture2030-hito-13-monitoreo`](../fixture2030-hito-13-monitoreo/README.md) lea las métricas internas de Cassandra, levantar el nodo con el override que carga el agente JMX de Prometheus (expone `http://localhost:7070/metrics`):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.monitoreo.yml up -d
+```
+
+El override solo agrega el agente (lo descarga de Maven Central y verifica su SHA-256) y el puerto 7070; el esquema, los datos y el volumen son los mismos. Pasar de un modo al otro recrea el contenedor sin perder datos.
+
 ---
 
 ## 8. Reproducir el hito desde cero (RNF3)

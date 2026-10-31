@@ -1,0 +1,149 @@
+# ============================================================
+#  Fixture 2030 — Hito 13 · Monitoreo final
+#  Prometheus + Grafana + node-exporter (Docker Compose)
+#  Ingeniería de Datos II — Pazos / Núñez / Frisoli
+# ------------------------------------------------------------
+#  Base: docker-compose.yml de la Clase 14 (stack "dash").
+#  Cambios respecto del original, para respetar la corrección del Hito 6
+#  ("cumplir literalmente los requisitos de infraestructura"):
+#    - Persistencia en VOLÚMENES NOMBRADOS respaldados por las carpetas
+#      ~/docker/data/prometheus y ~/docker/data/grafana (mismo patrón que
+#      Redis, Cassandra, InfluxDB e IRIS). Las carpetas tienen que existir
+#      antes del primer `up`:
+#          mkdir -p ~/docker/data/prometheus ~/docker/data/grafana
+#    - Grafana se configura por provisioning (datasource Prometheus y
+#      dashboards versionados en ./grafana): no hay que tocar nada a mano.
+#
+#  Accesos:
+#    Grafana     http://localhost:3000   (admin / fixture2030, dev)
+#    Prometheus  http://localhost:9090
+#    node-exp.   http://localhost:9100/metrics
+# ============================================================
+
+name: dash
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fixture2030-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # Permite recargar prometheus.yml sin reiniciar:
+      #   curl -X POST http://localhost:9090/-/reload
+      - '--web.enable-lifecycle'
+    extra_hosts:
+      # Para scrapear la API (uvicorn en la notebook) en Linux también.
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fixture2030-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Credenciales de DESARROLLO (las de la Clase 14). Se pueden pisar
+      # desde un .env no versionado: GRAFANA_ADMIN_PASSWORD=...
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-fixture2030}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # El dashboard del Fixture abre como página de inicio.
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/fixture2030-monitoreo.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: fixture2030-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+
+  # ----------------------------------------------------------
+  #  Exporters de las bases. Cada módulo (Hitos 4-8) tiene su propio
+  #  compose y su propia red, así que los exporters llegan a las bases
+  #  por los puertos publicados en la notebook (host.docker.internal).
+  #  No hace falta tocar los compose de los otros hitos.
+  # ----------------------------------------------------------
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.44.0
+    container_name: fixture2030-mongodb-exporter
+    restart: unless-stopped
+    command:
+      - '--mongodb.uri=mongodb://host.docker.internal:27017/?directConnection=true&serverSelectionTimeoutMS=2000'
+      - '--collect-all'
+      - '--compatible-mode'
+      # Arranca aunque Mongo esté apagado; mongodb_up queda en 0.
+      - '--mongodb.direct-connect'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9216:9216"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: fixture2030-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://host.docker.internal:6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9121:9121"
+
+  # Sondas de disponibilidad para las cinco bases (panel "Estado de
+  # salud por base"): TCP para Mongo, Redis y Cassandra; HTTP para
+  # Neo4j e InfluxDB. Cassandra y Neo4j no tienen exporter acá: ver README.
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: fixture2030-blackbox-exporter
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/blackbox/blackbox.yml'
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9115:9115"
+
+volumes:
+  # Volúmenes NOMBRADOS respaldados por la carpeta de la convención de la
+  # materia. `docker compose down` conserva los datos; `down -v` borra el
+  # volumen de Docker pero NO los archivos de la carpeta del host.
+  prometheus_data:
+    name: fixture2030_prometheus_data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PROMETHEUS_DATA_DIR:-${HOME}/docker/data/prometheus}
+  grafana_data:
+    name: fixture2030_grafana_data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${GRAFANA_DATA_DIR:-${HOME}/docker/data/grafana}

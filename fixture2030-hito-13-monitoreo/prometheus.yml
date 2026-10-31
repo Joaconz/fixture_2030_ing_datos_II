@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Métricas internas de MongoDB (Hito 4) y Redis (Hito 7).
+  - job_name: mongodb
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+        labels:
+          base: mongodb
+
+  - job_name: redis
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          base: redis
+
+  # Cassandra (Hito 6): agente JMX dentro de la JVM. Solo existe si Cassandra
+  # se levantó con fixture2030-cassandra/docker-compose.monitoreo.yml.
+  - job_name: cassandra
+    static_configs:
+      - targets: ['host.docker.internal:7070']
+        labels:
+          base: cassandra
+
+  # Disponibilidad de las cinco bases vía blackbox-exporter.
+  # Cada target es "<módulo>|<dirección>"; el relabel lo separa en
+  # el parámetro module, el parámetro target y la etiqueta "base".
+  - job_name: salud-bases
+    metrics_path: /probe
+    static_configs:
+      - targets: ['tcp_connect|host.docker.internal:27017']
+        labels: {base: mongodb}
+      - targets: ['tcp_connect|host.docker.internal:6379']
+        labels: {base: redis}
+      - targets: ['tcp_connect|host.docker.internal:9042']
+        labels: {base: cassandra}
+      - targets: ['http_2xx|http://host.docker.internal:7474']
+        labels: {base: neo4j}
+      - targets: ['http_2xx|http://host.docker.internal:8181/health']
+        labels: {base: influxdb}
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^|]+)\|(.+)'
+        target_label: __param_module
+        replacement: '$1'
+      - source_labels: [__address__]
+        regex: '([^|]+)\|(.+)'
+        target_label: __param_target
+        replacement: '$2'
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Cuando la API integrada (Hito 10) exponga /metrics,
+  # descomentar y adaptar el target:
+  # - job_name: fixture-api
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ['host.docker.internal:8000']

@@ -1,0 +1,13 @@
+# Carga los .json de /var/lib/grafana/dashboards (montado desde
+# ./grafana/dashboards) en la carpeta "Fixture 2030".
+apiVersion: 1
+
+providers:
+  - name: fixture2030
+    folder: Fixture 2030
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
