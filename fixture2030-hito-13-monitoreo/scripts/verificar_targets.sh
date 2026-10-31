@@ -24,7 +24,8 @@ print("|---|---|---|---|---|---|")
 for t in sorted(json.load(sys.stdin)["data"]["activeTargets"], key=lambda t: (t["labels"]["job"], t["labels"].get("base", ""))):
     l = t["labels"]
     err = (t.get("lastError") or "").replace("|", "/")[:90]
-    print(f"| {l[\"job\"]} | {l.get(\"base\") or l.get(\"capa\") or \"-\"} | {l[\"instance\"]} | {t[\"health\"].upper()} | {t[\"lastScrape\"][:19]} | {err} |")'
+    print("| %s | %s | %s | %s | %s | %s |" % (l["job"], l.get("base") or l.get("capa") or "-",
+          l["instance"], t["health"].upper(), t["lastScrape"][:19], err))'
   echo
   echo "## Disponibilidad por base (sonda del blackbox-exporter)"
   echo

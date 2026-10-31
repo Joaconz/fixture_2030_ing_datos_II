@@ -258,6 +258,10 @@
       ],
       "transformations": [
         {
+          "id": "merge",
+          "options": {}
+        },
+        {
           "id": "organize",
           "options": {
             "includeByName": {
@@ -1014,7 +1018,7 @@
           "mode": "multi"
         }
       },
-      "description": "Latencia vista por el nodo coordinador (no incluye la red ni la API). Percentiles de una ventana móvil de Cassandra (~1-5 min). Línea roja: 100 ms, umbral experimental."
+      "description": "Latencia vista por el nodo coordinador (no incluye la red ni la API). Los percentiles los calcula Cassandra dando más peso a lo reciente: reaccionan en minutos. Línea roja: 100 ms, umbral experimental."
     },
     {
       "id": 23,

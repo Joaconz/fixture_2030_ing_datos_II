@@ -36,6 +36,8 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      # Retención explícita (es el valor por defecto): 15 días de series.
+      - '--storage.tsdb.retention.time=15d'
       # Permite recargar prometheus.yml sin reiniciar:
       #   curl -X POST http://localhost:9090/-/reload
       - '--web.enable-lifecycle'

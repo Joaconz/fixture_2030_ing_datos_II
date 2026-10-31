@@ -1,80 +1,117 @@
-# Hito 13 · Monitoreo con Prometheus + Grafana
+# Hito 13 · Monitoreo con Prometheus + Grafana y defensa final
 
-Stack de observabilidad de la Clase 14: Prometheus recolecta (modelo *pull*), Grafana visualiza y los exporters traducen las métricas del host y de las bases a formato Prometheus.
+Capa de observabilidad del Fixture 2030: **Prometheus** recolecta métricas (modelo *pull*) de la API y de las bases, **Grafana** las muestra en un dashboard provisionado, y un conjunto de **alertas** dice cuándo actuar. Sobre esa evidencia se arma la defensa ante la FIFA.
+
+| Qué buscás | Dónde |
+|---|---|
+| Qué se monitorea y cómo | [`docs/inventario_de_componentes.md`](docs/inventario_de_componentes.md) |
+| Configuración de Prometheus, consultas PromQL, UP/DOWN | [`docs/metricas_y_consultas.md`](docs/metricas_y_consultas.md) |
+| Alertas y por qué cada umbral | [`docs/alertas_y_umbral.md`](docs/alertas_y_umbral.md) |
+| Evidencia, qué se midió y qué no | [`docs/limitaciones_y_evidencia.md`](docs/limitaciones_y_evidencia.md) |
+| Qué significa cada panel | [`grafana/README.md`](grafana/README.md) |
+| Decisiones de arquitectura y defensa | [`docs/decisiones_de_arquitectura.md`](docs/decisiones_de_arquitectura.md), [`docs/defensa_final.md`](docs/defensa_final.md), [`defensa/`](defensa/) |
 
 ```
 fixture2030-hito-13-monitoreo/
-├── docker-compose.yml                       # prometheus, grafana y exporters
-├── prometheus.yml                           # targets que scrapea Prometheus
-├── blackbox.yml                             # módulos de sonda (TCP / HTTP) del blackbox-exporter
-└── grafana/
-    ├── provisioning/
-    │   ├── datasources/prometheus.yml       # datasource "Prometheus" (uid fijo)
-    │   └── dashboards/fixture2030.yml       # carga los .json de grafana/dashboards
-    └── dashboards/fixture2030-monitoreo.json
+├── docker-compose.yml          prometheus, grafana, node-exporter, exporters de MongoDB y Redis, blackbox
+├── prometheus.yml              jobs y targets (scrape cada 15 s)
+├── blackbox.yml                sondas TCP / HTTP de disponibilidad
+├── prometheus/reglas-o-alertas.yml
+├── grafana/{provisioning,dashboards,README.md}
+├── scripts/                    iniciar_monitoreo · verificar_targets · ejecutar_prueba_controlada · limpiar_entorno
+├── docs/                       inventario, métricas, alertas, limitaciones, decisiones, defensa
+├── evidencia/                  targets, prueba de falla, capturas del dashboard
+└── defensa/                    guion de 20 minutos, demo, presentación
 ```
 
-## Levantar
+Fuera de esta carpeta, el hito también cambió:
+- [`../fixture2030-hito10-api/app/core/metricas.py`](../fixture2030-hito10-api/app/core/metricas.py): la API expone `GET /metrics` (RF4).
+- [`../fixture2030-cassandra/docker-compose.monitoreo.yml`](../fixture2030-cassandra/docker-compose.monitoreo.yml): override que agrega el agente JMX de Prometheus a Cassandra.
+
+## 1. Requisitos
+
+Docker Desktop (probado en macOS, Apple Silicon), `curl`, `python3` y `bash`. Para la API: Python 3.12 (`uv` o `venv`, lo resuelve `iniciar_api.sh`). Puertos libres: 3000, 9090, 9100, 9115, 9121, 9216, 7070 y 8000.
+
+## 2. Preparar la demo (una sola vez por notebook)
+
+Las credenciales de laboratorio **no están en el repo** (RNF6). Sin ellas, Neo4j e InfluxDB responden 503:
 
 ```bash
-mkdir -p ~/docker/data/prometheus ~/docker/data/grafana
-docker compose up -d
+cp fixture2030-neo4j/.env.example fixture2030-neo4j/.env        # contraseña de desarrollo de Neo4j
+sh fixture2030-influxdb/scripts/inicializacion.sh                # crea el token de InfluxDB en secrets/ (se muestra UNA vez)
 ```
 
-| Servicio | URL | Notas |
-|---|---|---|
-| Grafana | http://localhost:3000 | `admin` / `fixture2030` (desarrollo; se pisan con `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` en un `.env`) |
-| Prometheus | http://localhost:9090 | *Status → Targets* muestra el estado de cada scrape |
-| node-exporter | http://localhost:9100/metrics | métricas del host |
-| mongodb-exporter | http://localhost:9216/metrics | métricas de MongoDB |
-| redis-exporter | http://localhost:9121/metrics | métricas de Redis |
-| blackbox-exporter | http://localhost:9115 | sondas de disponibilidad de las cinco bases |
+(Desde la raíz del repositorio.) Si InfluxDB ya tenía un token que se perdió, ver [`../fixture2030-influxdb/secrets/README.md`](../fixture2030-influxdb/secrets/README.md).
 
-Grafana arranca con todo configurado por *provisioning*: el datasource Prometheus y el dashboard **Fixture 2030 — Monitoreo** (página de inicio, carpeta *Fixture 2030*). No hay que configurar nada desde la UI.
+## 3. Levantar la plataforma
 
-## Persistencia
-
-Igual que Redis, Cassandra, InfluxDB e IRIS: **volúmenes nombrados** (`fixture2030_prometheus_data`, `fixture2030_grafana_data`) respaldados por `~/docker/data/prometheus` y `~/docker/data/grafana`. Las carpetas tienen que existir antes del primer `up`. `docker compose down` conserva los datos.
-
-## Fuentes de métricas
-
-| Job | Exporter | Qué mide |
-|---|---|---|
-| `prometheus` | el propio Prometheus | su TSDB y sus scrapes |
-| `node-exporter` | `prom/node-exporter` | CPU, memoria, disco y red del host |
-| `mongodb` | `percona/mongodb_exporter` | operaciones por tipo, conexiones (`mongodb_up`) |
-| `redis` | `oliver006/redis_exporter` | comandos/s, hits y misses de la caché, memoria, clientes (`redis_up`) |
-| `cassandra` | `jmx_prometheus_javaagent` dentro de la JVM de Cassandra (`host.docker.internal:7070`) | latencia p50/p99 y peticiones/s de lecturas y escrituras, timeouts / unavailables / fallas, disco por tabla, tareas pendientes |
-| `salud-bases` | `prom/blackbox-exporter` | `probe_success` por base: TCP a MongoDB (27017), Redis (6379) y Cassandra (9042); HTTP a Neo4j (7474) e InfluxDB (`/health`, 8181) |
-
-**Cómo llegan a las bases.** Cada módulo (Hitos 4 a 8) tiene su propio compose y su propia red, y se levanta por separado. Los exporters no se suman a esas redes: llegan por los puertos publicados en la notebook a través de `host.docker.internal`. Así este stack arranca aunque las bases estén apagadas (se ven como CAÍDA) y no hubo que tocar los compose de otros hitos. Está probado en Docker Desktop (macOS); en Linux, Redis e InfluxDB publican solo en `127.0.0.1` y no son alcanzables desde `host-gateway`.
-
-**Cassandra necesita su override.** Cassandra publica métricas solo por JMX y la imagen oficial deja JMX escuchando dentro del contenedor. En lugar de abrir JMX remoto, el override [`fixture2030-cassandra/docker-compose.monitoreo.yml`](../fixture2030-cassandra/docker-compose.monitoreo.yml) carga el agente oficial de Prometheus en la JVM, que expone `/metrics` en el puerto 7070. Sin el override, Cassandra funciona igual que en el Hito 6 y el target `cassandra` queda DOWN (la sonda de `salud-bases` sigue funcionando):
+Cada base se levanta desde su carpeta; el monitoreo no depende del orden (lo que esté apagado se ve CAÍDO). Desde la raíz del repositorio:
 
 ```bash
-cd ../fixture2030-cassandra
-docker compose -f docker-compose.yml -f docker-compose.monitoreo.yml up -d
+(cd fixture2030-mongodb && docker compose up -d)
+(cd fixture2030-neo4j && docker compose up -d)
+(cd fixture2030-cassandra && docker compose -f docker-compose.yml -f docker-compose.monitoreo.yml up -d)
+(cd fixture2030-redis && docker compose up -d)
+(cd fixture2030-influxdb && docker compose up -d)
 ```
 
-**Lo que no tiene métricas internas (solo disponibilidad):**
-- **Neo4j:** el endpoint Prometheus (`server.metrics.prometheus.enabled`) es solo de Enterprise; usamos Community.
-- **InfluxDB 3 Core:** tiene `/metrics` propio, pero exige el token de administración.
+**Cargar datos de laboratorio** (idempotentes; solo la primera vez o para restaurar): cada módulo lo explica en su README — MongoDB [`load/seed.js`](../fixture2030-mongodb/README.md), Neo4j [`estructura.cypher` + `carga.cypher`](../fixture2030-neo4j/README.md), Cassandra [esquema y muestra](../fixture2030-cassandra/README.md), Redis [`carga_muestra.sh`](../fixture2030-redis/README.md), InfluxDB [`inicializacion.sh` y carga](../fixture2030-influxdb/README.md).
 
-## Dashboard
-
-- **Estado de salud:** `up` por target (OK / CAÍDO), cantidad de targets arriba y **estado de salud por base** (`probe_success`, OK / CAÍDA). Cada target nuevo de `prometheus.yml` aparece solo.
-- **MongoDB:** operaciones por segundo por tipo y conexiones abiertas.
-- **Cassandra:** latencia p50/p99 (umbral experimental de 100 ms marcado en rojo), peticiones por segundo, errores, disco por tabla y tareas pendientes.
-- **Redis:** comandos por segundo, hit ratio de la caché, memoria y clientes conectados.
-- **Host:** CPU, memoria, disco, red y carga (node-exporter).
-- **Prometheus:** duración de cada scrape y muestras ingeridas por segundo.
-
-## Agregar targets
-
-Editar `prometheus.yml` y recargar sin reiniciar:
+**API** (en otra terminal; queda en primer plano):
 
 ```bash
-curl -X POST http://localhost:9090/-/reload
+bash fixture2030-hito10-api/scripts/iniciar_api.sh
 ```
 
-La API del Hito 10 todavía no expone `/metrics`; el job `fixture-api` (`host.docker.internal:8000`) queda comentado hasta que lo haga.
+**Monitoreo:**
+
+```bash
+bash fixture2030-hito-13-monitoreo/scripts/iniciar_monitoreo.sh
+```
+
+| Servicio | URL |
+|---|---|
+| Grafana | http://localhost:3000 — `admin` / `fixture2030` (desarrollo) — abre en el dashboard *Fixture 2030 — Monitoreo* |
+| Prometheus | http://localhost:9090 — *Status → Targets* y *Alerts* |
+| Métricas de la API | http://localhost:8000/metrics |
+| Métricas de Cassandra | http://localhost:7070/metrics |
+
+## 4. Verificar
+
+```bash
+bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh            # tabla de targets y bases; código 1 si hay alguno DOWN
+bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh --guardar  # además la guarda en evidencia/
+```
+
+Esperado con todo arriba: 11 targets UP y las 5 bases con `probe_success = 1`.
+
+## 5. Repetir la demostración
+
+1. **Estado:** dashboard, fila *Estado de salud* (todo OK).
+2. **Tráfico:** usar el front, Swagger (http://localhost:8000/docs) o la colección de Postman del Hito 10; los paneles de la API y de *Comparación entre bases* se mueven.
+3. **Falla controlada** (≈ 4 minutos; solo `docker stop` / `docker start`, no toca datos):
+
+   ```bash
+   bash fixture2030-hito-13-monitoreo/scripts/ejecutar_prueba_controlada.sh redis   # o mongodb | cassandra | neo4j
+   ```
+
+   Durante la prueba: la base pasa a CAÍDA en ~10 s, la alerta `BaseNoResponde` a firing en ~70 s, y la API responde 503 solo en las rutas de esa base. Deja el informe en `evidencia/prueba_de_falla_<base>_<fecha>.md`.
+
+Guion completo y plan B si algo falla en vivo: [`defensa/demo.md`](defensa/demo.md).
+
+## 6. Limpiar
+
+```bash
+bash fixture2030-hito-13-monitoreo/scripts/limpiar_entorno.sh                 # apaga el monitoreo, conserva las series
+bash fixture2030-hito-13-monitoreo/scripts/limpiar_entorno.sh --borrar-datos  # además borra SOLO los datos de Prometheus y Grafana (pide "si")
+```
+
+Nunca borra volúmenes de las bases (RNF11). Cada base se apaga desde su carpeta con `docker compose down` (conserva los datos).
+
+## 7. Persistencia
+
+Igual que Redis, Cassandra, InfluxDB e IRIS: **volúmenes nombrados** (`fixture2030_prometheus_data`, `fixture2030_grafana_data`) respaldados por `~/docker/data/prometheus` y `~/docker/data/grafana` (las crea `iniciar_monitoreo.sh`). Retención de Prometheus: 15 días.
+
+## 8. Cómo llegan los exporters a las bases
+
+Cada módulo tiene su propio compose y su propia red. Los exporters no se suman a esas redes: llegan por los puertos publicados en la notebook a través de `host.docker.internal`. Así el monitoreo arranca aunque las bases estén apagadas y no hubo que tocar los compose de otros hitos (salvo el override opcional de Cassandra). Probado en Docker Desktop (macOS); en Linux, Redis e InfluxDB publican solo en `127.0.0.1` y no son alcanzables así (ver [limitaciones](docs/limitaciones_y_evidencia.md)).

@@ -33,7 +33,7 @@ docker ps --format '{{.Names}}' | grep -qx "$CONT" || falla "$CONT no está corr
 
 API_OK=0; curl -fsS -m 3 "$API_URL/health" >/dev/null 2>&1 && API_OK=1
 TRAFICO_PID=""
-terminar() { [ -n "$TRAFICO_PID" ] && kill "$TRAFICO_PID" 2>/dev/null || true; }
+terminar() { [ -n "$TRAFICO_PID" ] && { kill "$TRAFICO_PID" 2>/dev/null; wait "$TRAFICO_PID" 2>/dev/null; } || true; }
 trap terminar EXIT
 if [ "$API_OK" = 1 ]; then
   ( while true; do
@@ -102,7 +102,7 @@ print("|---" * (len(res) + 1) + "|")
 filas = {}
 for i, r in enumerate(res):
     for ts, v in r["values"]: filas.setdefault(ts, [""] * len(res))[i] = f"{float(v):.3g}"
-for ts in sorted(filas): print(f"| {datetime.datetime.utcfromtimestamp(ts):%H:%M:%S} | " + " | ".join(filas[ts]) + " |")'
+for ts in sorted(filas): print(f"| {datetime.datetime.fromtimestamp(ts, datetime.timezone.utc):%H:%M:%S} | " + " | ".join(filas[ts]) + " |")'
 }
 
 mkdir -p "$EVID"
@@ -129,6 +129,8 @@ INF="$EVID/prueba_de_falla_${BASE}_$(sello).md"
   echo "| antes | durante | después |"
   echo "|---|---|---|"
   echo "| $API_ANTES | $API_DURANTE | $API_DESPUES |"
+  echo
+  echo "Un 2xx o un 404 de dominio (p. ej. \`SESSION_NOT_FOUND\`) significa que la base respondió; 503 \`DEPENDENCY_UNAVAILABLE\` o 504 significa que la API no pudo consultarla."
   echo
   echo "## Series de Prometheus en el intervalo (paso 15 s)"
   echo
