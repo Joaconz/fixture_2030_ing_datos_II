@@ -1,0 +1,20 @@
+# Módulos de sonda del blackbox-exporter (los usa el job "salud-bases"
+# de prometheus.yml).
+#
+# preferred_ip_protocol: ip4 en los dos módulos: por defecto blackbox
+# prueba IPv6 primero y en Docker Desktop host.docker.internal resuelve
+# a una IPv6 sin ruta, así que la sonda falla aunque la base esté arriba.
+modules:
+  # El puerto acepta conexiones (Mongo, Redis, Cassandra).
+  tcp_connect:
+    prober: tcp
+    timeout: 3s
+    tcp:
+      preferred_ip_protocol: ip4
+
+  # El endpoint HTTP responde 2xx (Neo4j Browser, /health de InfluxDB).
+  http_2xx:
+    prober: http
+    timeout: 3s
+    http:
+      preferred_ip_protocol: ip4

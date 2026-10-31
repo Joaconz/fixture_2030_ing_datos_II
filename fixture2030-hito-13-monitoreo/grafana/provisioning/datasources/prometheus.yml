@@ -1,0 +1,14 @@
+# Datasource Prometheus provisionado al arrancar Grafana.
+# El uid fijo lo referencian los dashboards de ../../dashboards.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus-fixture2030
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s

@@ -15,6 +15,8 @@ from contextvars import ContextVar
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.metricas import SIN_RUTA, registrar_request
+
 HEADER = "X-Request-Id"
 _PATRON = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 _request_id: ContextVar[str] = ContextVar("request_id", default="-")
@@ -71,6 +73,9 @@ class RequestIdMiddleware:
             await respuesta_error_interno()(scope, receive, _send)
         finally:
             ruta = scope.get("route")
+            duracion_s = time.perf_counter() - inicio
+            registrar_request(scope.get("method", "-"), getattr(ruta, "path", None) or SIN_RUTA,
+                              estado["status"], duracion_s)
             log.info(
                 "request",
                 extra={
@@ -80,7 +85,7 @@ class RequestIdMiddleware:
                     "ruta": getattr(ruta, "path", None) or scope.get("path"),
                     "path": scope.get("path"),
                     "status": estado["status"],
-                    "duracion_ms": round((time.perf_counter() - inicio) * 1000, 1),
+                    "duracion_ms": round(duracion_s * 1000, 1),
                 },
             )
             _request_id.reset(token)
