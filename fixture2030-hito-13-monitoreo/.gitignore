@@ -1,0 +1,5 @@
+# Credenciales locales (RNF6): p. ej. GRAFANA_ADMIN_PASSWORD
+.env
+.env.*
+# Exportaciones crudas que pueden traer datos sin sanear; lo versionado va en evidencia/
+evidencia/crudo/

@@ -1,0 +1,113 @@
+# ============================================================
+#  Fixture 2030 — Hito 13 · Métricas de Cassandra para Prometheus
+#  Override OPCIONAL del docker-compose.yml del Hito 6.
+# ------------------------------------------------------------
+#  Cassandra publica sus métricas solo por JMX, y la imagen oficial deja
+#  JMX escuchando únicamente dentro del contenedor. En vez de abrir JMX
+#  remoto, se carga dentro de la JVM el agente oficial de Prometheus
+#  (jmx_prometheus_javaagent), que expone las métricas en HTTP:
+#      http://localhost:7070/metrics
+#
+#  Uso (desde fixture2030-cassandra/):
+#      docker compose -f docker-compose.yml -f docker-compose.monitoreo.yml up -d
+#  Sin el override, `docker compose up -d` levanta Cassandra igual que en
+#  el Hito 6 (sin agente). Cambiar de un modo al otro recrea el contenedor;
+#  los datos no se pierden porque viven en el volumen fixture2030_cassandra_data.
+#
+#  El agente NO se versiona (es un .jar): lo descarga el servicio
+#  `jmx-agent` de Maven Central a un volumen y verifica su SHA-256 antes
+#  de que arranque Cassandra. La configuración del agente va inline acá
+#  abajo (configs), así el override no depende de otros archivos.
+#  El agente solo LEE MBeans: no escribe en el keyspace (RNF5 del Hito 13).
+# ============================================================
+
+services:
+  jmx-agent:
+    image: curlimages/curl:latest
+    container_name: fixture2030-cassandra-jmx-agent
+    user: "0:0"
+    environment:
+      AGENT_URL: https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar
+      AGENT_SHA256: 7d61f737fd661610ccc14aea79764faa1ea94a340cbc8f0029b3d2edea3d80c1
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        if ! echo "$$AGENT_SHA256  /agent/jmx_prometheus_javaagent.jar" | sha256sum -c - >/dev/null 2>&1; then
+          curl -fsSL -o /agent/jmx_prometheus_javaagent.jar "$$AGENT_URL"
+          echo "$$AGENT_SHA256  /agent/jmx_prometheus_javaagent.jar" | sha256sum -c -
+        fi
+        chmod 644 /agent/jmx_prometheus_javaagent.jar
+    volumes:
+      - cassandra_jmx_agent:/agent
+    restart: "no"
+
+  cassandra:
+    depends_on:
+      jmx-agent:
+        condition: service_completed_successfully
+    environment:
+      # cassandra-env.sh agrega JVM_EXTRA_OPTS a la línea de la JVM.
+      JVM_EXTRA_OPTS: "-javaagent:/opt/jmx-agent/jmx_prometheus_javaagent.jar=7070:/etc/cassandra/jmx-exporter.yml"
+    ports:
+      - "${CASSANDRA_METRICS_PORT:-7070}:7070"
+    volumes:
+      - cassandra_jmx_agent:/opt/jmx-agent:ro
+    configs:
+      - source: jmx_exporter_config
+        target: /etc/cassandra/jmx-exporter.yml
+
+volumes:
+  cassandra_jmx_agent:
+    name: fixture2030_cassandra_jmx_agent
+
+configs:
+  jmx_exporter_config:
+    # Solo los MBeans que usa el dashboard: leer todo el árbol de Cassandra
+    # (miles de MBeans) hace cada scrape lento. Latencias en microsegundos
+    # en JMX, se pasan a segundos con valueFactor.
+    content: |
+      lowercaseOutputName: true
+      lowercaseOutputLabelNames: true
+      includeObjectNames:
+        - "org.apache.cassandra.metrics:type=ClientRequest,*"
+        - "org.apache.cassandra.metrics:type=Table,keyspace=fixture2030_comentarios,*"
+        - "org.apache.cassandra.metrics:type=Storage,*"
+        - "org.apache.cassandra.metrics:type=Compaction,*"
+        - "org.apache.cassandra.metrics:type=ThreadPools,*"
+      rules:
+        # Peticiones de clientes (coordinador): latencia, timeouts, fallas.
+        - pattern: 'org.apache.cassandra.metrics<type=ClientRequest, scope=([^,]+), name=(Latency)><>(\d+)thPercentile'
+          name: cassandra_clientrequest_latency_seconds
+          type: GAUGE
+          valueFactor: 0.000001
+          labels: {operacion: "$1", quantile: "0.$3"}
+        - pattern: 'org.apache.cassandra.metrics<type=ClientRequest, scope=([^,]+), name=(Latency)><>Count'
+          name: cassandra_clientrequest_total
+          type: COUNTER
+          labels: {operacion: "$1"}
+        - pattern: 'org.apache.cassandra.metrics<type=ClientRequest, scope=([^,]+), name=(Timeouts|Unavailables|Failures)><>Count'
+          name: cassandra_clientrequest_errores_total
+          type: COUNTER
+          labels: {operacion: "$1", tipo: "$2"}
+        # Tablas del keyspace del Fixture.
+        - pattern: 'org.apache.cassandra.metrics<type=Table, keyspace=([^,]+), scope=([^,]+), name=(ReadLatency|WriteLatency)><>Count'
+          name: cassandra_table_$3_total
+          type: COUNTER
+          labels: {keyspace: "$1", tabla: "$2"}
+        - pattern: 'org.apache.cassandra.metrics<type=Table, keyspace=([^,]+), scope=([^,]+), name=(LiveDiskSpaceUsed|LiveSSTableCount|EstimatedPartitionCount)><>(Count|Value)'
+          name: cassandra_table_$3
+          type: GAUGE
+          labels: {keyspace: "$1", tabla: "$2"}
+        # Nodo.
+        - pattern: 'org.apache.cassandra.metrics<type=Storage, name=Load><>Count'
+          name: cassandra_storage_load_bytes
+          type: GAUGE
+        - pattern: 'org.apache.cassandra.metrics<type=Compaction, name=PendingTasks><>Value'
+          name: cassandra_compaction_pending_tasks
+          type: GAUGE
+        - pattern: 'org.apache.cassandra.metrics<type=ThreadPools, path=([^,]+), scope=([^,]+), name=(PendingTasks|ActiveTasks)><>Value'
+          name: cassandra_threadpool_$3
+          type: GAUGE
+          labels: {path: "$1", pool: "$2"}

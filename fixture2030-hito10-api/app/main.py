@@ -22,6 +22,7 @@ from app.adapters.redis import RedisAdapter
 from app.config.settings import Settings, get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
+from app.core.metricas import RUTA_METRICAS, metricas
 from app.core.request_id import RequestIdMiddleware
 from app.routes import comentarios, equipos, estadisticas, partidos, salud, sesiones
 from app.services.salud import CacheSalud
@@ -83,6 +84,8 @@ def create_app() -> FastAPI:
     for r in (equipos.router, partidos.router, comentarios.router, sesiones.router,
               estadisticas.router, salud.router):
         app.include_router(r)
+    # Métricas para Prometheus (Hito 13): fuera del contrato OpenAPI.
+    app.add_route(RUTA_METRICAS, metricas, methods=["GET"], include_in_schema=False)
 
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origin_list,
                        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
