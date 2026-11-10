@@ -1,277 +1,255 @@
 import { useCallback, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { getEquipo, listJugadores, listPartidosDeEquipo } from '../api/endpoints'
-import { ETIQUETA_CONDICION, POSICIONES } from '../api/enums'
+import { POSICIONES } from '../api/enums'
 import type { Equipo, Jugador, Posicion } from '../api/types'
-import { EstadoPartidoBadge, SourceBadge } from '../components/Badges'
-import { ErrorPanel } from '../components/ErrorPanel'
+import { Cargando, EstadoDatoInvalido, EstadoError, EstadoNoDisponible, EstadoVacio } from '../components/Estados'
+import { FifaSearch } from '../components/FifaSearch'
+import { CodigoEquipo, FilaPartidoDeEquipo } from '../components/Fixture'
 import { Icon } from '../components/Icon'
-import { Panel } from '../components/Panel'
-import { EmptyState, Skeleton, Spinner } from '../components/States'
+import { Spinner } from '../components/States'
 import { useApi } from '../hooks/useApi'
 import { useCursorList } from '../hooks/useCursorList'
-import { formatFecha, formatFechaHoraUtc } from '../lib/time'
+import { validarCodigoFifa } from '../lib/fifa'
+import { ordenarPorFecha } from '../lib/partido'
+import { lineasDelPlantel, NOMBRE_LINEA, nombreCorto } from '../lib/plantel'
+import { formatFecha } from '../lib/time'
 
-function esColorCss(v: string): boolean {
-  return typeof CSS !== 'undefined' && CSS.supports('color', v)
+function Cabecera({ codigo }: { codigo: string }) {
+  const ficha = useApi(`equipo:${codigo}`, (s) => getEquipo(codigo, s))
+  const r = ficha.result
+
+  if (!r) {
+    return (
+      <section className="equipo-hero equipo-hero-cargando" aria-label={`Equipo ${codigo}`}>
+        <CodigoEquipo codigo={codigo} tamano="lg" />
+        <div className="equipo-hero-texto">
+          <h1>{codigo}</h1>
+          <Cargando lineas={2} etiqueta="Cargando la ficha…" />
+        </div>
+      </section>
+    )
+  }
+  if (!r.ok) {
+    return (
+      <section className="card card-pad" aria-labelledby="equipo-titulo">
+        <h1 id="equipo-titulo" className="titulo-seccion">
+          Equipo {codigo}
+        </h1>
+        <EstadoError error={r.error} onRetry={ficha.reload} recurso="la ficha de ese equipo" que="la ficha del equipo" buscarEquipo />
+      </section>
+    )
+  }
+  return <Hero equipo={r.data} />
 }
 
-function Ficha({ equipo }: { equipo: Equipo }) {
+function Hero({ equipo }: { equipo: Equipo }) {
   const colores = [equipo.colores?.principal, equipo.colores?.alternativo].filter(
-    (c): c is string => typeof c === 'string' && c !== '',
+    (c): c is string => typeof c === 'string' && c.trim() !== '',
   )
   return (
-    <dl className="kv-grid">
-      <div>
-        <dt>Confederación</dt>
-        <dd>{equipo.confederacion}</dd>
+    <section className="equipo-hero" aria-labelledby="equipo-titulo">
+      <div className="equipo-hero-id">
+        <CodigoEquipo codigo={equipo.codigo} tamano="lg" />
+        <div className="equipo-hero-texto">
+          <ul className="equipo-hero-chips" aria-label="Datos del equipo">
+            <li>{equipo.confederacion}</li>
+            <li>Grupo {equipo.grupo}</li>
+          </ul>
+          <h1 id="equipo-titulo">{equipo.nombre}</h1>
+          <p className="equipo-hero-sub">
+            {equipo.entrenador ? (
+              <>
+                Director técnico: <strong>{equipo.entrenador}</strong>
+              </>
+            ) : (
+              'Director técnico sin informar'
+            )}
+            {colores.length > 0 && (
+              <>
+                <span className="sep" aria-hidden="true" />
+                Colores: {colores.join(' y ')}
+              </>
+            )}
+          </p>
+        </div>
       </div>
-      <div>
-        <dt>Ranking FIFA</dt>
-        <dd className="num">#{equipo.rankingFifa}</dd>
-      </div>
-      <div>
-        <dt>Grupo</dt>
-        <dd>{equipo.grupo}</dd>
-      </div>
-      <div>
-        <dt>Entrenador</dt>
-        <dd>{equipo.entrenador ?? '—'}</dd>
-      </div>
-      <div>
-        <dt>Sede</dt>
-        <dd>{equipo.sede ?? '—'}</dd>
-      </div>
-      <div>
-        <dt>Jugadores</dt>
-        <dd className="num">{equipo.cantidadJugadores ?? '—'}</dd>
-      </div>
-      <div className="kv-wide">
-        <dt>Colores</dt>
-        <dd>
-          {colores.length === 0
-            ? '—'
-            : colores.map((c) => (
-                <span key={c} className="color-chip">
-                  {esColorCss(c) ? <span className="swatch" style={{ background: c }} aria-hidden="true" /> : null}
-                  {c}
-                </span>
-              ))}
-        </dd>
-      </div>
-    </dl>
+      <dl className="equipo-hero-datos">
+        <div>
+          <dt>Ranking FIFA</dt>
+          <dd className="num">{equipo.rankingFifa}</dd>
+        </div>
+        <div>
+          <dt>Grupo</dt>
+          <dd>{equipo.grupo}</dd>
+        </div>
+        <div>
+          <dt>Jugadores</dt>
+          <dd className="num">{equipo.cantidadJugadores ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Sede</dt>
+          <dd className="dd-texto">{equipo.sede ?? '—'}</dd>
+        </div>
+      </dl>
+    </section>
   )
 }
 
-function Plantel({ codigo, total }: { codigo: string; total: number | null }) {
+function TarjetaJugador({ j }: { j: Jugador }) {
+  return (
+    <li className="jugador" title={`${j.nombre} ${j.apellido}`}>
+      <span className="jugador-dorsal num">{j.dorsal}</span>
+      <span className="jugador-texto">
+        <span className="jugador-nombre">{nombreCorto(j)}</span>
+        <span className="jugador-sub num">Nac. {formatFecha(j.fechaNacimiento)}</span>
+      </span>
+    </li>
+  )
+}
+
+function Plantel({ codigo }: { codigo: string }) {
   const [posicion, setPosicion] = useState<Posicion | null>(null)
   const fetchPage = useCallback(
-    (cursor: string | null, signal: AbortSignal) => listJugadores(codigo, { posicion, limit: 8, cursor }, signal),
+    (cursor: string | null, signal: AbortSignal) => listJugadores(codigo, { posicion, limit: 24, cursor }, signal),
     [codigo, posicion],
   )
   const lista = useCursorList<Jugador>(`plantel:${codigo}:${posicion ?? '*'}`, fetchPage, (j) => j.dni)
+  const lineas = lineasDelPlantel(lista.items)
 
   return (
-    <Panel
-      title="Plantel"
-      id="plantel"
-      badges={<SourceBadge fuente="MongoDB" rol="jugadores" />}
-      meta={lista.meta}
-      actions={
-        <button type="button" className="btn btn-ghost btn-sm" onClick={lista.reload} aria-label="Recargar plantel">
-          <Icon name="refresh" size={16} />
-        </button>
-      }
-    >
-      <fieldset className="segmented" aria-describedby="plantel-ayuda">
-        <legend className="sr-only">Filtrar por posición</legend>
-        {[null, ...POSICIONES].map((p) => (
-          <label key={p ?? 'todas'} className={posicion === p ? 'seg active' : 'seg'}>
-            <input
-              type="radio"
-              name="posicion"
-              value={p ?? ''}
-              checked={posicion === p}
-              onChange={() => setPosicion(p)}
-            />
-            {p ?? 'Todas'}
-          </label>
-        ))}
-      </fieldset>
-      <p id="plantel-ayuda" className="help">
-        Páginas de 8 jugadores ordenadas por dorsal; “Cargar más” usa el <code className="mono">nextCursor</code> de la
-        página anterior.
-      </p>
+    <section className="card" aria-labelledby="plantel-titulo">
+      <header className="card-head">
+        <div>
+          <h2 id="plantel-titulo">Plantel</h2>
+          <p className="card-sub">Convocados ordenados por línea y dorsal</p>
+        </div>
+        {!lista.loading && !lista.error && (
+          <span className="tag num" aria-live="polite">
+            {lista.items.length} {lista.items.length === 1 ? 'jugador' : 'jugadores'}
+            {lista.hasMore ? ' (hay más)' : ''}
+          </span>
+        )}
+      </header>
+      <div className="card-body">
+        {!lista.error && (
+          <fieldset className="chips-filtro">
+            <legend className="sr-only">Filtrar por posición</legend>
+            {[null, ...POSICIONES].map((p) => (
+              <label key={p ?? 'todas'} className={posicion === p ? 'chip-filtro activo' : 'chip-filtro'}>
+                <input type="radio" name="posicion" checked={posicion === p} onChange={() => setPosicion(p)} />
+                {p ? NOMBRE_LINEA[p] : 'Todas'}
+              </label>
+            ))}
+          </fieldset>
+        )}
 
-      {lista.loading ? (
-        <Skeleton lines={5} label="Cargando plantel…" />
-      ) : lista.error ? (
-        <ErrorPanel error={lista.error} onRetry={lista.reload} recurso={`el equipo ${codigo}`} />
-      ) : lista.items.length === 0 ? (
-        <EmptyState title="Sin jugadores para este filtro" icon="users">
-          El equipo existe, pero no tiene jugadores con la posición elegida.
-        </EmptyState>
-      ) : (
-        <>
-          <div className="table-wrap">
-            <table className="table">
-              <caption className="sr-only">Jugadores de {codigo}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="num">
-                    Dorsal
-                  </th>
-                  <th scope="col">Jugador</th>
-                  <th scope="col">Posición</th>
-                  <th scope="col">Nacimiento</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lista.items.map((j) => (
-                  <tr key={j.dni}>
-                    <td className="num dorsal">{j.dorsal}</td>
-                    <td>
-                      <strong>{j.apellido}</strong>, {j.nombre}
-                    </td>
-                    <td>{j.posicion}</td>
-                    <td className="num">{formatFecha(j.fechaNacimiento)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="list-foot">
-            <span className="muted small" aria-live="polite">
-              {lista.items.length}
-              {posicion === null && total !== null ? ` de ${total}` : ''} jugadores · {lista.pages}{' '}
-              {lista.pages === 1 ? 'página' : 'páginas'}
-            </span>
-            {lista.hasMore ? (
-              <button type="button" className="btn btn-secondary" onClick={lista.loadMore} disabled={lista.loadingMore}>
-                {lista.loadingMore ? <Spinner label="Cargando…" /> : 'Cargar más'}
-              </button>
-            ) : (
-              <span className="muted small">No hay más páginas.</span>
+        {lista.loading ? (
+          <Cargando lineas={6} etiqueta="Cargando el plantel…" />
+        ) : lista.error ? (
+          <EstadoError error={lista.error} onRetry={lista.reload} recurso="el plantel de ese equipo" que="el plantel" />
+        ) : lineas.length === 0 ? (
+          <EstadoVacio titulo={posicion ? `Sin ${NOMBRE_LINEA[posicion].toLowerCase()} en el plantel` : 'El plantel está vacío'} icono="users">
+            El equipo existe, pero no tiene jugadores cargados{posicion ? ' en esa posición' : ''}.
+          </EstadoVacio>
+        ) : (
+          <>
+            {lineas.map((l) => (
+              <div key={l.posicion} className="linea">
+                <h3 className="label-titulo">{l.titulo}</h3>
+                <ul className="jugadores">
+                  {l.jugadores.map((j) => (
+                    <TarjetaJugador key={j.dni} j={j} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+            {lista.hasMore && (
+              <div className="card-acciones">
+                <button type="button" className="btn btn-secondary" onClick={lista.loadMore} disabled={lista.loadingMore}>
+                  {lista.loadingMore ? <Spinner label="Cargando…" /> : 'Ver más jugadores'}
+                </button>
+              </div>
             )}
-          </div>
-          {lista.moreError && <ErrorPanel error={lista.moreError} onRetry={lista.loadMore} compact />}
-        </>
-      )}
-    </Panel>
+            {lista.moreError && <EstadoError error={lista.moreError} onRetry={lista.loadMore} que="más jugadores" compacto />}
+          </>
+        )}
+      </div>
+    </section>
   )
 }
 
-function PartidosDelEquipo({ codigo }: { codigo: string }) {
-  const { loading, result, reload } = useApi(`partidos-eq:${codigo}`, (s) => listPartidosDeEquipo(codigo, 20, s))
+function Partidos({ codigo }: { codigo: string }) {
+  const { result, reload } = useApi(`partidos-eq:${codigo}`, (s) => listPartidosDeEquipo(codigo, 20, s))
   return (
-    <Panel
-      title="Partidos"
-      id="partidos-equipo"
-      badges={<SourceBadge fuente="Neo4j" rol="PARTICIPA_EN" />}
-      meta={result?.meta}
-      actions={
-        <button type="button" className="btn btn-ghost btn-sm" onClick={reload} aria-label="Recargar partidos">
-          <Icon name="refresh" size={16} />
-        </button>
-      }
-    >
-      {loading || !result ? (
-        <Skeleton lines={4} label="Cargando partidos…" />
-      ) : !result.ok ? (
-        <ErrorPanel error={result.error} onRetry={reload} recurso={`el equipo ${codigo} en el grafo`} />
-      ) : result.data.items.length === 0 ? (
-        <EmptyState title="Sin partidos" icon="ball">
-          El equipo está en el grafo pero no participa en ningún partido.
-        </EmptyState>
-      ) : (
-        <ul className="match-list">
-          {result.data.items.map((p) => {
-            const marcador =
-              p.golesLocal !== null && p.golesLocal !== undefined && p.golesVisitante !== null && p.golesVisitante !== undefined
-                ? `${p.golesLocal} – ${p.golesVisitante}`
-                : '– : –'
-            return (
+    <section className="card" aria-labelledby="partidos-titulo">
+      <header className="card-head">
+        <h2 id="partidos-titulo" className="con-icono">
+          <Icon name="calendar" size={20} />
+          Partidos en el Mundial 2030
+        </h2>
+      </header>
+      <div className="card-body">
+        {!result ? (
+          <Cargando lineas={4} etiqueta="Cargando los partidos…" />
+        ) : !result.ok ? (
+          <EstadoError error={result.error} onRetry={reload} recurso="partidos de ese equipo" que="los partidos" compacto />
+        ) : result.data.items.length === 0 ? (
+          <EstadoVacio titulo="Sin partidos" icono="ball" compacto>
+            Este equipo todavía no tiene partidos en el fixture.
+          </EstadoVacio>
+        ) : (
+          <ul className="lista-partidos">
+            {ordenarPorFecha(result.data.items).map((p) => (
               <li key={p.partidoId}>
-                <Link to={`/partidos/${encodeURIComponent(p.partidoId)}`} className="match-row">
-                  <span className="match-when">
-                    <span className="num">{formatFechaHoraUtc(p.fechaHora)}</span>
-                    <span className="muted small">
-                      {p.fase}
-                      {p.grupo ? ` · Grupo ${p.grupo}` : ''}
-                    </span>
-                  </span>
-                  <span className="match-vs">
-                    <span className="muted small">{ETIQUETA_CONDICION[p.condicion]} vs</span>
-                    <strong className="mono">{p.rivalCodigo}</strong>
-                  </span>
-                  <span className="match-score num" aria-label={`Marcador ${marcador}`}>
-                    {marcador}
-                  </span>
-                  <EstadoPartidoBadge estado={p.estado} />
-                  <code className="mono muted small match-id">{p.partidoId}</code>
-                  <Icon name="chevronRight" size={16} className="demo-chevron" />
-                </Link>
+                <FilaPartidoDeEquipo p={p} codigo={codigo} />
               </li>
-            )
-          })}
-        </ul>
-      )}
-    </Panel>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   )
 }
 
 export function EquipoPage() {
   const { codigo: raw = '' } = useParams()
-  const codigo = raw.toUpperCase()
-  const ficha = useApi(`equipo:${codigo}`, (s) => getEquipo(codigo, s))
-  const equipo = ficha.result?.ok ? ficha.result.data : null
+  const valido = validarCodigoFifa(raw)
 
+  if (!valido.ok) {
+    return (
+      <div className="page">
+        <section className="card card-pad" aria-labelledby="equipo-titulo">
+          <h1 id="equipo-titulo" className="titulo-seccion">
+            Buscar equipo
+          </h1>
+          <EstadoDatoInvalido accion={<FifaSearch valorInicial={raw} etiqueta="Código FIFA del equipo" />}>
+            <p>
+              “{raw}” no es un código FIFA. {valido.mensaje}
+            </p>
+          </EstadoDatoInvalido>
+        </section>
+      </div>
+    )
+  }
+  return <EquipoValido codigo={valido.codigo} />
+}
+
+function EquipoValido({ codigo }: { codigo: string }) {
   return (
     <div className="page">
-      <nav aria-label="Ruta" className="crumbs">
-        <Link to="/">Inicio</Link>
-        <Icon name="chevronRight" size={14} />
-        <span aria-current="page">Equipo {codigo}</span>
-      </nav>
-
-      <header className="page-head">
-        <div>
-          <p className="eyebrow mono">{codigo}</p>
-          <h1>{equipo ? equipo.nombre : `Equipo ${codigo}`}</h1>
+      <Cabecera codigo={codigo} />
+      <div className="grid-equipo">
+        <div className="col-principal">
+          <Plantel codigo={codigo} />
+          <EstadoNoDisponible titulo="Formación titular y posiciones del grupo">
+            Todavía no se publican el once titular, la tabla de posiciones ni los goles a favor y en contra.
+          </EstadoNoDisponible>
         </div>
-        <p className="note">
-          <Icon name="info" size={16} />
-          <span>
-            La ficha y el plantel vienen de <strong>MongoDB</strong>; los partidos, del grafo de <strong>Neo4j</strong>.
-            La API no cruza ambas bases por código de equipo, así que cada panel puede fallar por separado.
-          </span>
-        </p>
-      </header>
-
-      <div className="grid-2">
-        <Panel
-          title="Ficha"
-          id="ficha"
-          badges={<SourceBadge fuente="MongoDB" rol="equipos" />}
-          meta={ficha.result?.meta}
-          actions={
-            <button type="button" className="btn btn-ghost btn-sm" onClick={ficha.reload} aria-label="Recargar ficha">
-              <Icon name="refresh" size={16} />
-            </button>
-          }
-        >
-          {ficha.loading || !ficha.result ? (
-            <Skeleton lines={6} label="Cargando ficha…" />
-          ) : !ficha.result.ok ? (
-            <ErrorPanel error={ficha.result.error} onRetry={ficha.reload} recurso={`el equipo ${codigo}`} />
-          ) : (
-            <Ficha equipo={ficha.result.data} />
-          )}
-        </Panel>
-        <PartidosDelEquipo codigo={codigo} />
+        <aside className="col-lateral">
+          <Partidos codigo={codigo} />
+        </aside>
       </div>
-
-      <Plantel codigo={codigo} total={equipo?.cantidadJugadores ?? null} />
     </div>
   )
 }

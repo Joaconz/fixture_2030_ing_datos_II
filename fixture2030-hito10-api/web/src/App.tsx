@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { EquipoPage } from './pages/EquipoPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { MesaPage } from './pages/partido/MesaPage'
 import { PartidoPage } from './pages/partido/PartidoPage'
 import { SaludPage } from './pages/SaludPage'
 import { SesionPage } from './pages/SesionPage'
@@ -15,6 +16,10 @@ function EquipoRoute() {
 function PartidoRoute() {
   const { id = '' } = useParams()
   return <PartidoPage key={id} />
+}
+function MesaRoute() {
+  const { id = '' } = useParams()
+  return <MesaPage key={id} />
 }
 function SesionRoute() {
   const { id = '' } = useParams()
@@ -29,6 +34,8 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path="equipos/:codigo" element={<EquipoRoute />} />
           <Route path="partidos/:id" element={<PartidoRoute />} />
+          {/* Vistas de operación: fuera de la navegación del hincha, se llega por URL. */}
+          <Route path="partidos/:id/mesa" element={<MesaRoute />} />
           <Route path="sesiones/:id" element={<SesionRoute />} />
           <Route path="salud" element={<SaludPage />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -37,6 +37,13 @@ const PATHS = {
   ball: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5l4 2.9-1.5 4.6h-5L8 10.4zM12 3v4.5M21 10.4l-5 0M18 19.3l-3.5-4.3M6 19.3l3.5-4.3M3 10.4h5',
   key: 'M15.5 7.5a4.5 4.5 0 1 1-6.4 6.4 4.5 4.5 0 0 1 6.4-6.4zM15.5 7.5 21 2M18 5l3 3M12.3 10.7 3 20v2h2l9.3-9.3',
   external: 'M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  calendar: 'M4 5h16v16H4zM4 10h16M8 3v4M16 3v4',
+  arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
+  arrowRight: 'M5 12h14M12 5l7 7-7 7',
+  swap: 'M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7',
+  card: 'M7 3h10v18H7z',
+  shirt:
+    'M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.5 1.1l.9 3.3a1 1 0 0 0 1 .7H7v9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-9h2a1 1 0 0 0 1-.7l.9-3.3a1 1 0 0 0-.5-1.1z',
 } as const
 
 export type IconName = keyof typeof PATHS

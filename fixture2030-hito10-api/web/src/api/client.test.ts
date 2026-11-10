@@ -94,3 +94,23 @@ describe('cliente tipado', () => {
     if (!r.ok) expect(r.error.kind).toBe('network')
   })
 })
+
+describe('tope de espera del cliente', () => {
+  it('una API que no contesta termina en "sin conexión" en vez de cargar para siempre', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.resetModules()
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
+      const { run, api, CLIENT_TIMEOUT_MS } = await import('./client')
+      const pendiente = run(() => api.GET('/health'))
+      await vi.advanceTimersByTimeAsync(CLIENT_TIMEOUT_MS + 1)
+      const r = await pendiente
+      expect(r.ok).toBe(false)
+      if (r.ok) return
+      expect(r.error.kind).toBe('network')
+      expect(r.error.code).toBe('CLIENT_TIMEOUT')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dependencyFrom, kindFromStatus, nombreFuente, parseApiError, parseRetryAfter } from './errors'
+import { areaDeFuente, dependencyFrom, kindFromStatus, nombreFuente, parseApiError, parseRetryAfter } from './errors'
 
 const h = (o: Record<string, string>) => new Headers(o)
 
@@ -86,5 +86,16 @@ describe('helpers', () => {
     expect(parseRetryAfter('12')).toBe(12)
     expect(parseRetryAfter(null)).toBeNull()
     expect(parseRetryAfter('mañana')).toBeNull()
+  })
+})
+
+describe('areaDeFuente', () => {
+  it('traduce la fuente caída a lo que el hincha deja de ver, sin nombrar la base', () => {
+    expect(areaDeFuente('cassandra')).toBe('comentarios')
+    expect(areaDeFuente('InfluxDB')).toBe('estadísticas')
+    expect(areaDeFuente('mongodb')).toBe('equipos y planteles')
+    expect(areaDeFuente('neo4j')).toBe('partidos y eventos')
+    expect(areaDeFuente('desconocida')).toBeNull()
+    expect(areaDeFuente(null)).toBeNull()
   })
 })

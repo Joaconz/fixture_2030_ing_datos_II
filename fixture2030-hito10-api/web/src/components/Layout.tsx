@@ -1,37 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
-import { API_URL } from '../config'
-import { useTheme, type Tema } from '../hooks/useTheme'
-import { ConnectionIndicator } from './ConnectionIndicator'
-import { Icon, type IconName } from './Icon'
+import { Link, Outlet, useLocation } from 'react-router'
+import { FifaSearch } from './FifaSearch'
+import { Icon } from './Icon'
 
-const TEMAS: Array<{ tema: Tema; icono: IconName; label: string }> = [
-  { tema: 'sistema', icono: 'monitor', label: 'Tema del sistema' },
-  { tema: 'claro', icono: 'sun', label: 'Tema claro' },
-  { tema: 'oscuro', icono: 'moon', label: 'Tema oscuro' },
-]
-
-function ThemeSwitch() {
-  const [tema, setTema] = useTheme()
-  return (
-    <div className="theme-switch" role="group" aria-label="Tema de color">
-      {TEMAS.map((t) => (
-        <button
-          key={t.tema}
-          type="button"
-          className="btn-icon"
-          aria-pressed={tema === t.tema}
-          aria-label={t.label}
-          title={t.label}
-          onClick={() => setTema(t.tema)}
-        >
-          <Icon name={t.icono} size={16} />
-        </button>
-      ))}
-    </div>
-  )
-}
-
+/**
+ * Barra superior fina (stitch/DESIGN.md §5): marca y buscador de equipo por
+ * código FIFA. Sin pestañas de navegación, sin pie de página y sin selector de
+ * tema: el diseño es sólo claro (§6).
+ */
 export function Layout() {
   const location = useLocation()
   const mainRef = useRef<HTMLElement>(null)
@@ -52,6 +28,8 @@ export function Layout() {
     }
   }, [location.pathname])
 
+  const enInicio = location.pathname === '/'
+
   return (
     <div className="app">
       <a className="skip-link" href="#contenido">
@@ -59,24 +37,16 @@ export function Layout() {
       </a>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link to="/" className="brand" aria-label="Fixture 2030 · Centro de datos — Inicio">
-            <span className="brand-mark" aria-hidden="true">
-              <Icon name="ball" size={20} />
-            </span>
-            <span className="brand-text">
-              <strong>Fixture 2030</strong>
-              <span>Centro de datos</span>
-            </span>
+          {!enInicio && (
+            <Link to="/" className="btn-icon topbar-volver" aria-label="Volver al inicio">
+              <Icon name="arrowLeft" size={20} />
+            </Link>
+          )}
+          <Link to="/" className="brand" aria-label="Fixture 2030 — Inicio">
+            Fixture 2030
           </Link>
-          <nav className="mainnav" aria-label="Principal">
-            <NavLink to="/" end>
-              Inicio
-            </NavLink>
-            <NavLink to="/salud">Salud</NavLink>
-          </nav>
           <div className="topbar-tools">
-            <ConnectionIndicator />
-            <ThemeSwitch />
+            <FifaSearch variante="barra" key={location.pathname} />
           </div>
         </div>
       </header>
@@ -84,17 +54,6 @@ export function Layout() {
       <main id="contenido" ref={mainRef} tabIndex={-1} className="main">
         <Outlet />
       </main>
-
-      <footer className="footer">
-        <div className="footer-inner">
-          <span>
-            Ingeniería de Datos II · Hito 10 · API REST integrada
-          </span>
-          <span>
-            API: <code className="mono">{API_URL}</code>
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }
