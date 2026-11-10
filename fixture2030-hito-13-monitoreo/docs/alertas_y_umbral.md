@@ -1,6 +1,6 @@
 # Alertas y umbrales (§5.4, RF9)
 
-Las cinco reglas viven en [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) y se validan con `promtool check rules`. Prometheus las evalúa cada 15 s. **No hay Alertmanager**: nadie recibe un mensaje; el estado se ve en http://localhost:9090/alerts y en el panel "Alertas activas" de Grafana. En un despliegue real, el paso siguiente sería enrutar `critica` a quien está de guardia y `advertencia` a un canal del equipo.
+Las ocho reglas viven en [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) y se validan con `promtool check rules`. Prometheus las evalúa cada 15 s. **No hay Alertmanager**: nadie recibe un mensaje; el estado se ve en http://localhost:9090/alerts y en el panel "Alertas activas" de Grafana. En un despliegue real, el paso siguiente sería enrutar `critica` a quien está de guardia y `advertencia` a un canal del equipo.
 
 Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó el tiempo `for`) y después a `firing`.
 
@@ -73,3 +73,45 @@ Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó e
 | Quién la atiende | quien opera Cassandra |
 | Acción | Mirar compactaciones pendientes y la latencia de escritura (Q7). Con un solo nodo no hay a dónde repartir: la salida es agregar nodos (la estrategia de partición por partido + ventana + bucket lo permite) o limitar la carga. |
 | Por qué el umbral | En las pruebas la cola estuvo siempre en 0 (`max_over_time` de 2 horas, 30/10/2026). 100 tareas sostenidas 2 minutos significa que el nodo no da abasto. **Experimental:** no se llegó a saturar Cassandra en el laboratorio. |
+
+## Neo4jNoResponde
+
+| Campo | Valor |
+|---|---|
+| Métrica | `neo4j_up` (exporter propio, [`metricas_neo4j_e_influxdb.md`](metricas_neo4j_e_influxdb.md)) |
+| Condición | `== 0` |
+| Duración mínima | 1 minuto |
+| Severidad | crítica |
+| Componente | Neo4j (N2 partidos, N3 eventos, N8 tipos de evento) |
+| Impacto | Sin calendario ni línea de tiempo de eventos: las rutas de partidos y eventos de la API responden 503. |
+| Quién la atiende | quien opera Neo4j |
+| Acción | `docker logs fixture2030-neo4j-exporter` dice el motivo (conexión rechazada, credencial, base offline); después `docker ps` / `docker logs fixture2030-neo4j`. |
+| Por qué el umbral | Mismo minuto que `BaseNoResponde`. La diferencia es qué mira: la sonda solo ve el puerto 7474 abierto; esta alerta exige que una consulta real corra, así que también salta con la credencial rechazada o la base offline. Con Neo4j apagado saltan las dos. **Verificado** (10/11/2026, stack aislado): firing a los 88 s del `docker stop`, resuelta 58 s después del `docker start` (ver la evidencia de métricas de Neo4j e InfluxDB). |
+
+## Neo4jConsultaLenta
+
+| Campo | Valor |
+|---|---|
+| Métrica | `neo4j_consulta_referencia_segundos{medida="servidor"}` (eventos de un partido, tiempo del motor) |
+| Condición | `> 0.1` (100 ms) |
+| Duración mínima | 5 minutos |
+| Severidad | advertencia |
+| Componente | Neo4j |
+| Impacto | La línea de tiempo del partido se sirve lenta; con la API cargada acerca el p95 a `ApiLatenciaAlta`. |
+| Quién la atiende | quien opera Neo4j |
+| Acción | Heap y transacciones abiertas en el dashboard *Neo4j e InfluxDB*; revisar que existan los índices de `estructura.cypher`. |
+| Por qué el umbral | En el laboratorio la consulta tarda 6–66 ms en el motor con la base caliente. Justo después de un reinicio la primera vuelta tarda más (caché fría) y la alerta queda en pending unos segundos: el `for` de 5 minutos evita que eso dispare. **Experimental:** no se probó con carga. |
+
+## InfluxDBEscriturasRechazadas
+
+| Campo | Valor |
+|---|---|
+| Métrica | `influxdb3_write_lines_rejected_total` (`/metrics` de InfluxDB) |
+| Condición | `increase(...[5m]) > 0` |
+| Duración mínima | 1 minuto |
+| Severidad | advertencia |
+| Componente | InfluxDB 3 Core (N7 estadísticas en vivo) |
+| Impacto | Esos puntos de estadísticas no se guardan: los agregados del partido quedan incompletos. La base sigue respondiendo, así que ninguna otra alerta lo ve. |
+| Quién la atiende | quien opera la carga de estadísticas |
+| Acción | Ver la respuesta del `POST /api/v3/write_lp` (conflicto de tipo de campo o línea mal formada) en el log del cargador o de la API. |
+| Por qué el umbral | En operación normal el contador no se mueve: cualquier rechazo es un error del productor de datos. **Verificado** (10/11/2026): una línea con `tipo=5i` sobre un campo string devolvió HTTP 400 y la alerta pasó a firing. Se resuelve sola cuando el rechazo sale de la ventana de 5 minutos. |

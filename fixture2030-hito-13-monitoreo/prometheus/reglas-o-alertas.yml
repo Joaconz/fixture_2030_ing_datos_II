@@ -64,3 +64,39 @@ groups:
           resumen: "Cassandra tiene {{ $value }} escrituras esperando en MutationStage"
           impacto: "Pico de comentarios (p. ej. un gol): las escrituras se encolan y la latencia de POST sube."
           accion: "Mirar tareas pendientes y compactaciones; con un solo nodo la salida es escalar (más nodos) o limitar la carga."
+
+  # Neo4j e InfluxDB: métricas internas del exporter propio (neo4j_*) y del
+  # /metrics de InfluxDB 3 Core. Ver docs/metricas_neo4j_e_influxdb.md.
+  - name: fixture2030-neo4j
+    rules:
+      - alert: Neo4jNoResponde
+        expr: neo4j_up == 0
+        for: 1m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "Neo4j no ejecuta consultas: el exporter no pudo correr la consulta de referencia"
+          impacto: "Sin calendario ni línea de tiempo de eventos: las rutas de partidos y eventos de la API devuelven 503."
+          accion: "docker logs fixture2030-neo4j-exporter dice el motivo (conexión rechazada, credencial, base offline); después docker ps / docker logs fixture2030-neo4j."
+
+      - alert: Neo4jConsultaLenta
+        expr: neo4j_consulta_referencia_segundos{medida="servidor"} > 0.1
+        for: 5m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "La consulta de referencia de Neo4j tarda {{ $value | humanizeDuration }} en el motor (umbral 100 ms)"
+          impacto: "La línea de tiempo de eventos del partido se sirve lenta; con la API ya cargada se acerca al umbral de ApiLatenciaAlta."
+          accion: "Mirar heap (neo4j_heap_bytes) y transacciones abiertas en el dashboard Neo4j e InfluxDB; revisar que existan los índices de estructura.cypher."
+
+  - name: fixture2030-influxdb
+    rules:
+      - alert: InfluxDBEscriturasRechazadas
+        expr: increase(influxdb3_write_lines_rejected_total[5m]) > 0
+        for: 1m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "InfluxDB rechazó {{ $value | printf \"%.0f\" }} líneas en los últimos 5 minutos"
+          impacto: "Esos puntos de estadísticas en vivo no se guardan: los agregados del partido quedan incompletos."
+          accion: "Ver la respuesta del POST /api/v3/write_lp (conflicto de tipo de campo o línea mal formada) en el log del cargador o de la API."

@@ -32,7 +32,7 @@ Resumen para la defensa de **por qué cada dato vive donde vive**, con enlaces a
 | Consistencia | **Cierre CP** (no puede haber dos resultados oficiales); **ingesta de eventos AP** con orden causal. Son operaciones distintas en el mismo motor |
 | Ante una falla | Sin partidos ni eventos → 503 en esas rutas; el cierre espera antes que confirmar un resultado dudoso |
 | Trade-off | Las reglas de cada tipo de evento (qué campos lleva un Gol o una Tarjeta) se validan en la API, no en la base: una escritura que no pase por la API no queda validada. Se acepta porque el catálogo es chico y estable y la API es el único camino de escritura (Hito 3, reentrega) |
-| Evidencia | Reentrega del Hito 3: el calendario duplicado en IRIS ya había producido una inconsistencia real (`PAR-A-1` con equipos distintos). Monitoreo: solo sonda y latencia desde la API (Community no expone métricas) |
+| Evidencia | Reentrega del Hito 3: el calendario duplicado en IRIS ya había producido una inconsistencia real (`PAR-A-1` con equipos distintos). Monitoreo: sonda, latencia desde la API y exporter propio que consulta la Query API (Community no expone métricas) |
 
 ### Cassandra — columnar (N6 Comentarios)
 
@@ -74,7 +74,7 @@ Resumen para la defensa de **por qué cada dato vive donde vive**, con enlaces a
 | Consistencia | AP, eventual con orden monótono por partido |
 | Ante una falla | Sin estadísticas en vivo (503); el resto sigue |
 | Trade-off | Retención fija al crear la base; puntos individuales prescindibles gracias al resumen por minuto |
-| Evidencia | Hito 8 (`docs/pruebas_y_rendimiento.md`). Monitoreo: sonda y latencia desde la API; sin métricas internas (el `/metrics` de Influx exige el token de administración) |
+| Evidencia | Hito 8 (`docs/pruebas_y_rendimiento.md`). Monitoreo: sonda, latencia desde la API y su propio `/metrics`, leído con el token de administración desde un archivo fuera del repo |
 
 ### IRIS — objetos (fuera de la arquitectura vigente)
 
@@ -113,4 +113,4 @@ Cassandra responde en un milisegundo; el resto del tiempo es **espera dentro del
 
 ## 4. Costo de operar cinco productos
 
-Cinco motores, cinco formas de respaldo, de seguridad y de actualización, y cinco exporters o sondas. Este hito lo muestra en chico: Cassandra necesitó un agente JMX, Neo4j Community no expone métricas, InfluxDB pide un token para las suyas. Se acepta porque la alternativa (una base para todo) degrada el acceso dominante de algún módulo, y porque una falla queda contenida en su módulo.
+Cinco motores, cinco formas de respaldo, de seguridad y de actualización, y cinco exporters o sondas. Este hito lo muestra en chico: Cassandra necesitó un agente JMX, Neo4j Community no expone métricas (hubo que escribir un exporter que las consulta), InfluxDB pide un token para las suyas. Se acepta porque la alternativa (una base para todo) degrada el acceso dominante de algún módulo, y porque una falla queda contenida en su módulo.

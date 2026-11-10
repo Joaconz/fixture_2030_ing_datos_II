@@ -15,7 +15,7 @@ bash fixture2030-hito-13-monitoreo/scripts/iniciar_monitoreo.sh
 bash fixture2030-hito10-api/scripts/iniciar_api.sh               # en otra terminal
 ```
 
-Chequeo (tiene que salir con código 0, 11 targets UP):
+Chequeo (tiene que salir con código 0, 13 targets UP):
 
 ```bash
 bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh
