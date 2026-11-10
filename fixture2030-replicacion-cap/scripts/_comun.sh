@@ -108,6 +108,63 @@ cql() {
 }
 nodetool() { local c="$1"; shift; dk exec "$c" nodetool "$@"; }
 
+ip_de() { docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$1"; }
+
+# esperar_estado_cas OBSERVADOR IP UN|DN SEGUNDOS — espera a que el OBSERVADOR
+# vea al nodo de esa IP en ese estado (nodetool status). Imprime los segundos
+# que tardó. Se pasa la IP y no el contenedor: un contenedor parado no tiene IP.
+esperar_estado_cas() {
+  local t0; t0=$(date +%s)
+  while [ $(( $(date +%s) - t0 )) -lt "$4" ]; do
+    if nodetool "$1" status 2>/dev/null | grep -qE "^$3 +$2 "; then echo $(( $(date +%s) - t0 )); return 0; fi
+    sleep 2
+  done
+  echo "más de $4"; return 1
+}
+
+# hints_en_disco NODO — archivos de hints que ese coordinador guarda para
+# réplicas caídas. Se mira el directorio porque `nodetool listpendinghints`
+# solo lista un archivo cuando el coordinador lo cierra: mientras se sigue
+# escribiendo (réplica todavía caída) no aparece, aunque el hint exista.
+hints_en_disco() {
+  local l
+  l="$(dk exec "$1" sh -c 'cd /var/lib/cassandra/hints && ls -l --time-style=+%H:%M:%S *.hints 2>/dev/null' | awk '{print $5 " bytes  " $6 "  " $7}')"
+  [ -n "$l" ] && echo "$l" | sed 's/^/     /' || echo "     (ninguno)"
+}
+# esperar_log CONTENEDOR DESDE_ISO 'regex' SEGUNDOS — espera una línea del log
+# posterior a DESDE_ISO; la imprime y devuelve los segundos que tardó.
+esperar_log() {
+  local t0 l; t0=$(date +%s)
+  while [ $(( $(date +%s) - t0 )) -lt "$4" ]; do
+    l="$(docker logs --since "$2" "$1" 2>&1 | grep -E "$3" | head -1)"
+    [ -n "$l" ] && { echo "$(( $(date +%s) - t0 )) s · $l"; return 0; }
+    sleep 2
+  done
+  echo "no apareció en $4 s"; return 1
+}
+
+# motivo 'salida de cqlsh' — el porqué de un error de consistencia, en una línea.
+motivo() {
+  echo "$1" | grep -oE "Unavailable exception|Cannot achieve consistency level [A-Z_]+|required_replicas[^0-9]*[0-9]+|alive_replicas[^0-9]*[0-9]+|Operation timed out[^.]*|NoHostAvailable"     | sed "s/[\\']//g" | awk '!v[$0]++' | paste -sd'|' - | sed 's/|/ · /g'
+}
+
+# Filas de prueba: van a una partición real del Hito 6 (PAR-A-1, ventana de
+# las 13:00, bucket 0) con comentario_id PAR-A-1-REP-* para distinguirlas de
+# la carga de muestra. Los scripts las borran al final.
+PART="partido_id = 'PAR-A-1' AND ventana = '2030-06-09 13:00:00.000+0000' AND bucket = 0"
+# insertar_comentario COORDINADOR NIVEL ID 'creado_en' 'contenido'
+insertar_comentario() {
+  cql "$1" "$2" "INSERT INTO $KS.comentarios_por_partido (partido_id, ventana, bucket, creado_en, comentario_id,
+    usuario_id, alias_usuario, hinchada, minuto_partido, contenido, idioma, editado, estado_moderacion)
+    VALUES ('PAR-A-1', '2030-06-09 13:00:00.000+0000', 0, '$4', '$3',
+    'USR-PRUEBA-REP', 'prueba_replicacion', 'NEUTRAL', 5, '$5', 'es', false, 'PUBLICADO');"
+}
+# leer_comentario COORDINADOR NIVEL ID 'creado_en' — imprime filas encontradas
+# (0 o 1) o el error de cqlsh; devuelve ≠ 0 si la lectura no alcanzó el nivel.
+leer_comentario() {
+  cql "$1" "$2" "SELECT count(*) FROM $KS.comentarios_por_partido WHERE $PART AND creado_en = '$4' AND comentario_id = '$3';"
+}
+
 # memoria — RAM real de cada contenedor de este módulo (docker stats).
 memoria() {
   docker stats --no-stream --format '   {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}' $(docker ps --format '{{.Names}}' | grep '^fixture2030-rep-' | sort)

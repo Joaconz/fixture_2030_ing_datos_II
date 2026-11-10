@@ -1,0 +1,58 @@
+# Fixture 2030 — Replicación y CAP · mongo_failover_kill
+# fecha:    2026-11-10 18:16:31 -0300 (2026-11-10T21:16:31Z)
+# comando:  bash scripts/mongo_failover.sh kill
+# commit:   ae46f10 (+ cambios sin commitear en el módulo)
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== ANTES — primario: mongo1 · el escritor corre en fixture2030-rep-mongo2
+   mongo1:27017  PRIMARY     salud=1 optime=2026-11-10T21:16:33.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-10T21:16:33.000Z
+   mongo3:27017  SECONDARY   salud=1 optime=2026-11-10T21:16:33.000Z
+   escrituras confirmadas antes de la falla: 29
+
+==== FALLA — docker kill fixture2030-rep-mongo1
+   orden docker kill: 2026-11-10T21:16:52.336Z · el contenedor terminó: 2026-11-10T21:16:53.204Z (State.FinishedAt)
+   referencia de la falla para las mediciones: 2026-11-10T21:16:53.204Z
+   fixture2030-rep-mongo2 ve como primario a mongo3 a las 2026-11-10T21:17:03.934Z
+   mongo1:27017  (not reachable/healthy) salud=0 optime=1970-01-01T00:00:00.000Z · Couldn't get a connection within the time limit
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-10T21:16:53.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-10T21:16:53.000Z
+
+==== ELECCIÓN — métricas que registra el nuevo primario (mongo3)
+   motivo de la elección:            electionTimeout
+   término (term):                   16
+   electionTimeoutMillis:            10000
+   votos necesarios:                 2 de 3
+   elección ganada (lastElectionDate): 2026-11-10T21:17:03.832Z  -> 10.63 s desde la falla
+   el sondeo de fixture2030-rep-mongo2 lo vio primario a: 10.73 s  (el sondeo arranca cuando docker kill devuelve el control)
+   voto de mongo2:27017: a favor del miembro 2 a las 2026-11-10T21:17:03.837Z (term 16)
+
+==== ESCRITURAS — qué vio el cliente (escritor continuo, w:majority)
+   intentos: 251 · confirmados (w:majority): 251 · con error: 0
+   última confirmada por el primario viejo (mongo1:27017): seq=37 fin=2026-11-10T21:16:53.047Z (-0.16 s respecto de la falla)
+   primera confirmada por el primario nuevo (mongo3:27017): seq=38 ini=2026-11-10T21:16:53.248Z fin=2026-11-10T21:17:13.901Z (20653 ms de latencia)
+   => hueco sin confirmaciones: 20.85 s · primera escritura en el primario nuevo a los 20.70 s de la falla (sin errores en el cliente: la operación esperó al nuevo primario y se reintentó)
+   después del cambio se confirmaron 214 escrituras en mongo3:27017
+   latencia de escritura: mediana 14 ms · máxima 20653 ms
+   registro del escritor alrededor de la falla:
+     {"seq": 36, "ini": "2026-11-10T21:16:52.821Z", "ok": true, "primario": "mongo1:27017", "fin": "2026-11-10T21:16:52.835Z", "ms": 14}
+     {"seq": 37, "ini": "2026-11-10T21:16:53.035Z", "ok": true, "primario": "mongo1:27017", "fin": "2026-11-10T21:16:53.047Z", "ms": 12}
+     {"seq": 38, "ini": "2026-11-10T21:16:53.248Z", "ok": true, "primario": "mongo3:27017", "fin": "2026-11-10T21:17:13.901Z", "ms": 20653}
+     {"seq": 39, "ini": "2026-11-10T21:17:14.103Z", "ok": true, "primario": "mongo3:27017", "fin": "2026-11-10T21:17:14.131Z", "ms": 28}
+     {"seq": 40, "ini": "2026-11-10T21:17:14.331Z", "ok": true, "primario": "mongo3:27017", "fin": "2026-11-10T21:17:14.352Z", "ms": 21}
+
+==== RECUPERACIÓN — docker start fixture2030-rep-mongo1
+   mongo1 vuelve como SECONDARY a las 2026-11-10T21:18:04.683Z (visto desde el primario mongo3)
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-10T21:17:59.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-10T21:17:59.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-10T21:17:59.000Z
+
+==== VERIFICACIÓN — el nodo que volvió tiene todo lo escrito mientras estaba caído
+   mongo3 (primario)   latidos=251
+   mongo1 (secundario) latidos=251 · equipos=64 · jugadores=1472  (igualó al primario 37 ms después de volver a SECONDARY)
+   (los latidos escritos durante la caída llegaron por replicación del oplog al reincorporarse)
+
+==== Limpieza de la base de prueba
+   {"ok":1,"dropped":"fixture2030_pruebas"}
+
+✔ Fin. Primario actual: mongo3. Evidencia: evidencia/mongo_failover_kill_20261110-181631.txt

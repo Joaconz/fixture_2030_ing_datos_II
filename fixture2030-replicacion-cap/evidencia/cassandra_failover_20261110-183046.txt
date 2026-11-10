@@ -1,0 +1,49 @@
+# Fixture 2030 — Replicación y CAP · cassandra_failover
+# fecha:    2026-11-10 18:30:46 -0300 (2026-11-10T21:30:46Z)
+# comando:  bash scripts/cassandra_failover.sh
+# commit:   ae46f10 (+ cambios sin commitear en el módulo)
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== Anillo antes de la prueba
+   UN  172.28.0.2  120.91 KiB  16      100.0%            ec658e1e-bdbf-493e-990a-d093ca978481  rack1
+   UN  172.28.0.4  117.71 KiB  16      100.0%            77f55fe0-922e-47ed-8b1a-a20d127fbc8d  rack1
+   UN  172.28.0.3  117.74 KiB  16      100.0%            ac3f6a44-d7be-4731-bdae-4869bd541b70  rack1
+
+==== 1. Los 3 nodos arriba (coordinador cas1)
+   nivel    escritura                                                      lectura de esa fila
+   ONE      OK                                                             OK (1 fila)
+   QUORUM   OK                                                             OK (1 fila)
+   ALL      OK                                                             OK (1 fila)
+
+==== 2. docker stop fixture2030-rep-cas3
+   cas1 lo ve DN (caído) a los  s
+   UN  172.28.0.2  120.91 KiB  16      100.0%            ec658e1e-bdbf-493e-990a-d093ca978481  rack1
+   DN  172.28.0.4  117.71 KiB  16      100.0%            77f55fe0-922e-47ed-8b1a-a20d127fbc8d  rack1
+   UN  172.28.0.3  117.74 KiB  16      100.0%            ac3f6a44-d7be-4731-bdae-4869bd541b70  rack1
+
+   nivel    escritura                                                      lectura de esa fila
+   ONE      OK                                                             OK (1 fila)
+   QUORUM   OK                                                             OK (1 fila)
+   ALL      FALLA: NoHostAvailable                                         FALLA: NoHostAvailable
+
+==== 3. Hints guardados en el coordinador para la réplica caída
+   This node does not have any pending hints
+
+==== 4. docker start fixture2030-rep-cas3 — vuelta y hinted handoff
+   cas3 acepta CQL a los 16 s; cas1 lo ve UN a los 18 s
+   hints pendientes en cas1 a los 25 s:
+     This node does not have any pending hints
+   log de cas1 (entrega de hints):
+     INFO  [HintsDispatcher:1] 2026-11-10T21:33:50,932 HintsStore.java:232 - Deleted hint file 77f55fe0-922e-47ed-8b1a-a20d127fbc8d-1794346402761-2.hints
+     INFO  [HintsDispatcher:1] 2026-11-10T21:33:50,933 HintsDispatchExecutor.java:300 - Finished hinted handoff of file 77f55fe0-922e-47ed-8b1a-a20d127fbc8d-1794346402761-2.hints to endpoint /172.28.0.4:7000: 77f55fe0-922e-47ed-8b1a-a20d127fbc8d
+
+==== 5. Los 3 nodos arriba otra vez (coordinador cas1)
+   nivel    escritura                                                      lectura de esa fila
+   ONE      OK                                                             OK (1 fila)
+   QUORUM   OK                                                             OK (1 fila)
+   ALL      OK                                                             OK (1 fila)
+
+==== Limpieza de las filas de prueba (CONSISTENCY ALL)
+   filas de prueba restantes: 0
+
+✔ Fin. Evidencia: evidencia/cassandra_failover_20261110-183046.txt

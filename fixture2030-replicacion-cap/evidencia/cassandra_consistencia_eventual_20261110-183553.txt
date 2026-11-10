@@ -1,0 +1,90 @@
+# Fixture 2030 — Replicación y CAP · cassandra_consistencia_eventual
+# fecha:    2026-11-10 18:35:53 -0300 (2026-11-10T21:35:54Z)
+# comando:  bash scripts/cassandra_consistencia_eventual.sh
+# commit:   ae46f10 (+ cambios sin commitear en el módulo)
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== Anillo y nodos (cas3 = 172.28.0.4)
+   fixture2030-rep-cas1 = 172.28.0.2
+   fixture2030-rep-cas2 = 172.28.0.3
+   fixture2030-rep-cas3 = 172.28.0.4
+   UN  172.28.0.2  120.91 KiB  16      100.0%            ec658e1e-bdbf-493e-990a-d093ca978481  rack1
+   UN  172.28.0.4  193.56 KiB  16      100.0%            77f55fe0-922e-47ed-8b1a-a20d127fbc8d  rack1
+   UN  172.28.0.3  117.74 KiB  16      100.0%            ac3f6a44-d7be-4731-bdae-4869bd541b70  rack1
+
+==== A1. Pausa de la entrega de hints en cas1 y cas2 (pausehandoff) y docker stop fixture2030-rep-cas3
+   cas1 ve a cas3 (172.28.0.4) DN a los 3 s
+
+==== A2. Escritura con CONSISTENCY ONE (coordinador cas1) mientras cas3 está caído
+   escritura aceptada con ONE: PAR-A-1-REP-EVENTUAL-HINT
+   This node does not have any pending hints
+
+==== A3. docker start fixture2030-rep-cas3 (la entrega de hints sigue pausada)
+   cas1 ve a cas3 (172.28.0.4) UN a los 2 s de que acepta CQL
+
+==== A4. Lectura en cas3 ANTES de la reparación
+   resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-HINT | Golazo! (escrito con ONE, cas3 caido)
+   traza (qué nodo leyó la partición):
+     172.28.0.4  Sending READ_REQ message to cas2/172.28.0.3:7000 message size 293 bytes [Messaging-EventLoop-3-4]
+   misma lectura con coordinador cas1 (tiene el dato):
+     filas: 1
+
+==== A5. Se reanuda la entrega de hints (resumehandoff)
+   cas1 sin hints pendientes a los 8 s
+   log cas1: INFO  [RMI TCP Connection(28)-127.0.0.1] 2026-11-10T21:36:06,454 HintsService.java:234 - Paused hints dispatch
+   log cas1: INFO  [RMI TCP Connection(66)-127.0.0.1] 2026-11-10T21:38:03,124 HintsService.java:242 - Resumed hints dispatch
+
+==== A6. Lectura en cas3 DESPUÉS del hinted handoff
+   resultado: 0 filas (cas3 no tiene el comentario)
+   traza (qué nodo leyó la partición):
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-1]
+     172.28.0.4  Partition index found for sstable 1, size = 0 [ReadStage-1]
+     172.28.0.4  Partition index found for sstable 2, size = 0 [ReadStage-1]
+     172.28.0.4  Read 0 live rows and 0 tombstone cells [ReadStage-1]
+
+==== B1. Hints DESACTIVADOS en cas1 y cas2 (disablehandoff) y docker stop fixture2030-rep-cas3
+   cas1: Hinted handoff is not running
+   cas1 ve a cas3 (172.28.0.4) DN a los 3 s
+
+==== B2. Escritura con CONSISTENCY ONE (coordinador cas1) mientras cas3 está caído
+   escritura aceptada con ONE: PAR-A-1-REP-EVENTUAL-REPAIR
+   Host ID                              Address         Rack  DC          Status Total files Newest                  Oldest                 
+   77f55fe0-922e-47ed-8b1a-a20d127fbc8d 172.28.0.4:7000 rack1 datacenter1 DOWN   1           2026-11-10 21:36:22,772 2026-11-10 21:36:22,772
+
+==== B3. docker start fixture2030-rep-cas3
+   cas1 ve a cas3 (172.28.0.4) UN a los 3 s de que acepta CQL
+   (hints reactivados para lo que venga; lo perdido mientras estaban desactivados no se recupera así)
+
+==== B4. Lectura en cas3 recién vuelto y 30 s después: no se repara sola
+   resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-REPAIR | Que partido! (escrito con ONE, sin hints)
+   traza (qué nodo leyó la partición):
+     172.28.0.3  Executing single-partition query on comentarios_por_partido [ReadStage-1]
+     172.28.0.3  Read 1 live rows and 0 tombstone cells [ReadStage-1]
+     172.28.0.3  Sending READ_RSP message to /172.28.0.4:7000 message size 181 bytes [Messaging-EventLoop-3-8]
+     172.28.0.4  Sending READ_REQ message to cas2/172.28.0.3:7000 message size 295 bytes [Messaging-EventLoop-3-4]
+   resultado: 0 filas (cas3 no tiene el comentario)
+   traza (qué nodo leyó la partición):
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-3]
+     172.28.0.4  Partition index found for sstable 1, size = 0 [ReadStage-3]
+     172.28.0.4  Partition index found for sstable 2, size = 0 [ReadStage-3]
+     172.28.0.4  Read 0 live rows and 0 tombstone cells [ReadStage-3]
+
+==== B5. nodetool repair en cas3 (anti-entropía: compara árboles de Merkle con las otras réplicas)
+   [2026-11-10 21:39:55,041] Repair completed successfully
+   [2026-11-10 21:39:55,044] Repair command #1 finished in 1 second
+   [2026-11-10 21:39:55,052] condition satisfied queried for parent session status and discovered repair completed.
+   [2026-11-10 21:39:55,052] Repair completed successfully
+   repair terminado en 5 s
+
+==== B6. Lectura en cas3 DESPUÉS del repair
+   resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-REPAIR | Que partido! (escrito con ONE, sin hints)
+   traza (qué nodo leyó la partición):
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-19]
+     172.28.0.4  Read 1 live rows and 0 tombstone cells [ReadStage-19]
+
+==== Limpieza de las filas de prueba (CONSISTENCY ALL)
+   PAR-A-1-REP-EVENTUAL-HINT: 0 filas
+   PAR-A-1-REP-EVENTUAL-REPAIR: 0 filas
+   cas1: Hinted handoff is running
+
+✔ Fin. Evidencia: evidencia/cassandra_consistencia_eventual_20261110-183553.txt
