@@ -1,0 +1,164 @@
+# ============================================================
+#  Fixture 2030 — Replicación y CAP (Hito 9 de la guía del TPO)
+#  Ingeniería de Datos II — Pazos / Núñez / Frisoli
+# ------------------------------------------------------------
+#  Dos clústeres de laboratorio, cada uno en su PERFIL de compose para no
+#  tenerlos arriba a la vez (en Docker Desktop con 8 GB no entran los dos
+#  junto con los módulos de un nodo):
+#
+#    mongo      replica set rs-fixture2030: 3 nodos (1 primario + 2 secundarios)
+#               + `mongo-carga` (solo a pedido) que corre el seed.js del Hito 4
+#    cassandra  anillo de 3 nodos peer-to-peer en un datacenter (datacenter1)
+#
+#  Nombres, puertos, red y volúmenes son PROPIOS de este módulo (prefijo
+#  fixture2030-rep-*) para no chocar con fixture2030-mongodb (27017) ni con
+#  fixture2030-cassandra (9042), que pueden estar corriendo al mismo tiempo.
+#  `name:` fija el proyecto: un `docker compose down` acá solo toca esto.
+#
+#  Sin credenciales (igual que los módulos de un nodo): laboratorio, no
+#  producción. Puertos publicados solo en 127.0.0.1.
+# ============================================================
+name: fixture2030-replicacion
+
+x-mongo: &mongo
+  image: mongo:7.0                         # misma imagen que fixture2030-mongodb
+  profiles: ["mongo"]
+  # --replSet: el nodo arranca como miembro (todavía sin configurar) del
+  # replica set. La configuración (rs.initiate) la hace scripts/mongo_iniciar.sh.
+  # --wiredTigerCacheSizeGB 0.25: la caché de WiredTiger por defecto es ~50 % de
+  # la RAM; con tres nodos en una notebook se acota a 256 MB cada uno.
+  command: ["mongod", "--replSet", "rs-fixture2030", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+  mem_limit: 512m
+  restart: "no"                            # las pruebas de failover apagan nodos a propósito
+  # volumes: en cada servicio. ../fixture2030-mongodb/init trae el esquema del
+  # Hito 4 (validadores $jsonSchema + índices) sin copiarlo. NO se monta en
+  # /docker-entrypoint-initdb.d: esos scripts corren contra un mongod
+  # standalone antes de que exista el replica set.
+  healthcheck:
+    test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+    interval: 10s
+    timeout: 5s
+    retries: 12
+  networks: [replicacion]
+
+x-cassandra: &cassandra
+  image: cassandra:latest                  # misma imagen que fixture2030-cassandra (5.0.x, SAI)
+  profiles: ["cassandra"]
+  mem_limit: 900m
+  restart: "no"
+  environment:
+    CASSANDRA_CLUSTER_NAME: "Fixture2030-Replicacion"
+    # Dos semillas: si cae una, los nodos que reinician igual encuentran el anillo.
+    CASSANDRA_SEEDS: "cas1,cas2"
+    CASSANDRA_ENDPOINT_SNITCH: "GossipingPropertyFileSnitch"
+    CASSANDRA_DC: "datacenter1"            # el DC que nombra el keyspace (RF=3)
+    CASSANDRA_RACK: "rack1"
+    # Heap acotado para que tres nodos entren en Docker Desktop. Por defecto
+    # Cassandra toma 1/4 de la RAM (~2 GB cada uno). Medido: ver
+    # evidencia/cassandra_iniciar_*.txt (docker stats).
+    MAX_HEAP_SIZE: "256M"
+    HEAP_NEWSIZE: "64M"
+    # No esperar a que el gossip "se asiente" al arrancar (acorta el arranque
+    # de laboratorio; no cambia la replicación).
+    JVM_EXTRA_OPTS: "-Dcassandra.skip_wait_for_gossip_to_settle=0"
+  # volumes: en cada servicio. ../fixture2030-cassandra/scripts trae el esquema
+  # y la carga de muestra del Hito 6 sin copiarlos.
+  healthcheck:
+    # "healthy" cuando el puerto CQL acepta conexiones: recién ahí el nodo
+    # terminó de unirse al anillo. Un chequeo con bash, sin levantar otra JVM.
+    test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/9042' || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 40s
+  networks: [replicacion]
+
+services:
+  # ------------------------- MongoDB (Master-Slave) -------------------------
+  mongo1:
+    <<: *mongo
+    container_name: fixture2030-rep-mongo1
+    hostname: mongo1
+    ports: ["127.0.0.1:27041:27017"]
+    volumes:
+      - rep_mongo1:/data/db
+      - ../fixture2030-mongodb/init:/fuente/mongodb-init:ro
+      - ./scripts:/scripts:ro
+  mongo2:
+    <<: *mongo
+    container_name: fixture2030-rep-mongo2
+    hostname: mongo2
+    ports: ["127.0.0.1:27042:27017"]
+    volumes:
+      - rep_mongo2:/data/db
+      - ../fixture2030-mongodb/init:/fuente/mongodb-init:ro
+      - ./scripts:/scripts:ro
+  mongo3:
+    <<: *mongo
+    container_name: fixture2030-rep-mongo3
+    hostname: mongo3
+    ports: ["127.0.0.1:27043:27017"]
+    volumes:
+      - rep_mongo3:/data/db
+      - ../fixture2030-mongodb/init:/fuente/mongodb-init:ro
+      - ./scripts:/scripts:ro
+
+  # Corre fixture2030-mongodb/load/seed.js (Hito 4) contra el replica set.
+  # Se copia a /tmp para que `npm ci` no deje node_modules en el otro módulo.
+  mongo-carga:
+    image: node:20-alpine
+    container_name: fixture2030-rep-mongo-carga
+    profiles: ["carga"]
+    environment:
+      MONGO_URI: "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs-fixture2030"
+      npm_config_update_notifier: "false"
+    volumes:
+      - ../fixture2030-mongodb/load:/fuente/load:ro
+    entrypoint: ["sh", "-c", "cp -r /fuente/load /tmp/load && cd /tmp/load && npm ci --no-audit --no-fund --loglevel=error && node seed.js"]
+    networks: [replicacion]
+
+  # --------------------- Cassandra (Peer-to-Peer, RF=3) ---------------------
+  # Los nodos se unen de a uno (depends_on: healthy): Cassandra no admite que
+  # dos nodos nuevos hagan bootstrap a la vez.
+  cas1:
+    <<: *cassandra
+    container_name: fixture2030-rep-cas1
+    hostname: cas1
+    ports: ["127.0.0.1:19041:9042"]
+    volumes:
+      - rep_cas1:/var/lib/cassandra
+      - ../fixture2030-cassandra/scripts:/fuente/cassandra-scripts:ro
+      - ./scripts:/scripts:ro
+  cas2:
+    <<: *cassandra
+    container_name: fixture2030-rep-cas2
+    hostname: cas2
+    ports: ["127.0.0.1:19042:9042"]
+    depends_on: { cas1: { condition: service_healthy } }
+    volumes:
+      - rep_cas2:/var/lib/cassandra
+      - ../fixture2030-cassandra/scripts:/fuente/cassandra-scripts:ro
+      - ./scripts:/scripts:ro
+  cas3:
+    <<: *cassandra
+    container_name: fixture2030-rep-cas3
+    hostname: cas3
+    ports: ["127.0.0.1:19043:9042"]
+    depends_on: { cas2: { condition: service_healthy } }
+    volumes:
+      - rep_cas3:/var/lib/cassandra
+      - ../fixture2030-cassandra/scripts:/fuente/cassandra-scripts:ro
+      - ./scripts:/scripts:ro
+
+volumes:
+  rep_mongo1: { name: fixture2030_rep_mongo1 }
+  rep_mongo2: { name: fixture2030_rep_mongo2 }
+  rep_mongo3: { name: fixture2030_rep_mongo3 }
+  rep_cas1:   { name: fixture2030_rep_cas1 }
+  rep_cas2:   { name: fixture2030_rep_cas2 }
+  rep_cas3:   { name: fixture2030_rep_cas3 }
+
+networks:
+  replicacion:
+    name: fixture2030-replicacion-net
+    driver: bridge
