@@ -69,6 +69,10 @@ def ejecutar_pipeline(base, t0: float, resultado: dict, leidos: dict, op: dict) 
     for fase in FASES:
         if fase == "apagado" and not op["liberar"]:
             continue
+        if comun.ABORTO and fase != "apagado":
+            r["estado"] = f"cortada por el vigía antes de {fase}"
+            r.setdefault("fallas", []).append(f"vigía: {comun.ABORTO}")
+            break
         ini = time.perf_counter()
         log(f"{base.nombre:<9} ▶ {fase}")
         try:
@@ -76,7 +80,7 @@ def ejecutar_pipeline(base, t0: float, resultado: dict, leidos: dict, op: dict) 
         except Exception as e:  # noqa: BLE001 — se registra; la base queda marcada
             r["fases"][fase] = {"desde_s": round(ini - t0, 1), "hasta_s": round(time.perf_counter() - t0, 1),
                                 "segundos": round(time.perf_counter() - ini, 1)}
-            r.setdefault("errores", []).append(f"{fase}: {e.__class__.__name__}: {e}")
+            r.setdefault("fallas", []).append(f"{fase}: {e.__class__.__name__}: {e}")
             log(f"{base.nombre:<9} ✖ {fase}: {e.__class__.__name__}: {e}")
             if fase in ("arranque", "preparacion", "carga"):
                 r["estado"] = f"falló en {fase}"
@@ -124,6 +128,11 @@ def planificar_paralelo(bases: list, t0: float, resultado: dict, leidos: dict, o
 
     with cond:
         while pendientes:
+            if comun.ABORTO:
+                log(f"✖ no se admiten más bases: {', '.join(b.nombre for b in pendientes)}")
+                for b in pendientes:
+                    resultado[b.nombre] = {"fases": {}, "estado": "no arrancó (vigía)"}
+                break
             elegida = None
             for b in pendientes:
                 if max_paralelo and estado["activos"] >= max_paralelo:
@@ -136,7 +145,7 @@ def planificar_paralelo(bases: list, t0: float, resultado: dict, leidos: dict, o
                 log(f"⚠ {elegida.nombre}: reserva {elegida.reserva_mib} MiB + reservado {estado['reservado']} MiB "
                     f"supera el presupuesto ({presupuesto} MiB); arranca sola")
             if elegida is None:
-                cond.wait()
+                cond.wait(timeout=5)
                 continue
             pendientes.remove(elegida)
             estado["reservado"] += elegida.reserva_mib
@@ -221,7 +230,7 @@ def main() -> int:
 
     # 2. pipelines ----------------------------------------------------------
     log(f"== 2. Carga en modo {args.modo} · orden {' → '.join(orden)}")
-    muestreador = Muestreador()
+    muestreador = Muestreador(vm_mib=vm_mib)
     muestreador.fase = "pipelines"
     muestreador.start()
     resultado: dict = {}
@@ -231,6 +240,9 @@ def main() -> int:
     meta["inicio_carga"] = ahora()
     if args.modo == "secuencial":
         for b in bases:
+            if comun.ABORTO:
+                resultado[b.nombre] = {"fases": {}, "estado": "no arrancó (vigía)"}
+                continue
             admisiones.append({"base": b.nombre, "t_s": round(time.perf_counter() - t0, 1),
                                "reservado_mib": b.reserva_mib, "simultaneas": 1,
                                "ram_libre_host_mib": ram_libre_host_mib()})
@@ -252,6 +264,7 @@ def main() -> int:
                   "bases": {b: r.get("validacion", {}).get("datos") for b, r in resultado.items()}}
     distribucion = {b: r["distribucion"] for b, r in resultado.items() if "distribucion" in r}
 
+    meta["vigia"] = comun.ABORTO
     informe = {"meta": meta, "insumos_influxdb": insumos, "admisiones": admisiones,
                "bases": {b: {k: v for k, v in r.items() if k not in ("validacion", "distribucion")}
                          for b, r in resultado.items()},
@@ -273,7 +286,9 @@ def main() -> int:
     malos = validacion["resumen"]["fallidos"]
     log(f"FIN · carga {informe['total']['reloj_hasta_ultima_carga_s']:,.1f} s · total {total:,.1f} s · "
         f"bases con error: {fallidas or 'ninguna'} · chequeos fallidos: {malos or 'ninguno'}")
-    return 1 if fallidas or malos else 0
+    if comun.ABORTO:
+        log(f"✖ CORRIDA CORTADA POR EL VIGÍA: {comun.ABORTO}")
+    return 1 if fallidas or malos or comun.ABORTO else 0
 
 
 def totales(res: dict, total: float) -> dict:
@@ -320,6 +335,8 @@ def markdown(inf: dict) -> str:
          f"presupuesto para la prueba: {n(mi['presupuesto_mib']) + ' MiB' if mi['presupuesto_mib'] else 'sin control (secuencial)'}",
          f"- Orden: {' → '.join(m['orden'])}",
          "- Desde volúmenes vacíos: sí (limpieza al inicio de la corrida)"]
+    if m.get("vigia"):
+        L += ["", f"> **Corrida cortada por el vigía de memoria:** {m['vigia']}"]
     ins = inf.get("insumos_influxdb")
     if ins:
         L.append(f"- Insumos de InfluxDB: " + (f"generados en esta corrida ({n(ins['segundos'])} s, fuera del tiempo de carga)"
@@ -347,7 +364,7 @@ def markdown(inf: dict) -> str:
           f"| Carga más larga | {t['carga_mas_larga'][0]} ({n(t['carga_mas_larga'][1])} s) |", ""]
     for b, r in inf["bases"].items():
         L.append(f"- **{b}**: {r.get('detalle', '')}" + (f" · {r['tasa_propia']}" if r.get("tasa_propia") else ""))
-        for e in r.get("errores", []):
+        for e in r.get("fallas", []):
             L.append(f"  - error: `{e[:600]}`")
     adm = inf.get("admisiones") or []
     if adm:

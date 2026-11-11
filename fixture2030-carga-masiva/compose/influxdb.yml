@@ -16,6 +16,15 @@ services:
   influxdb:
     container_name: f30cm-influxdb
     mem_limit: 2g     # búferes de ingesta, WAL y caché de consultas de InfluxDB 3 Core
+    # InfluxDB 3 Core reparte su memoria en PORCENTAJES DE LA RAM QUE VE (la de la VM, 7,7 GB),
+    # no del cgroup: 20 % consultas + 50 % búfer de escritura + 20 % caché = hasta ~6,9 GB contra
+    # un tope de 2 GB. En la primera corrida con presupuesto llegó a 2.044 MiB y una consulta de
+    # distribución lo tiró (evidencia/corridas/20261111-193323_paralelo). Se fijan en absoluto por
+    # variables de entorno (opciones de `influxdb3 serve`), sin tocar el command del módulo.
+    environment:
+      INFLUXDB3_EXEC_MEM_POOL_SIZE: 512MB
+      INFLUXDB3_FORCE_SNAPSHOT_MEM_SIZE: 512MB
+      INFLUXDB3_FILE_CACHE_SIZE: 256MB
     restart: "no"
 
   herramientas:

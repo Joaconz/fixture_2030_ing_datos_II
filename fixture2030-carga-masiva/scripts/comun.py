@@ -40,6 +40,7 @@ EVIDENCIA = MODULO / "evidencia"
 SECRETOS = MODULO / ".secrets"
 DATOS_HOST = Path.home() / "docker" / "data" / "f30cm"
 PREFIJO = "f30cm"
+ABORTO: str | None = None   # lo fija el vigía del Muestreador; corta la corrida
 
 NEO4J_HTTP = "http://127.0.0.1:37474"
 NEO4J_AUTH = ("neo4j", "fixture2030")                 # credencial de desarrollo del módulo (.env.example)
@@ -397,13 +398,21 @@ def a_bytes(texto: str) -> float:
 class Muestreador(threading.Thread):
     """Toma `docker stats --no-stream` en bucle (cada llamada tarda ~2 s) mientras dura la carga.
     Registra TODOS los contenedores: los f30cm-* son los de la prueba y el resto es la carga
-    de fondo de la VM (otras instancias que no son de esta prueba)."""
+    de fondo de la VM (otras instancias que no son de esta prueba).
 
-    def __init__(self):
+    VIGÍA (después del cuelgue del 11/11): si la RAM de todos los contenedores llega a menos de
+    `margen_vm_mib` del total de la VM, o la RAM disponible del host baja de `host_min_mib`,
+    durante 3 muestras seguidas, o `docker stats` no contesta 2 veces seguidas (el motor se
+    empieza a trabar), mata los contenedores f30cm-* y marca ABORTO: la corrida se corta y se
+    informa, en vez de dejar que Docker Desktop se cuelgue."""
+
+    def __init__(self, vm_mib: int | None = None, margen_vm_mib: int = 256, host_min_mib: int = 250):
         super().__init__(daemon=True)
         self.muestras: list[dict] = []
         self.host_libre: list[tuple] = []
         self.fase = "inicio"
+        self.vm_mib, self.margen_vm_mib, self.host_min_mib = vm_mib, margen_vm_mib, host_min_mib
+        self._alarmas = self._sin_respuesta = 0
         self._fin = threading.Event()
 
     def run(self) -> None:
@@ -412,16 +421,49 @@ class Muestreador(threading.Thread):
             try:
                 sal = subprocess.run(["docker", "stats", "--no-stream", "--format",
                                       "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}"],
-                                     capture_output=True, text=True, timeout=60).stdout
+                                     capture_output=True, text=True, timeout=45).stdout
+                self._sin_respuesta = 0
             except subprocess.TimeoutExpired:
+                self._sin_respuesta += 1
+                if self._sin_respuesta >= 2:
+                    self.abortar("docker stats no respondió en 45 s, dos veces seguidas")
                 continue
             t = round(time.perf_counter() - t0, 1)
-            self.host_libre.append((t, ram_libre_host_mib()))
+            host = ram_libre_host_mib()
+            self.host_libre.append((t, host))
+            total = 0.0
             for linea in sal.strip().splitlines():
                 nombre, cpu, mem = linea.split("|")
+                b = a_bytes(mem.split("/")[0])
+                total += b
                 self.muestras.append({"t": t, "fase": self.fase, "contenedor": nombre,
-                                      "cpu_pct": float(cpu.rstrip("%") or 0),
-                                      "mem_bytes": a_bytes(mem.split("/")[0])})
+                                      "cpu_pct": float(cpu.rstrip("%") or 0), "mem_bytes": b})
+            total_mib = total / 2 ** 20
+            motivo = None
+            if self.vm_mib and total_mib > self.vm_mib - self.margen_vm_mib:
+                motivo = f"contenedores {total_mib:,.0f} MiB de {self.vm_mib:,} MiB de la VM"
+            elif host is not None and host < self.host_min_mib:
+                motivo = f"RAM disponible del host {host} MiB (< {self.host_min_mib})"
+            self._alarmas = self._alarmas + 1 if motivo else 0
+            if motivo:
+                log(f"⚠ vigía: {motivo} ({self._alarmas}/3)")
+            if self._alarmas >= 3:
+                self.abortar(motivo)
+
+    def abortar(self, motivo: str) -> None:
+        global ABORTO
+        if ABORTO:
+            return
+        ABORTO = motivo
+        log(f"✖ VIGÍA: corto la corrida — {motivo}. Mato los contenedores f30cm-*.")
+        try:
+            ids = subprocess.run(["docker", "ps", "-q", "--filter", f"name={PREFIJO}-"],
+                                 capture_output=True, text=True, timeout=60).stdout.split()
+            if ids:
+                subprocess.run(["docker", "kill", *ids], capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            log("✖ VIGÍA: docker no respondió al kill")
+        self._fin.set()
 
     def detener(self) -> None:
         self._fin.set()
