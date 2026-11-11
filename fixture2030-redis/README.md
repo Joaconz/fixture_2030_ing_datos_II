@@ -27,14 +27,18 @@ fixture2030-redis/
 │   ├── memoria_prueba.sh        TTL vs evicción (baja maxmemory temporalmente y la restaura)
 │   ├── limpieza.redis / .sh     limpieza opcional (SCAN + UNLINK, nunca KEYS/FLUSHALL)
 │   ├── verificar_persistencia.sh  volumen nombrado, restart y down/up sin perder datos
-│   └── correr_todo.sh           todo lo anterior en orden, guardando la evidencia
+│   ├── correr_todo.sh           todo lo anterior en orden, guardando la evidencia
+│   ├── carga_volumen.sh         100.000 usuarios simultáneos: sesión, índice y perfil (redis-cli --pipe, MULTI/EXEC)
+│   ├── rendimiento_volumen.sh   memoria, latencia, redis-benchmark, transacciones concurrentes y expiración con 100.000
+│   ├── limpieza_volumen.sh      borra sólo el volumen (SCAN por prefijo + UNLINK)
+│   └── correr_volumen.sh        carga x3 + rendimiento + limpieza, guardando la evidencia 10_ y 11_
 ├── docs/
 │   ├── patrones_de_acceso.md          problema de concurrencia y patrones P1–P11 (se escribió primero)
 │   ├── modelo_clave_valor.md          convención de claves, estructuras, operaciones atómicas
 │   ├── ciclo_de_vida_e_invalidacion.md  sesiones, TTL, invalidación, clave ausente
 │   ├── memoria_y_escalabilidad.md     TTL vs evicción, política elegida, nodo único vs producción
 │   ├── concurrencia_y_pruebas.md      atomicidad, datos cargados, mediciones, coherencia con el TPO
-│   └── evidencia/                     salidas reales de cada etapa (01_ … 09_)
+│   └── evidencia/                     salidas reales de cada etapa (01_ … 09_; volumen: 10_ y 11_)
 ├── .gitattributes                  los scripts siempre con finales de línea LF (también al clonar en Windows)
 └── README.md
 ```
@@ -109,6 +113,35 @@ Cada `.redis` imprime marcadores `== N.M … ==` que dicen qué paso se está vi
 
 `carga_muestra.sh` y `sesiones.redis` se pueden repetir: los conteos finales (`DBSIZE = 4203` tras la carga) y los valores no cambian. Solo varían los TTL restantes.
 
+Las 27 operaciones de ejemplo de los `.redis` (crear, validar, renovar y cerrar sesión, caché, voto, ranking, métricas) están catalogadas, con el script y el paso donde se ven, en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §3.1.
+
+### 4.2 Volumen: 100.000 usuarios simultáneos
+
+Carga **100.000 usuarios**, cada uno con su sesión activa (TTL), su índice de sesiones y su perfil con preferencias (idioma, región), con las mismas claves que el resto del módulo. Va por pipeline (`redis-cli --pipe`) y cada usuario se crea con las mismas transacciones `MULTI/EXEC` de la aplicación. No pisa la muestra (otros ids) y se borra por prefijo con `SCAN` + `UNLINK`.
+
+```bash
+sh scripts/correr_volumen.sh          # ~2 min: carga x3, pruebas de rendimiento, limpieza -> docs/evidencia/10_ y 11_
+```
+
+```bash
+docker compose exec -T redis sh /scripts/carga_volumen.sh          # sólo cargar (idempotente)
+docker compose exec -T redis sh /scripts/rendimiento_volumen.sh    # sólo las pruebas (con el volumen cargado)
+docker compose exec -T redis sh /scripts/limpieza_volumen.sh       # borrar el volumen; la muestra queda
+```
+
+Resultados de la corrida del 2026-11-11 (detalle en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §6 y [`memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §4.1):
+
+| Medida | Resultado |
+|---|---|
+| Carga de 100.000 usuarios (1,1 M de comandos) | 2,2–2,8 s, 0 errores; tres corridas con los mismos conteos (100.000 usuarios, sesiones y perfiles) y el mismo contenido |
+| Memoria | 63 MB en total; **584 B por usuario**; 0 claves desalojadas |
+| Validar sesión (`HMGET`), 200 clientes, sesiones al azar | 114.234 req/s, p50 1,50 ms, p99 3,82 ms |
+| Latencia de un cliente: en reposo / con esa carga | p50 0,19 / 1,44 ms; p99 0,89 / 3,72 ms |
+| Transacciones con 50 clientes sobre los 100.000 usuarios | renovar 136.799/s, cerrar 204.082/s, crear 73.314/s; 0 errores y resultado verificado |
+| Expiración activa | 100.000 sesiones vencidas sin ser leídas, borradas por Redis en ~15 s |
+
+Son cifras de un nodo de laboratorio, con cliente y servidor en la misma VM: sirven para comparar en este equipo, no como capacidad de producción.
+
 ---
 
 ## 5. Detener y reiniciar sin perder datos (RNF2)
@@ -148,6 +181,7 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 |---|---|---|
 | 2026-09-25 | **8.10.2** · Linux aarch64 (Docker Desktop, Apple M4) | Primera versión del módulo, con Redis Functions |
 | 2026-10-10 | **8.10.2** · Linux x86_64 (Docker Desktop WSL2, Windows 11) | Versión corregida: solo comandos nativos y `MULTI/EXEC`. Las 9 etapas de `correr_todo.sh` corrieron sin errores desde un ambiente vacío. `EXPIRE … NX` requiere Redis ≥ 7.0 |
+| 2026-11-11 | **8.10.2** · Linux x86_64 (Docker Desktop WSL2, Windows 11) | Volumen de 100.000 usuarios (`correr_volumen.sh`, evidencia `10_` y `11_`) desde un ambiente vacío; `correr_todo.sh` volvió a correr sin errores |
 
 ---
 
@@ -162,7 +196,7 @@ docker compose exec redis redis-cli INFO server | grep -E "redis_version|os:"
 | Memoria | `maxmemory 256mb` + `volatile-lru`: se desaloja sólo lo reconstruible; la votación abierta no vence ni se desaloja | [`memoria_y_escalabilidad.md`](./docs/memoria_y_escalabilidad.md) §2 |
 | Ranking | ZSET por hora con TTL de 2 h | [`modelo_clave_valor.md`](./docs/modelo_clave_valor.md) |
 
-Resultados clave observados (detalle y limitaciones en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §4): 20 clientes simultáneos con el mismo usuario dieron puntaje **20** sin atomicidad y **1** con `SADD` como guarda; 100.000 `ZINCRBY` concurrentes dieron exactamente 100.000; bajo presión de memoria la votación abierta quedó intacta mientras se desalojaron ~16.000 claves con TTL.
+Resultados clave observados (detalle y limitaciones en [`concurrencia_y_pruebas.md`](./docs/concurrencia_y_pruebas.md) §4): 20 clientes simultáneos con el mismo usuario dieron puntaje **20** sin atomicidad y **1** con `SADD` como guarda; 100.000 `ZINCRBY` concurrentes dieron exactamente 100.000; bajo presión de memoria la votación abierta quedó intacta mientras se desalojaron ~16.000 claves con TTL. Con **100.000 usuarios simultáneos** cargados, ver §4.2.
 
 ---
 
@@ -187,7 +221,8 @@ git clone <repo> && cd <repo>/fixture2030-redis
 mkdir -p ~/docker/data/redis
 docker compose up -d && docker compose ps                    # esperar "healthy"
 sh scripts/correr_todo.sh                                     # carga, sesiones, caché, concurrencia, medición, memoria, métricas
-ls docs/evidencia                                             # 01_ … 09_
+sh scripts/correr_volumen.sh                                  # 100.000 usuarios: carga, rendimiento y limpieza
+ls docs/evidencia                                             # 01_ … 11_
 ```
 
 ---

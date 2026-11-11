@@ -65,7 +65,40 @@ De [`08_metricas.txt`](./evidencia/08_metricas.txt) y [`02_carga_muestra.txt`](.
 | ZSET de tendencia (112 partidos) | 1.501 |
 | SET de 500 votantes (`hashtable`) | 18.705 |
 
-Con **255 B por sesión** (dato medido; excluye el ítem del índice por usuario y la sobrecarga de la clave en el diccionario), 3 millones de sesiones darían ~0,7 GB **por extrapolación lineal**, un orden de magnitud a validar con una prueba de carga real, no una cifra comprometida. El `mem_fragmentation_ratio` (13,73) de la muestra **no** es representativo: con menos de 4 MB de datos, el RSS del proceso está dominado por el arranque, no por la fragmentación de los datos.
+Con **255 B por sesión** (dato medido; excluye el ítem del índice por usuario y la sobrecarga de la clave en el diccionario), 3 millones de sesiones darían ~0,7 GB **por extrapolación lineal**. Esa cifra se queda corta: con 100.000 usuarios cargados (§4.1) el costo real por usuario es de 584 B. El `mem_fragmentation_ratio` (13,73) de la muestra **no** es representativo: con menos de 4 MB de datos, el RSS del proceso está dominado por el arranque, no por la fragmentación de los datos.
+
+### 4.1 Medido con 100.000 usuarios simultáneos
+
+Evidencia: [`10_carga_volumen.txt`](./evidencia/10_carga_volumen.txt) y [`11_rendimiento_volumen.txt`](./evidencia/11_rendimiento_volumen.txt) (2026-11-11, Redis 8.10.2). Cada usuario tiene sesión, índice y perfil con sus preferencias: [`concurrencia_y_pruebas.md`](./concurrencia_y_pruebas.md) §6.
+
+| Medida | Valor |
+|---|---|
+| `used_memory` con 100.000 usuarios + la muestra | 63 MB (de 256 MB de `maxmemory`) |
+| `used_memory_dataset` | 37,7 MB |
+| `used_memory_rss` / `mem_fragmentation_ratio` | 85,6 MB / 1,35 |
+| `evicted_keys` durante la carga y las pruebas | **0** |
+| Costo por usuario: diferencia de `used_memory` antes y después de cargar | **584 B** |
+| Costo por usuario: suma de `MEMORY USAGE` de sus tres claves (promedio de 1.000 usuarios) | 467 B |
+
+| Clave | Estructura (`OBJECT ENCODING`) | `MEMORY USAGE` promedio |
+|---|---|---|
+| Sesión `f30:ses:…` (10 campos) | HASH (`listpack`) | 262 B |
+| Índice `f30:usr:…:sesiones` (1 sesión) | SET (`listpack`) | 84 B |
+| Perfil `f30:cache:usuario:…:perfil` (3 campos) | HASH (`listpack`) | 121 B |
+
+**Por qué 584 y no 467.** `MEMORY USAGE` mide el valor y la clave, pero no la entrada en el diccionario principal ni la de la tabla de vencimientos (las tres claves tienen TTL). Esa diferencia (~117 B por usuario, ~39 B por clave) es parte del costo real: para dimensionar se usa 584 B.
+
+**Proyección lineal** (no medida; orden de magnitud):
+
+| Usuarios con sesión y perfil | Memoria de datos | Comentario |
+|---|---|---|
+| 100.000 | ~56 MB (58,4 millones de bytes) | medido |
+| ~400.000–450.000 | ~256 MB | llena el `maxmemory` del laboratorio: desde ahí `volatile-lru` empieza a desalojar sesiones y perfiles (§1) |
+| 2–3 millones (escenario del Hito 1) | ~1,1–1,6 GB | más fragmentación (×1,35 observado); entra en un nodo con varios GB, o se reparte en un Cluster por región (§5) |
+
+(MB y GB en potencias de 2, como `used_memory_human`.)
+
+**Expiración activa con volumen.** Cuando 100.000 sesiones vencieron sin que nadie las leyera, Redis las borró solo en unos 15 s (≈ 6.700 claves/s, `hz 10`): la memoria de las sesiones inactivas se libera sin barridos ni procesos externos. Mientras el ciclo activo no llega a una clave vencida, cualquier lectura ya la ve como inexistente (expiración pasiva), así que la validez de la sesión nunca depende de esa demora.
 
 ## 5. Límites del nodo local y pasos futuros de escala
 
