@@ -111,7 +111,7 @@ function TarjetaJugador({ j }: { j: Jugador }) {
 function Plantel({ codigo }: { codigo: string }) {
   const [posicion, setPosicion] = useState<Posicion | null>(null)
   const fetchPage = useCallback(
-    (cursor: string | null, signal: AbortSignal) => listJugadores(codigo, { posicion, limit: 24, cursor }, signal),
+    (cursor: string | null, signal: AbortSignal) => listJugadores(codigo, { posicion, limit: 26, cursor }, signal),
     [codigo, posicion],
   )
   const lista = useCursorList<Jugador>(`plantel:${codigo}:${posicion ?? '*'}`, fetchPage, (j) => j.dni)

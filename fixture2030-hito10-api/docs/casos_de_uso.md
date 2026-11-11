@@ -44,7 +44,7 @@ Columnas pedidas por §5.1: consumidor · entrada · fuente · respuesta esperad
 - **Fuente:** MongoDB, `jugadores` por `{equipoId, posicion}` (índice `idx_jugadores_equipoId_posicion`), orden por dorsal.
 - **Respuesta:** página de jugadores + `nextCursor`.
 - **No existe:** 404 `TEAM_NOT_FOUND` si el equipo no existe (no se devuelve una lista vacía ambigua). **Fuente caída:** 503.
-- **Tipo:** lectura. **Éxito:** recorriendo todas las páginas se obtienen los 23 jugadores del equipo, sin repetidos.
+- **Tipo:** lectura. **Éxito:** recorriendo todas las páginas se obtienen los 26 jugadores del equipo, sin repetidos.
 
 ### CU3 — Ver los partidos de un equipo
 - **Consumidor:** app del hincha. **Entrada:** código FIFA, `limit` 1–20.

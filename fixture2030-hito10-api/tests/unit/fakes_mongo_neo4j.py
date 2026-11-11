@@ -15,12 +15,14 @@ from app.schemas.equipos import Colores, Equipo, Jugador, PartidoDeEquipo
 from app.schemas.eventos import Evento, EventoNuevo
 from app.schemas.partidos import EquipoEnPartido, Marcador, PartidoDetalle, Sede
 
-POSICIONES = ["Arquero"] + ["Defensor"] * 5 + ["Mediocampista"] * 8 + ["Delantero"] * 9
+# 26 = plantel del seed de Mongo; los dorsales 24-26 son los otros dos arqueros y un defensor.
+POSICIONES = (["Arquero"] + ["Defensor"] * 5 + ["Mediocampista"] * 8 + ["Delantero"] * 9
+              + ["Arquero"] * 2 + ["Defensor"])
 
 
-def plantel(codigo: str, n: int = 23) -> list[Jugador]:
+def plantel(codigo: str, n: int = 26) -> list[Jugador]:
     return [Jugador(dni=str(30000000 + d), nombre=f"Nombre{d}", apellido=f"Apellido{d}",
-                    fechaNacimiento=date(2000, 1, d % 28 + 1), posicion=POSICIONES[(d - 1) % 23],
+                    fechaNacimiento=date(2000, 1, d % 28 + 1), posicion=POSICIONES[(d - 1) % len(POSICIONES)],
                     dorsal=d, equipoCodigo=codigo) for d in range(1, n + 1)]
 
 
@@ -32,7 +34,7 @@ class FakeMongo:
             "ARG": Equipo(codigo="ARG", nombre="Argentina", confederacion="CONMEBOL", rankingFifa=1,
                           grupo="A", entrenador="Lionel Scaloni", sede="Montevideo",
                           colores=Colores(principal="Celeste", alternativo="Azul"),
-                          cantidadJugadores=23),
+                          cantidadJugadores=26),
             "FIJ": Equipo(codigo="FIJ", nombre="Fiyi", confederacion="OFC", rankingFifa=155, grupo="P"),
         }
         self.jugadores = {"ARG": plantel("ARG"), "FIJ": []}

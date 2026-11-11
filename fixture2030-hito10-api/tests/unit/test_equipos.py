@@ -64,20 +64,20 @@ def test_paginacion_completa_sin_repetidos(make_client):
         cursor = body["nextCursor"]
         if cursor is None:
             break
-    assert dorsales == list(range(1, 24)) and paginas == 5
+    assert dorsales == list(range(1, 27)) and paginas == 6
     # se pide limit+1 al adaptador para saber si hay otra página
     pedidos = [ll for ll in mongo.llamadas if ll[0] == "list_jugadores"]
-    assert len(pedidos) == 5 and all(ll[4] == 6 for ll in pedidos)
+    assert len(pedidos) == 6 and all(ll[4] == 6 for ll in pedidos)
 
 
 def test_pagina_exacta_no_deja_cursor_colgado(make_client):
-    body = make_client(mongodb=FakeMongo()).get("/equipos/ARG/jugadores?limit=23").json()
-    assert len(body["items"]) == 23 and body["nextCursor"] is None
+    body = make_client(mongodb=FakeMongo()).get("/equipos/ARG/jugadores?limit=26").json()
+    assert len(body["items"]) == 26 and body["nextCursor"] is None
 
 
 def test_filtro_por_posicion(make_client):
     body = make_client(mongodb=FakeMongo()).get("/equipos/ARG/jugadores?posicion=Defensor").json()
-    assert [j["dorsal"] for j in body["items"]] == [2, 3, 4, 5, 6]
+    assert [j["dorsal"] for j in body["items"]] == [2, 3, 4, 5, 6, 26]
     assert all(j["posicion"] == "Defensor" and j["equipoCodigo"] == "ARG" for j in body["items"])
 
 
@@ -150,7 +150,7 @@ def test_partidos_neo4j_caido_da_503(make_client):
 def test_mapeo_documento_equipo():
     eq = equipo_desde_documento({"_id": "ARG", "nombre": "Argentina", "confederacion": "CONMEBOL",
                                  "rankingFifa": 1, "grupo": "A", "colores": {"principal": "Celeste"},
-                                 "cantidadJugadores": 23})
+                                 "cantidadJugadores": 26})
     assert eq.codigo == "ARG" and eq.colores.principal == "Celeste" and eq.colores.alternativo is None
     assert eq.entrenador is None
 
