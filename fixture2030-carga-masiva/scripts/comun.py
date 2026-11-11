@@ -70,7 +70,8 @@ def commit() -> str:
     def git(*a):
         return subprocess.run(["git", *a], cwd=RAIZ, capture_output=True, text=True).stdout.strip()
     corto = git("rev-parse", "--short", "HEAD") or "sin-git"
-    sucio = git("status", "--porcelain", "--", ".")
+    # La evidencia que van dejando las corridas no cuenta como código sin commitear
+    sucio = git("status", "--porcelain", "--", ".", ":(exclude)fixture2030-carga-masiva/evidencia")
     return corto + (" + cambios sin commitear" if sucio else "")
 
 
