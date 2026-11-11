@@ -43,7 +43,7 @@ Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó e
 | Componente | API REST (y la base que la arrastra) |
 | Impacto | Usuarios que reciben errores en vez de datos del partido. |
 | Quién la atiende | quien opera la API; si Q6 apunta a una base, quien opera esa base |
-| Acción | Panel "Llamadas por segundo a cada base, por resultado": qué `dependencia` pasa a `no_disponible` o `timeout`. |
+| Acción | Panel "Llamadas por segundo a cada base, por resultado" (dashboard *3. Comparación entre bases*): qué `dependencia` pasa a `no_disponible` o `timeout`. |
 | Por qué el umbral | El Hito 12 midió **0 errores** con 364 req/s, así que cualquier 5xx sostenido es una anomalía. 1 % deja margen para un error aislado. **Observado:** se activó (pending) con Neo4j rechazando credenciales e InfluxDB sin token (18,6 % de 5xx). |
 
 ## ApiLatenciaAlta
@@ -99,7 +99,7 @@ Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó e
 | Componente | Neo4j |
 | Impacto | La línea de tiempo del partido se sirve lenta; con la API cargada acerca el p95 a `ApiLatenciaAlta`. |
 | Quién la atiende | quien opera Neo4j |
-| Acción | Heap y transacciones abiertas en el dashboard *Neo4j e InfluxDB*; revisar que existan los índices de `estructura.cypher`. |
+| Acción | Heap y transacciones abiertas en el dashboard *4. Bases por dentro*; revisar que existan los índices de `estructura.cypher`. |
 | Por qué el umbral | En el laboratorio la consulta tarda 6–66 ms en el motor con la base caliente. Justo después de un reinicio la primera vuelta tarda más (caché fría) y la alerta queda en pending unos segundos: el `for` de 5 minutos evita que eso dispare. **Experimental:** no se probó con carga. |
 
 ## InfluxDBEscriturasRechazadas

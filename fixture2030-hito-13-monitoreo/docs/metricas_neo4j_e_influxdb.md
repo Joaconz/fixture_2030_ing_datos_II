@@ -1,6 +1,6 @@
 # Métricas internas de Neo4j e InfluxDB (§5.2, RF2)
 
-Hasta este cambio, de Neo4j y de InfluxDB solo había **sonda** (el puerto o `/health` responde) y la **latencia vista desde la API**. Ahora las dos tienen métricas internas en Prometheus, alertas propias y un dashboard aparte: *Fixture 2030 — Neo4j e InfluxDB* ([`grafana/dashboards/fixture2030-neo4j-influxdb.json`](../grafana/dashboards/fixture2030-neo4j-influxdb.json)).
+Hasta este cambio, de Neo4j y de InfluxDB solo había **sonda** (el puerto o `/health` responde) y la **latencia vista desde la API**. Ahora las dos tienen métricas internas en Prometheus, alertas propias y dos filas en el dashboard *4. Bases por dentro* ([`grafana/dashboards/fixture2030-bases.json`](../grafana/dashboards/fixture2030-bases.json)). La evidencia de abajo se tomó cuando esas filas eran un dashboard aparte (*Fixture 2030 — Neo4j e InfluxDB*); se unieron al *4* para mantener los cinco dashboards, con los mismos paneles y consultas.
 
 | Base | Job de Prometheus | De dónde salen las métricas | Credencial |
 |---|---|---|---|

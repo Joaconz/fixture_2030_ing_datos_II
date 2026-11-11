@@ -87,7 +87,7 @@ groups:
         annotations:
           resumen: "La consulta de referencia de Neo4j tarda {{ $value | humanizeDuration }} en el motor (umbral 100 ms)"
           impacto: "La línea de tiempo de eventos del partido se sirve lenta; con la API ya cargada se acerca al umbral de ApiLatenciaAlta."
-          accion: "Mirar heap (neo4j_heap_bytes) y transacciones abiertas en el dashboard Neo4j e InfluxDB; revisar que existan los índices de estructura.cypher."
+          accion: "Mirar heap (neo4j_heap_bytes) y transacciones abiertas en el dashboard 4. Bases por dentro; revisar que existan los índices de estructura.cypher."
 
   - name: fixture2030-influxdb
     rules:

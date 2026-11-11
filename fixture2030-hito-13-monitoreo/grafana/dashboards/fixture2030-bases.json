@@ -1,12 +1,10 @@
 {
-  "uid": "fixture2030-neo4j-influxdb",
-  "title": "Fixture 2030 — Neo4j e InfluxDB",
-  "description": "Métricas internas de Neo4j (exporter propio) y de InfluxDB 3 Core (/metrics con token). Ver docs/metricas_neo4j_e_influxdb.md.",
+  "uid": "fixture2030-bases",
+  "title": "Fixture 2030 — 4. Bases por dentro",
+  "description": "Métricas internas de las cinco bases: MongoDB y Redis (exporters), Cassandra (agente JMX), Neo4j (exporter propio) e InfluxDB (/metrics con token).",
   "tags": [
     "fixture2030",
-    "hito13",
-    "neo4j",
-    "influxdb"
+    "hito13"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -17,6 +15,19 @@
     "from": "now-30m",
     "to": "now"
   },
+  "links": [
+    {
+      "title": "Dashboards del Fixture 2030",
+      "type": "dashboards",
+      "tags": [
+        "fixture2030"
+      ],
+      "asDropdown": false,
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    }
+  ],
   "templating": {
     "list": []
   },
@@ -25,9 +36,9 @@
   },
   "panels": [
     {
-      "id": 1,
+      "id": 14,
       "type": "row",
-      "title": "Neo4j (Hito 5) — exporter propio (neo4j-exporter)",
+      "title": "MongoDB (Hito 4)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -38,7 +49,590 @@
       "panels": []
     },
     {
-      "id": 2,
+      "id": 15,
+      "title": "Operaciones por segundo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (type) (rate(mongodb_op_counters_total[1m]))",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Conexiones abiertas",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "mongodb_connections{state=\"current\"}",
+          "legendFormat": "actuales"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "Redis (Hito 7)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 18,
+      "title": "Comandos por segundo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "rate(redis_commands_processed_total[1m])",
+          "legendFormat": "comandos/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Hit ratio de la caché",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "rate(redis_keyspace_hits_total[1m]) / clamp_min(rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]), 1e-9)",
+          "legendFormat": "hits / (hits + misses)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Memoria y clientes",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "redis_memory_used_bytes",
+          "legendFormat": "memoria usada"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "redis_connected_clients",
+          "legendFormat": "clientes"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "clientes"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "row",
+      "title": "Cassandra (Hito 6)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 22,
+      "title": "Latencia de lectura y escritura (p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "cassandra_clientrequest_latency_seconds{operacion=~\"Read|Write\",quantile=\"0.99\"}",
+          "legendFormat": "{{operacion}} p99"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "cassandra_clientrequest_latency_seconds{operacion=~\"Read|Write\",quantile=\"0.50\"}",
+          "legendFormat": "{{operacion}} p50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Latencia vista por el nodo coordinador (no incluye la red ni la API). Los percentiles los calcula Cassandra dando más peso a lo reciente: reaccionan en minutos. Línea roja: 100 ms, umbral experimental."
+    },
+    {
+      "id": 23,
+      "title": "Peticiones por segundo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "rate(cassandra_clientrequest_total{operacion=~\"Read|Write\"}[1m])",
+          "legendFormat": "{{operacion}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "Errores (timeouts, no disponibles, fallas)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (operacion, tipo) (rate(cassandra_clientrequest_errores_total{operacion=~\"Read|Write\"}[1m]))",
+          "legendFormat": "{{operacion}} {{tipo}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Unavailables: no hay réplicas suficientes para el nivel de consistencia. Timeouts: las réplicas no respondieron a tiempo. Con un solo nodo y RF=1, Unavailable equivale a nodo caído."
+    },
+    {
+      "id": 25,
+      "title": "Espacio en disco por tabla",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "cassandra_table_livediskspaceused{keyspace=\"fixture2030_comentarios\"}",
+          "legendFormat": "{{tabla}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "title": "Tareas pendientes (escrituras y compactación)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "cassandra_threadpool_pendingtasks{pool=\"MutationStage\"}",
+          "legendFormat": "MutationStage (escrituras)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "cassandra_threadpool_pendingtasks{pool=\"ReadStage\"}",
+          "legendFormat": "ReadStage (lecturas)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "C",
+          "expr": "cassandra_compaction_pending_tasks",
+          "legendFormat": "compactaciones"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Cola de trabajo del nodo. Si crece y no baja, Cassandra está saturada: la latencia sube después."
+    },
+    {
+      "id": 101,
+      "type": "row",
+      "title": "Neo4j (Hito 5) — exporter propio (neo4j-exporter)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 102,
       "title": "Neo4j: estado",
       "type": "stat",
       "datasource": {
@@ -47,7 +641,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 1,
+        "y": 36,
         "w": 8,
         "h": 5
       },
@@ -122,7 +716,7 @@
       "description": "neo4j_up = 1 si el exporter se autenticó y ejecutó la consulta de referencia (alerta Neo4jNoResponde). 'base neo4j online' sale de SHOW DATABASES. Sin datos = el exporter no responde (alerta TargetSinScrape)."
     },
     {
-      "id": 3,
+      "id": 103,
       "title": "Tamaño del grafo",
       "type": "stat",
       "datasource": {
@@ -131,7 +725,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 1,
+        "y": 36,
         "w": 5,
         "h": 5
       },
@@ -174,7 +768,7 @@
       "description": "Suma de neo4j_nodos (por etiqueta) y neo4j_relaciones (por tipo). Con la carga del Hito 5: 2654 nodos y 6802 relaciones."
     },
     {
-      "id": 4,
+      "id": 104,
       "title": "Versión",
       "type": "stat",
       "datasource": {
@@ -183,7 +777,7 @@
       },
       "gridPos": {
         "x": 13,
-        "y": 1,
+        "y": 36,
         "w": 4,
         "h": 5
       },
@@ -217,7 +811,7 @@
       "description": "Versión y edición que reporta dbms.components()."
     },
     {
-      "id": 5,
+      "id": 105,
       "title": "Alertas de Neo4j e InfluxDB",
       "type": "table",
       "datasource": {
@@ -226,7 +820,7 @@
       },
       "gridPos": {
         "x": 17,
-        "y": 1,
+        "y": 36,
         "w": 7,
         "h": 5
       },
@@ -307,7 +901,7 @@
       }
     },
     {
-      "id": 6,
+      "id": 106,
       "title": "Latencia de la consulta de referencia",
       "type": "timeseries",
       "datasource": {
@@ -316,7 +910,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 41,
         "w": 8,
         "h": 8
       },
@@ -371,7 +965,7 @@
       "description": "Eventos de un partido (la lectura principal de la API). servidor = tiempo del motor que informa la Query API; ida_y_vuelta = medido por el exporter (incluye HTTP). La línea roja punteada es el umbral de Neo4jConsultaLenta (100 ms en el motor, sostenido 5 min)."
     },
     {
-      "id": 7,
+      "id": 107,
       "title": "Transacciones abiertas",
       "type": "timeseries",
       "datasource": {
@@ -380,7 +974,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 6,
+        "y": 41,
         "w": 8,
         "h": 8
       },
@@ -419,7 +1013,7 @@
       "description": "SHOW TRANSACTIONS en cada scrape (15 s), sin contar la del exporter. Es una foto: una transacción más corta que 15 s puede no verse."
     },
     {
-      "id": 8,
+      "id": 108,
       "title": "Heap de la JVM",
       "type": "timeseries",
       "datasource": {
@@ -428,7 +1022,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 6,
+        "y": 41,
         "w": 8,
         "h": 8
       },
@@ -467,7 +1061,7 @@
       "description": "Heap usado y máximo (dbms.queryJmx, java.lang:type=Memory). El máximo es el de fixture2030-neo4j/docker-compose.yml (1 GB)."
     },
     {
-      "id": 9,
+      "id": 109,
       "title": "Nodos por etiqueta",
       "type": "timeseries",
       "datasource": {
@@ -476,7 +1070,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 49,
         "w": 8,
         "h": 8
       },
@@ -515,7 +1109,7 @@
       "description": "Conteo por etiqueta (count store, no recorre el grafo). Sube con los eventos que registra la API durante un partido."
     },
     {
-      "id": 10,
+      "id": 110,
       "title": "Relaciones por tipo",
       "type": "timeseries",
       "datasource": {
@@ -524,7 +1118,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 14,
+        "y": 49,
         "w": 8,
         "h": 8
       },
@@ -563,7 +1157,7 @@
       "description": "Conteo por tipo de relación (count store)."
     },
     {
-      "id": 11,
+      "id": 111,
       "title": "Duración de la recolección del exporter",
       "type": "timeseries",
       "datasource": {
@@ -572,7 +1166,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 14,
+        "y": 49,
         "w": 8,
         "h": 8
       },
@@ -620,20 +1214,20 @@
       "description": "Cuánto tarda el exporter en hacer todas sus consultas. Si se acerca a 10 s (timeout del scrape) el target cae."
     },
     {
-      "id": 12,
+      "id": 112,
       "type": "row",
       "title": "InfluxDB 3 Core (Hito 8) — /metrics de InfluxDB (con token)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 57,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 13,
+      "id": 113,
       "title": "InfluxDB: métricas internas",
       "type": "stat",
       "datasource": {
@@ -642,7 +1236,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 58,
         "w": 6,
         "h": 5
       },
@@ -708,7 +1302,7 @@
       "description": "1 = Prometheus leyó /metrics con el token. CAÍDO con la base arriba = falta o es inválido fixture2030-influxdb/secrets/prometheus-token (ver docs/metricas_neo4j_e_influxdb.md)."
     },
     {
-      "id": 14,
+      "id": 114,
       "title": "Tiempo encendido",
       "type": "stat",
       "datasource": {
@@ -717,7 +1311,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 23,
+        "y": 58,
         "w": 5,
         "h": 5
       },
@@ -753,7 +1347,7 @@
       "description": "Desde el último arranque del proceso influxdb3. Si vuelve a cero, el contenedor se reinició."
     },
     {
-      "id": 15,
+      "id": 115,
       "title": "Líneas escritas (total)",
       "type": "stat",
       "datasource": {
@@ -762,7 +1356,7 @@
       },
       "gridPos": {
         "x": 11,
-        "y": 23,
+        "y": 58,
         "w": 7,
         "h": 5
       },
@@ -805,7 +1399,7 @@
       "description": "Contadores desde el arranque. Aparecen después de la primera escritura."
     },
     {
-      "id": 16,
+      "id": 116,
       "title": "Memoria del proceso",
       "type": "stat",
       "datasource": {
@@ -814,7 +1408,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 23,
+        "y": 58,
         "w": 6,
         "h": 5
       },
@@ -850,7 +1444,7 @@
       "description": "Memoria residente según jemalloc (el asignador de InfluxDB)."
     },
     {
-      "id": 17,
+      "id": 117,
       "title": "Líneas por segundo (escritura)",
       "type": "timeseries",
       "datasource": {
@@ -859,7 +1453,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 63,
         "w": 8,
         "h": 8
       },
@@ -907,7 +1501,7 @@
       "description": "Ventana de 1 minuto. Rechazadas > 0 dispara InfluxDBEscriturasRechazadas (ventana de 5 min, sostenido 1 min)."
     },
     {
-      "id": 18,
+      "id": 118,
       "title": "Requests HTTP por segundo, por endpoint y resultado",
       "type": "timeseries",
       "datasource": {
@@ -916,7 +1510,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 28,
+        "y": 63,
         "w": 8,
         "h": 8
       },
@@ -955,7 +1549,7 @@
       "description": "Lo que recibe la API HTTP de InfluxDB (sin contar el scrape de Prometheus). status: ok, client_error, server_error, aborted."
     },
     {
-      "id": 19,
+      "id": 119,
       "title": "Latencia p95 de escritura y consulta",
       "type": "timeseries",
       "datasource": {
@@ -964,7 +1558,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 28,
+        "y": 63,
         "w": 8,
         "h": 8
       },
@@ -1003,7 +1597,7 @@
       "description": "p95 (ventana de 5 min) de cada request HTTP de escritura (write_lp) y de consulta (query_sql, la que usa la API). Es la latencia del motor sin la red de la API. write_lp ronda 1 s a propósito: InfluxDB confirma la escritura después del flush del WAL (--wal-flush-interval, 1 s por defecto)."
     },
     {
-      "id": 20,
+      "id": 120,
       "title": "Consultas: p95 de punta a punta en el motor",
       "type": "timeseries",
       "datasource": {
@@ -1012,7 +1606,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 36,
+        "y": 71,
         "w": 8,
         "h": 8
       },
@@ -1051,7 +1645,7 @@
       "description": "influxdb_iox_query_log_end2end_duration_seconds: desde que la consulta entra hasta que termina (planificación + ejecución)."
     },
     {
-      "id": 21,
+      "id": 121,
       "title": "Bytes escritos por segundo",
       "type": "timeseries",
       "datasource": {
@@ -1060,7 +1654,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 36,
+        "y": 71,
         "w": 8,
         "h": 8
       },
@@ -1099,7 +1693,7 @@
       "description": "Volumen de line protocol recibido (ventana de 1 minuto)."
     },
     {
-      "id": 22,
+      "id": 122,
       "title": "Memoria (jemalloc)",
       "type": "timeseries",
       "datasource": {
@@ -1108,7 +1702,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 36,
+        "y": 71,
         "w": 8,
         "h": 8
       },
