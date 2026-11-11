@@ -1,0 +1,36 @@
+# ============================================================
+#  Fixture 2030 — Carga masiva (Hito 11 del PDF) · override de Cassandra
+#  Se aplica ENCIMA de ../fixture2030-cassandra/docker-compose.yml.
+#  Cambia nombres (contenedor, volumen, red, puerto) para no chocar con la
+#  instancia compartida `fixture2030-cassandra`. La carpeta que respalda el
+#  volumen la fija el orquestador con CASSANDRA_DATA_DIR (variable del módulo).
+#
+#  El cargador es el del módulo (python:3.11-slim + scripts/carga_masiva.py).
+#  Dos diferencias, ambas solo de forma:
+#   - su evidencia va a la carpeta de este módulo, no a docs/evidencia de Cassandra;
+#   - arranca con `sleep infinity` y el orquestador ejecuta adentro, por separado,
+#     el `pip install cassandra-driver` (preparación) y carga_masiva.py (carga),
+#     para no cargarle a Cassandra el tiempo de descarga del driver.
+# ============================================================
+services:
+  cassandra:
+    container_name: f30cm-cassandra
+    mem_limit: 2g     # MAX_HEAP_SIZE 1G del módulo + off-heap (la compartida usa ~1,6 GiB)
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:19142:9042"
+
+  cargador:
+    container_name: f30cm-cassandra-cargador
+    mem_limit: 768m   # carga_masiva.py + recorrido de validación (conjuntos de 1,05 M ids)
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ../fixture2030-carga-masiva/evidencia/modulos/cassandra:/app/evidencia
+
+volumes:
+  cassandra_data:
+    name: f30cm_cassandra_data
+
+networks:
+  fixture2030-net:
+    name: f30cm-cassandra-net

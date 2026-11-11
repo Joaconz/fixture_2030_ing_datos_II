@@ -10,11 +10,13 @@
 #
 #  USO: lo llama inicializacion.sh. Suelto: sh scripts/autorizacion_local.sh
 #  REQUIERE: el servidor arriba (docker compose up -d).
+#  SECRETS_DIR (opcional, por defecto secrets): carpeta del token. La usa la carga
+#  masiva integrada (fixture2030-carga-masiva) para no pisar el token de otra instancia.
 # ============================================================================
 set -eu
 cd "$(dirname "$0")/.."
-TOKEN_FILE="secrets/admin-token.json"
-mkdir -p secrets
+TOKEN_FILE="${SECRETS_DIR:-secrets}/admin-token.json"
+mkdir -p "${SECRETS_DIR:-secrets}"
 
 leer() { sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TOKEN_FILE"; }
 token_valido() {

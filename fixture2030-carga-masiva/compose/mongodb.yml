@@ -1,0 +1,45 @@
+# ============================================================
+#  Fixture 2030 — Carga masiva (Hito 11 del PDF) · override de MongoDB
+#  Se aplica ENCIMA de ../fixture2030-mongodb/docker-compose.yml:
+#      docker compose -p f30cm-mongodb -f docker-compose.yml \
+#          -f ../fixture2030-carga-masiva/compose/mongodb.yml ...
+#  Las rutas relativas se resuelven desde la carpeta del módulo (el primer -f).
+#
+#  Solo cambia NOMBRES (contenedor, volumen, puerto) para no chocar con la
+#  instancia compartida `fixture2030_mongo`; imagen, init y datos son los del módulo.
+# ============================================================
+services:
+  mongodb:
+    container_name: f30cm-mongodb
+    mem_limit: 768m   # WiredTiger dimensiona su caché con este límite
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:27130:27017"
+    # El compose del módulo no tiene healthcheck. Este responde por la IP del
+    # contenedor: mientras corren los scripts de init/ mongod escucha solo en
+    # 127.0.0.1, así que "healthy" significa init terminado y servidor definitivo.
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --host $$(hostname -i) --eval 'db.adminCommand({ping: 1}).ok' | grep -q 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 5s
+
+  # Contenedor de herramientas para correr load/seed.js tal como está en el módulo
+  # (Node + npm). El código se monta de solo lectura y se copia adentro: así
+  # node_modules no ensucia el repo ni pasa por el disco de Windows.
+  cargador:
+    image: node:20-alpine
+    profiles: ["carga"]
+    container_name: f30cm-mongodb-cargador
+    mem_limit: 384m   # npm ci + node seed.js
+    working_dir: /app
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+    volumes:
+      - ./load:/src:ro
+    entrypoint: ["sleep", "infinity"]
+
+volumes:
+  mongo_data:
+    name: f30cm_mongo_data

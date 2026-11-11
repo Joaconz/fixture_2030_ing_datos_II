@@ -1,0 +1,216 @@
+[18:52:53] # Ejecutado: 2026-11-11T18:52:50+00:00 | commit: 7926c96 + cambios sin commitear | comando: python fixture2030-carga-masiva/scripts/orquestador.py --modo paralelo --conservar
+[18:52:53] # VM de Docker: 12 CPUs, 7.68 GiB
+[18:52:53] == 0. Limpieza: proyectos f30cm-* abajo, volúmenes y carpetas de datos borrados
+[18:53:05]   mongodb | 
+[18:53:05]   mongodb |  Container f30cm-mongodb-cargador  Stopping
+[18:53:05]   mongodb |  Container f30cm-mongodb  Stopping
+[18:53:05]   mongodb |  Container f30cm-mongodb  Stopped
+[18:53:05]   mongodb |  Container f30cm-mongodb  Removing
+[18:53:05]   mongodb |  Container f30cm-mongodb  Removed
+[18:53:05]   mongodb |  Container f30cm-mongodb-cargador  Stopped
+[18:53:05]   mongodb |  Container f30cm-mongodb-cargador  Removing
+[18:53:05]   mongodb |  Container f30cm-mongodb-cargador  Removed
+[18:53:05]   mongodb |  Network f30cm-mongodb_default  Removing
+[18:53:05]   mongodb |  Volume f30cm_mongo_data  Removing
+[18:53:05]   mongodb |  Volume f30cm_mongo_data  Removed
+[18:53:05]   mongodb |  Network f30cm-mongodb_default  Removed
+[18:53:18]   neo4j | 
+[18:53:18]   neo4j |  Container f30cm-neo4j  Stopping
+[18:53:18]   neo4j |  Container f30cm-neo4j  Stopped
+[18:53:18]   neo4j |  Container f30cm-neo4j  Removing
+[18:53:18]   neo4j |  Container f30cm-neo4j  Removed
+[18:53:18]   neo4j |  Volume f30cm_neo4j_data  Removing
+[18:53:18]   neo4j |  Volume f30cm_neo4j_plugins  Removing
+[18:53:18]   neo4j |  Network f30cm-neo4j-net  Removing
+[18:53:18]   neo4j |  Volume f30cm_neo4j_logs  Removing
+[18:53:18]   neo4j |  Volume f30cm_neo4j_plugins  Removed
+[18:53:18]   neo4j |  Volume f30cm_neo4j_data  Removed
+[18:53:18]   neo4j |  Volume f30cm_neo4j_logs  Removed
+[18:53:18]   neo4j |  Network f30cm-neo4j-net  Removed
+[18:53:21]   influxdb | 
+[18:53:21]   influxdb |  Network f30cm-influxdb-net  Removing
+[18:53:21]   influxdb |  Volume f30cm_influxdb_data  Removing
+[18:53:21]   influxdb |  Volume f30cm_influxdb_data  Removed
+[18:53:21]   influxdb |  Network f30cm-influxdb-net  Removed
+[18:53:28]   redis | 
+[18:53:28]   redis |  Container f30cm-redis  Stopping
+[18:53:28]   redis |  Container f30cm-redis  Stopped
+[18:53:28]   redis |  Container f30cm-redis  Removing
+[18:53:28]   redis |  Container f30cm-redis  Removed
+[18:53:28]   redis |  Volume f30cm_redis_data  Removing
+[18:53:28]   redis |  Network f30cm-redis_default  Removing
+[18:53:28]   redis |  Volume f30cm_redis_data  Removed
+[18:53:28]   redis |  Network f30cm-redis_default  Removed
+[18:53:28] == 1. Insumos de InfluxDB (data/lp/completo, deterministas)
+[18:53:28]    ya existían: se reutilizan (no cuentan como carga)
+[18:53:28] == 2. Carga en modo paralelo
+[18:53:28] mongodb   ▶ arranque
+[18:53:29] neo4j     ▶ arranque
+[18:53:29] cassandra ▶ arranque
+[18:53:30] influxdb  ▶ arranque
+[18:53:30] redis     ▶ arranque
+[18:53:41]   redis | 
+[18:53:41]   redis |  Network f30cm-redis_default  Creating
+[18:53:41]   redis |  Network f30cm-redis_default  Created
+[18:53:41]   redis |  Volume "f30cm_redis_data"  Creating
+[18:53:41]   redis |  Volume "f30cm_redis_data"  Created
+[18:53:41]   redis |  Container f30cm-redis  Creating
+[18:53:41]   redis |  Container f30cm-redis  Created
+[18:53:41]   redis |  Container f30cm-redis  Starting
+[18:53:41]   redis |  Container f30cm-redis  Started
+[18:53:41]   redis |  Container f30cm-redis  Waiting
+[18:53:41]   redis |  Container f30cm-redis  Healthy
+[18:53:41] redis     ✔ arranque en 10.5 s
+[18:53:41] redis     ▶ preparacion
+[18:53:41] redis     ✔ preparacion en 0.0 s
+[18:53:41] redis     ▶ carga
+[18:53:45]   redis | == 2.1 Estado previo (DBSIZE es O(1), no recorre claves) ==
+[18:53:45]   redis | 0
+[18:53:45]   redis | == 2.2 Generación determinista: 2000 usuarios, tendencia de 112 partidos, 500 votos MVP ==
+[18:53:45]   redis | == 2.3 Verificación de lo cargado ==
+[18:53:45]   redis | 4203
+[18:53:45]   redis | 2
+[18:53:45]   redis | 112
+[18:53:45]   redis | 500
+[18:53:45]   redis | ARG-10
+[18:53:45]   redis | 99
+[18:53:45]   redis | FRA-7
+[18:53:45]   redis | 99
+[18:53:45]   redis | ARG-9
+[18:53:45]   redis | 100
+[18:53:45]   redis | BRA-11
+[18:53:45]   redis | 101
+[18:53:45]   redis | FRA-10
+[18:53:45]   redis | 101
+[18:53:45]   redis | == 2.4 Una sesión cargada: atributos y TTL restante ==
+[18:53:45]   redis | session_id
+[18:53:45]   redis | demo-ses-0000001-1
+[18:53:45]   redis | usuario_id
+[18:53:45]   redis | USR-0000001
+[18:53:45]   redis | rol
+[18:53:45]   redis | HINCHA
+[18:53:45]   redis | region
+[18:53:45]   redis | EU
+[18:53:45]   redis | dispositivo
+[18:53:45]   redis | ios
+[18:53:45]   redis | estado
+[18:53:45]   redis | ACTIVA
+[18:53:45]   redis | creada_en
+[18:53:45]   redis | 1908979133
+[18:53:45]   redis | ultima_actividad
+[18:53:45]   redis | 1908979193
+[18:53:45]   redis | expira_absoluta
+[18:53:45]   redis | 1909022333
+[18:53:45]   redis | solicitudes
+[18:53:45]   redis | 13
+[18:53:45]   redis | 1789
+[18:53:45]   redis | == 2.5 Sesión bloqueada de muestra (usuario 33) ==
+[18:53:45]   redis | BLOQUEADA
+[18:53:45]   redis | == 2.6 Caché fría a propósito: no existe copia de ningún partido todavía ==
+[18:53:45]   redis | 0
+[18:54:00]   redis | == V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+[18:54:00]   redis | DBSIZE: 4203 | used_memory: 2793712 bytes
+[18:54:00]   redis | == V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+[18:54:00]   redis | errors: 0, replies: 1000000
+[18:54:00]   redis | tiempo de carga: 10161 ms | 9842 usuarios/s, 108257 comandos/s (11 por usuario)
+[18:54:00]   redis | == V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+[18:54:00]   redis | conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+[18:54:00]   redis | INFO keyspace (expires = claves con TTL): db0:keys=304203,expires=304201,avg_ttl=15877377,subexpiry=0
+[18:54:00]   redis | huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+[18:54:00]   redis | -- primer usuario --
+[18:54:00]   redis | session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+[18:54:00]   redis | nombre Usuario 1000000 idioma es region AM
+[18:54:00]   redis | TTL sesión: 1788 | TTL índice: 43188 | TTL perfil: 888
+[18:54:00]   redis | -- último usuario (USR-1099999) --
+[18:54:00]   redis | sesiones: vol-ses-000000099999 | TTL sesión: 1405
+[18:54:00]   redis | == V.4 Memoria ==
+[18:54:00]   redis | used_memory antes: 2793712 | después: 61308416 (58.47M) | maxmemory: 268435456
+[18:54:00]   redis | por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): 585 bytes
+[18:54:00]   redis | evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+[18:54:00] redis     ✔ carga en 18.9 s · 100,000 usuarios · 5,280.8 /s
+[18:54:09]   influxdb | 
+[18:54:09]   influxdb |  influxdb Pulling 
+[18:54:09]   influxdb |  influxdb Pulled 
+[18:54:09]   influxdb |  Network f30cm-influxdb-net  Creating
+[18:54:09]   influxdb |  Network f30cm-influxdb-net  Created
+[18:54:09]   influxdb |  Volume "f30cm_influxdb_data"  Creating
+[18:54:09]   influxdb |  Volume "f30cm_influxdb_data"  Created
+[18:54:09]   influxdb |  Container f30cm-influxdb  Creating
+[18:54:09]   influxdb |  Container f30cm-influxdb  Created
+[18:54:09]   influxdb |  Container f30cm-influxdb  Starting
+[18:54:09]   influxdb |  Container f30cm-influxdb  Started
+[18:54:09]   influxdb |  Container f30cm-influxdb  Waiting
+[18:54:09]   influxdb |  Container f30cm-influxdb  Healthy
+[18:54:09] influxdb  ✔ arranque en 39.2 s
+[18:54:09] influxdb  ▶ preparacion
+[18:54:14]   mongodb | 
+[18:54:14]   mongodb |  Network f30cm-mongodb_default  Creating
+[18:54:14]   mongodb |  Network f30cm-mongodb_default  Created
+[18:54:14]   mongodb |  Volume "f30cm_mongo_data"  Creating
+[18:54:14]   mongodb |  Volume "f30cm_mongo_data"  Created
+[18:54:14]   mongodb |  Container f30cm-mongodb  Creating
+[18:54:14]   mongodb |  Container f30cm-mongodb  Created
+[18:54:14]   mongodb |  Container f30cm-mongodb  Starting
+[18:54:14]   mongodb |  Container f30cm-mongodb  Started
+[18:54:14]   mongodb |  Container f30cm-mongodb  Waiting
+[18:54:14]   mongodb |  Container f30cm-mongodb  Healthy
+[18:54:14] mongodb   ✔ arranque en 45.5 s
+[18:54:14] mongodb   ▶ preparacion
+[18:54:21]   mongodb | 
+[18:54:21]   mongodb |  Container f30cm-mongodb-cargador  Creating
+[18:54:21]   mongodb |  Container f30cm-mongodb-cargador  Created
+[18:54:21]   mongodb |  Container f30cm-mongodb-cargador  Starting
+[18:54:21]   mongodb |  Container f30cm-mongodb-cargador  Started
+[18:54:37]   cassandra | 
+[18:54:37]   cassandra |  Network f30cm-cassandra-net  Creating
+[18:54:37]   cassandra |  Network f30cm-cassandra-net  Created
+[18:54:37]   cassandra |  Volume "f30cm_cassandra_data"  Creating
+[18:54:37]   cassandra |  Volume "f30cm_cassandra_data"  Created
+[18:54:37]   cassandra |  Container f30cm-cassandra  Creating
+[18:54:37]   cassandra |  Container f30cm-cassandra  Created
+[18:54:37]   cassandra |  Container f30cm-cassandra  Starting
+[18:54:37]   cassandra |  Container f30cm-cassandra  Started
+[18:54:37]   cassandra |  Container f30cm-cassandra  Waiting
+[18:54:37]   cassandra | request returned 500 Internal Server Error for API route and version http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/containers/a9fb55c1ba4ca5ba96402bc4c3253fbbe6e16f54472dde1329a9857d895aaafd/json, check if the server supports the requested API version
+[18:54:37] cassandra ✖ arranque: ErrorPaso: docker compose -p f30cm-cassandra -f docker-compose.yml -f ../fixture2030-carga-masiva/compose/cassandra.yml… salió con 1 (68.0 s):
+Network f30cm-cassandra-net  Creating
+ Network f30cm-cassandra-net  Created
+ Volume "f30cm_cassandra_data"  Creating
+ Volume "f30cm_cassandra_data"  Created
+ Container f30cm-cassandra  Creating
+ Container f30cm-cassandra  Created
+ Container f30cm-cassandra  Starting
+ Container f30cm-cassandra  Started
+ Container f30cm-cassandra  Waiting
+request returned 500 Internal Server Error for API route and version http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/containers/a9fb55c1ba4ca5ba96402bc4c3253fbbe6e16f54472dde1329a9857d895aaafd/json, check if the server supports the requested API version
+[18:54:37]   neo4j | 
+[18:54:37]   neo4j |  Network f30cm-neo4j-net  Creating
+[18:54:37]   neo4j |  Network f30cm-neo4j-net  Created
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_data"  Creating
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_data"  Created
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_logs"  Creating
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_logs"  Created
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_plugins"  Creating
+[18:54:37]   neo4j |  Volume "f30cm_neo4j_plugins"  Created
+[18:54:37]   neo4j |  Container f30cm-neo4j  Creating
+[18:54:37]   neo4j |  Container f30cm-neo4j  Created
+[18:54:37]   neo4j |  Container f30cm-neo4j  Starting
+[18:54:37]   neo4j |  Container f30cm-neo4j  Started
+[18:54:37]   neo4j |  Container f30cm-neo4j  Waiting
+[18:54:37]   neo4j | request returned 500 Internal Server Error for API route and version http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/containers/9790bc3778dc7a81f189c57e986b7972d974d9266fd2e9414fe755e671960821/json, check if the server supports the requested API version
+[18:54:37] neo4j     ✖ arranque: ErrorPaso: docker compose -p f30cm-neo4j -f docker-compose.yml -f ../fixture2030-carga-masiva/compose/neo4j.yml… salió con 1 (68.7 s):
+Network f30cm-neo4j-net  Creating
+ Network f30cm-neo4j-net  Created
+ Volume "f30cm_neo4j_data"  Creating
+ Volume "f30cm_neo4j_data"  Created
+ Volume "f30cm_neo4j_logs"  Creating
+ Volume "f30cm_neo4j_logs"  Created
+ Volume "f30cm_neo4j_plugins"  Creating
+ Volume "f30cm_neo4j_plugins"  Created
+ Container f30cm-neo4j  Creating
+ Container f30cm-neo4j  Created
+ Container f30cm-neo4j  Starting
+ Container f30cm-neo4j  Started
+ Container f30cm-neo4j  Waiting
+request returned 500 Internal Server Error for API route and version http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/containers/9790bc3778dc7a81f189c57e986b7972d974d9266fd2e9414fe755e671960821/json, check if the server supports the requested API version
+[19:09:21] mongodb   ✖ preparacion: TimeoutExpired: Command '['docker', 'exec', 'f30cm-mongodb-cargador', 'sh', '-c', 'cp /src/package.json /src/package-lock.json /src/seed.js /app/ && npm ci --no-audit --no-fund --loglevel=error']' timed out after 900 seconds

@@ -1,0 +1,3 @@
+# Token de administración de la instancia InfluxDB de la prueba (se borra al apagar)
+.secrets/
+__pycache__/

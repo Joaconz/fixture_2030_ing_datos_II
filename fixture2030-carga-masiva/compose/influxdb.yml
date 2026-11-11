@@ -1,0 +1,33 @@
+# ============================================================
+#  Fixture 2030 — Carga masiva (Hito 11 del PDF) · override de InfluxDB 3 Core
+#  Se aplica ENCIMA de ../fixture2030-influxdb/docker-compose.yml.
+#  Cambia nombres (contenedor, volumen, red) para no chocar con la instancia
+#  compartida `fixture2030-influxdb`. Puerto (INFLUX_PORT) y carpeta de datos
+#  (INFLUX_DATA_DIR) los fija el orquestador con las variables del módulo.
+#
+#  `herramientas` es el contenedor del módulo (python:3.12-slim, solo stdlib).
+#  Se reemplazan dos montajes (Compose los combina por ruta de destino):
+#   - el token de ESTA instancia vive en fixture2030-carga-masiva/.secrets/influxdb
+#     (ignorado por git), no en secrets/ del módulo, que guarda el de la compartida;
+#   - la evidencia de carga_lotes.py va a la carpeta de este módulo.
+#  data/ (los .lp.gz generados) es el mismo del módulo: se generan una sola vez.
+# ============================================================
+services:
+  influxdb:
+    container_name: f30cm-influxdb
+    mem_limit: 2g     # búferes de ingesta, WAL y caché de consultas de InfluxDB 3 Core
+    restart: "no"
+
+  herramientas:
+    mem_limit: 512m   # carga_lotes.py: como mucho 2 x hilos lotes de ~7 MB en vuelo
+    volumes:
+      - ../fixture2030-carga-masiva/.secrets/influxdb:/app/secrets:ro
+      - ../fixture2030-carga-masiva/evidencia/modulos/influxdb:/app/docs/evidencia
+
+volumes:
+  influxdb_data:
+    name: f30cm_influxdb_data
+
+networks:
+  fixture2030-net:
+    name: f30cm-influxdb-net
