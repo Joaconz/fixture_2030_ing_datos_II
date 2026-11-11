@@ -4,7 +4,9 @@
 
 Subgrafo del Mundial 2030: equipos, jugadores, grupos, sedes, partidos y **eventos deportivos encadenados causalmente**. Todo el hito se maneja con Cypher; no hay API, ni interfaz, ni scripts en otro lenguaje.
 
-> **Entorno validado el 2026-09-08** con la imagen `neo4j:latest`.
+**Dataset (pedido del enunciado):** **127 partidos** (96 de grupos + 16 dieciseisavos + 8 octavos + 4 cuartos + 2 semifinales + 1 final, sin tercer puesto) y **1.572 eventos**. Nodos `Equipo`, `Jugador`, `Partido`, `Evento` (más `Grupo`, `Sede`, `TipoEvento`) y las relaciones **`PARTICIPA`, `ANOTA`, `ASISTE`, `RECIBE_TARJETA`, `REEMPLAZA`**, derivadas de los eventos. **19 consultas complejas** y un análisis de relaciones. El torneo queda en la víspera de la final: todo jugado hasta semifinales y la final `PROGRAMADO`.
+
+> **Entorno validado el 2026-09-08** con la imagen `neo4j:latest`; **revalidado el 2026-11-11** (127 partidos y relaciones del enunciado) con Neo4j 2026.09.0 Community.
 > Registrar acá la versión concreta con la que se pruebe (ver [§6](#6-registro-de-la-versión-probada)): la etiqueta `latest` cambia y esa trazabilidad la pide el enunciado (RNF1).
 
 ---
@@ -18,13 +20,15 @@ fixture2030-neo4j/
 ├── import/                     insumos de importación (vacío: la carga es pura Cypher)
 ├── queries/
 │   ├── estructura.cypher       7 restricciones de unicidad + 9 índices
-│   ├── carga.cypher            carga idempotente completa (MERGE, sin aleatoriedad)
+│   ├── carga.cypher            carga idempotente completa (MERGE, sin aleatoriedad): 127 partidos,
+│   │                           1.572 eventos y las 5 relaciones del enunciado (paso 18)
 │   ├── crud.cypher             create / read / update / delete con filtros precisos
-│   └── consultas_grafo.cypher  patrones multi-salto, análisis causal, camino y centralidad
+│   └── consultas_grafo.cypher  patrones multi-salto, análisis causal, camino, centralidad,
+│                               relaciones del enunciado (bloque 7) y su análisis (bloque 8)
 ├── docs/
 │   ├── modelo_grafo.md         etiquetas, atributos, direcciones, cardinalidades, índices
 │   ├── decisiones.md           razonamiento técnico y vínculo con los Hitos 1 a 4
-│   └── evidencia/              capturas de la carga, las consultas y el subgrafo
+│   └── evidencia/              capturas del Hito 5 y salida real de la carga de 127 partidos
 └── README.md
 ```
 
@@ -88,22 +92,40 @@ Este es el chequeo que pide explícitamente el enunciado: la carga no debe dupli
 docker compose exec neo4j cypher-shell -u neo4j -p fixture2030 -f /queries/carga.cypher
 ```
 
-Los conteos del último bloque (paso 14) deben ser **idénticos** a los de la primera corrida:
+Los conteos del último bloque (paso 19) deben ser **idénticos** a los de la primera corrida. Estos son los reales, de dos corridas desde una base vacía ([evidencia](./docs/evidencia/127_partidos_relaciones_20261111.md)):
 
 | Etiqueta | Nodos | | Relación | Aristas |
 |---|---:|---|---|---:|
-| `Jugador` | 1282 | | `SIGUIENTE_EVENTO` | 1056 |
-| `Evento` | 1152 | | `JUEGA_EN` | 1282 |
-| `Partido` | 112 | | `OCURRE_EN` | 1152 |
-| `Equipo` | 64 | | `ES_DE_TIPO` | 1152 |
-| `Sede` | 16 | | `PROTAGONIZADO_POR` | 1152 |
-| `Grupo` | 16 | | `CAUSA_DE` | 512 |
-| `TipoEvento` | 12 | | `PARTICIPA_EN` | 224 |
-| **Total** | **2654** | | `SE_JUEGA_EN` | 112 |
+| `Evento` | 1572 | | `ES_DE_TIPO` | 1572 |
+| `Jugador` | 1282 | | `OCURRE_EN` | 1572 |
+| `Partido` | 127 | | `PROTAGONIZADO_POR` | 1572 |
+| `Equipo` | 64 | | `SIGUIENTE_EVENTO` | 1446 |
+| `Sede` | 16 | | `JUEGA_EN` | 1282 |
+| `Grupo` | 16 | | `PARTICIPA` *(enunciado)* | 1248 |
+| `TipoEvento` | 12 | | `CAUSA_DE` | 702 |
+| **Total** | **3089** | | `PARTICIPA_EN` | 254 |
+| | | | `ANOTA` *(enunciado)* | 220 |
+| | | | `ASISTE` *(enunciado)* | 220 |
+| | | | `RECIBE_TARJETA` *(enunciado)* | 136 |
+| | | | `REEMPLAZA` *(enunciado)* | 136 |
+| | | | `SE_JUEGA_EN` | 127 |
 | | | | `CORRESPONDE_A` | 96 |
 | | | | `PERTENECE_A` | 64 |
 
-**Por qué no se duplica:** todo se escribe con `MERGE` sobre clave natural (`equipoId`, `dni`, `partidoId`, `eventoId`, …) y ningún valor se genera con `rand()`, `randomUUID()` ni `datetime()` "de ahora". Es la misma estrategia que el Hito 4 resolvió con `bulkWrite` + upsert.
+Y por fase:
+
+| Fase | Partidos | Estado | Eventos |
+|---|---:|---|---:|
+| GRUPOS | 96 | FINALIZADO | 1152 |
+| DIECISEISAVOS | 16 | FINALIZADO | 220 |
+| OCTAVOS | 8 | FINALIZADO | 116 |
+| CUARTOS | 4 | FINALIZADO | 52 |
+| SEMIFINAL | 2 | FINALIZADO | 32 |
+| FINAL | 1 | PROGRAMADO | 0 |
+
+**Por qué no se duplica:** todo se escribe con `MERGE` sobre clave natural (`equipoId`, `dni`, `partidoId`, `eventoId`, …) y ningún valor se genera con `rand()`, `randomUUID()` ni `datetime()` "de ahora". Es la misma estrategia que el Hito 4 resolvió con `bulkWrite` + upsert. Las relaciones del enunciado llevan el `eventoId` de su evento en el `MERGE`.
+
+**Las relaciones del enunciado son derivadas.** `PARTICIPA`, `ANOTA`, `ASISTE`, `RECIBE_TARJETA` y `REEMPLAZA` se calculan en el paso 18 a partir de los `:Evento` (que siguen siendo la fuente, y los que usa la API). `PARTICIPA` (jugador → partido, quién actuó) convive con `PARTICIPA_EN` (equipo → partido, quién está programado). Origen, destino y propiedades de cada una: [`docs/modelo_grafo.md` §3.2](./docs/modelo_grafo.md#32-relaciones-del-enunciado-participa-anota-asiste-recibe_tarjeta-reemplaza).
 
 ### 4.2 Probar el CRUD y las consultas
 
@@ -161,6 +183,24 @@ PROFILE MATCH (n:Evento {partidoId:'PAR-A-1'}) RETURN n ORDER BY n.secuencia;
 
 Buscar `NodeIndexSeek` sobre `evento_particion_partido`. Si aparece `NodeByLabelScan`, el índice no se creó — volver a correr `estructura.cypher`.
 
+**5.6 · Las relaciones del enunciado alrededor de un partido** (goles, asistencias, tarjetas, cambios y quién actuó):
+
+```cypher
+MATCH (p:Partido {partidoId:'PAR-OCT-01'})<-[r:PARTICIPA|ANOTA|RECIBE_TARJETA]-(j:Jugador)
+OPTIONAL MATCH (j)-[x:ASISTE|REEMPLAZA]-(otro:Jugador)
+  WHERE x.partidoId = p.partidoId
+RETURN p, r, j, x, otro;
+```
+
+**5.7 · El camino de los dos finalistas por el cuadro:**
+
+```cypher
+MATCH (:Partido {fase:'FINAL'})<-[:PARTICIPA_EN]-(e:Equipo)
+MATCH ruta = (e)-[:PARTICIPA_EN]->(p:Partido)<-[:PARTICIPA_EN]-(:Equipo)
+WHERE p.fase <> 'GRUPOS'
+RETURN ruta;
+```
+
 ---
 
 ## 6. Registro de la versión probada
@@ -175,6 +215,7 @@ docker compose exec neo4j cypher-shell -u neo4j -p fixture2030 \
 | Fecha de prueba | Versión de Neo4j | Edición | Observaciones |
 |---|---|---|---|
 | 2026-09-08 | *(completar con la salida del comando)* | Community | Sin incompatibilidades detectadas |
+| 2026-11-11 | Neo4j Kernel 2026.09.0 · Cypher 5 y 25 (`neo4j@sha256:91fb0bf2…`) | Community | Carga de 127 partidos y relaciones del enunciado. Contenedor de prueba sin los plugins APOC/GDS (ninguna consulta los usa). Ver [evidencia](./docs/evidencia/127_partidos_relaciones_20261111.md) |
 
 **Incompatibilidades conocidas de usar `latest`:**
 
@@ -223,6 +264,8 @@ docker compose exec neo4j cypher-shell -u neo4j -p fixture2030 -f /queries/consu
 
 - **Hito 3** — Neo4j (Eventos en vivo, N3) es **AP**, con **consistencia causal**, **partición por partido** y **réplica multi-región asíncrona**. Cómo lo respeta el modelo está desarrollado en [`docs/decisiones.md` §3.2–3.4](./docs/decisiones.md).
 - **Hito 4** — módulo documental (MongoDB) de equipos y jugadores. **No hay integración por código**: la relación es semántica, por identificadores. Se reutilizan sus mismas claves naturales (`equipos._id` = código FIFA, `jugadores.dni`), como exige RF5 / RNF6.
+- **Hito 10 (API)** — lee y escribe este grafo (`GET /partidos/{id}`, eventos, cierre). Con el cuadro completo, `PAR-FINAL` es el partido del torneo que queda `PROGRAMADO` y sin eventos; `PAR-DEMO-API` sigue siendo el de la demo de escritura.
+- **Actualizar una base que ya tenía la carga anterior (112 partidos):** alcanza con volver a correr `carga.cypher`. Los dieciseisavos pasan de `PROGRAMADO` a `FINALIZADO` con sus eventos, se crean las 15 llaves restantes y se derivan las relaciones del enunciado; no hace falta borrar el volumen.
 
 ---
 

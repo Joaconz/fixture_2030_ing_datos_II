@@ -2,9 +2,14 @@
 //  Fixture 2030 — Hito 5 · Módulo de Grafos (Neo4j)
 //  ARCHIVO: queries/consultas_grafo.cypher
 //  PROPÓSITO: consultas de patrones multi-salto, análisis causal, camino,
-//             conectividad y centralidad.
+//             conectividad y centralidad; consultas y análisis sobre las
+//             relaciones del enunciado (PARTICIPA, ANOTA, ASISTE,
+//             RECIBE_TARJETA, REEMPLAZA).
 //  CUBRE: RF8 (dos o más saltos), RF9 (camino/conectividad/centralidad),
 //         RNF5, RNF7.
+//  CONSULTAS NUMERADAS (19): 1.1-1.3, 2.1-2.3, 3.1-3.3, 4.1-4.2, 5.1-5.2,
+//         7.1-7.5; más el análisis de relaciones (8.1-8.3) y la auditoría
+//         (6.1-6.9).
 //
 //  EJECUCIÓN:
 //      docker compose exec neo4j cypher-shell -u neo4j -p fixture2030 \
@@ -189,9 +194,9 @@ RETURN a.nombre AS desde,
 //  HALLAZGO : (a) con solo la fase de grupos se alcanzan 3 equipos — los del
 //                 propio grupo. La fase de grupos NO es un grafo conexo: son
 //                 16 COMPONENTES AISLADAS de 4 equipos cada una.
-//             (b) al sumar los dieciseisavos, la cantidad de alcanzables
-//                 crece: las eliminatorias son literalmente las aristas que
-//                 unen las componentes.
+//             (b) al sumar las eliminatorias (dieciseisavos a final), la
+//                 cantidad de alcanzables crece: las eliminatorias son
+//                 literalmente las aristas que unen las componentes.
 //  POR QUÉ IMPORTA: esa estructura no es un detalle deportivo, es la
 //             justificación empírica de la partición POR PARTIDO del Hito 3.
 //             Los recorridos frecuentes (plantel, timeline, jugada del gol)
@@ -208,10 +213,10 @@ RETURN 'Solo fase de grupos' AS escenario,
        count(DISTINCT otro)  AS equiposAlcanzables,
        collect(DISTINCT otro.nombre) AS alcanzados;
 
-// (b) Fase de grupos + dieciseisavos
+// (b) Fase de grupos + eliminatorias
 MATCH (origen:Equipo {equipoId: 'ARG'})-[:PARTICIPA_EN*1..8]-(otro:Equipo)
 WHERE otro <> origen
-RETURN 'Grupos + dieciseisavos' AS escenario,
+RETURN 'Grupos + eliminatorias' AS escenario,
        count(DISTINCT otro)     AS equiposAlcanzables;
 
 
@@ -317,11 +322,13 @@ ORDER BY p.fechaHora, grupo;
 // ----------------------------------------------------------------------------
 //  5.2 · Detección de conflictos de programación: dos partidos en la misma
 //        sede con menos de 24 horas de diferencia.
+//        Se mide en segundos: `duration.between(...).days` ignora los meses
+//        (11/06 -> 11/07 da P1M, con days = 0) y marcaba falsos conflictos
+//        entre grupos y eliminatorias.
 // ----------------------------------------------------------------------------
 MATCH (p1:Partido)-[:SE_JUEGA_EN]->(s:Sede)<-[:SE_JUEGA_EN]-(p2:Partido)
 WHERE p1.partidoId < p2.partidoId
-  AND duration.between(p1.fechaHora, p2.fechaHora).days < 1
-  AND duration.between(p1.fechaHora, p2.fechaHora).days > -1
+  AND abs(duration.inSeconds(p1.fechaHora, p2.fechaHora).seconds) < 86400
 RETURN s.nombre AS sede, p1.partidoId AS partidoA, p1.fechaHora AS fechaA,
        p2.partidoId AS partidoB, p2.fechaHora AS fechaB
 ORDER BY sede, fechaA;
@@ -374,7 +381,45 @@ WITH p, golesLocalReales, count(gv) AS golesVisitanteReales
 WHERE p.golesLocal <> golesLocalReales OR p.golesVisitante <> golesVisitanteReales
 RETURN count(p) AS partidosConMarcadorInconsistente;
 
-// 6.7 · Resumen del subgrafo (evidencia final, RF11)
+// 6.7 · Relaciones del enunciado vs. eventos de origen. Son proyecciones
+//       (carga.cypher, paso 18): cada una debe tener su evento y cada evento
+//       su proyección. Todas las columnas deben dar 0.
+RETURN
+  COUNT { MATCH (g:Evento {tipo: 'GOL'})-[:PROTAGONIZADO_POR]->(j:Jugador)
+          WHERE NOT (j)-[:ANOTA {eventoId: g.eventoId}]->(:Partido {partidoId: g.partidoId}) }
+      AS golesSinAnota,
+  COUNT { MATCH (a:Evento {tipo: 'ASISTENCIA'})-[:CAUSA_DE]->(:Evento {tipo: 'GOL'})
+          WHERE NOT ()-[:ASISTE {eventoId: a.eventoId}]->() }
+      AS asistenciasSinAsiste,
+  COUNT { MATCH (t:Evento) WHERE t.tipo IN ['TARJETA_AMARILLA', 'TARJETA_ROJA']
+            AND NOT ()-[:RECIBE_TARJETA {eventoId: t.eventoId}]->() }
+      AS tarjetasSinRecibeTarjeta,
+  COUNT { MATCH (s:Evento {tipo: 'SUSTITUCION'}) WHERE s.dorsalSaliente IS NOT NULL
+            AND NOT ()-[:REEMPLAZA {eventoId: s.eventoId}]->() }
+      AS sustitucionesSinReemplaza,
+  COUNT { MATCH ()-[r:ANOTA|ASISTE|RECIBE_TARJETA|REEMPLAZA]->()
+          WHERE NOT EXISTS { MATCH (:Evento {eventoId: r.eventoId}) } }
+      AS proyeccionesSinEvento,
+  COUNT { MATCH (j:Jugador)-[:ANOTA|RECIBE_TARJETA]->(p:Partido)
+          WHERE NOT (j)-[:PARTICIPA]->(p) }
+      AS actuacionesSinParticipa;
+
+// 6.8 · Cuadro eliminatorio: ningún partido jugado terminó empatado y quien
+//       pasó de ronda es quien ganó por goles (marcador derivado, paso 17).
+//       Las dos columnas deben dar 0.
+MATCH (p:Partido)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+MATCH (gan:Equipo)-[c:PARTICIPA_EN]->(p)
+WHERE c.condicion = CASE WHEN p.golesLocal > p.golesVisitante THEN 'LOCAL' ELSE 'VISITANTE' END
+WITH p, gan,
+     {DIECISEISAVOS: 'OCTAVOS', OCTAVOS: 'CUARTOS', CUARTOS: 'SEMIFINAL', SEMIFINAL: 'FINAL'}[p.fase]
+       AS faseSiguiente
+RETURN
+  sum(CASE WHEN p.golesLocal = p.golesVisitante THEN 1 ELSE 0 END) AS empatesEnEliminatoria,
+  sum(CASE WHEN EXISTS { (gan)-[:PARTICIPA_EN]->(:Partido {fase: faseSiguiente}) }
+           THEN 0 ELSE 1 END)                                   AS ganadoresQueNoAvanzaron;
+
+// 6.9 · Resumen del subgrafo (evidencia final, RF11)
 MATCH (n)
 RETURN labels(n)[0] AS etiqueta, count(*) AS nodos
 ORDER BY etiqueta;
@@ -382,3 +427,237 @@ ORDER BY etiqueta;
 MATCH ()-[r]->()
 RETURN type(r) AS relacion, count(*) AS relaciones
 ORDER BY relacion;
+
+MATCH (p:Partido)
+WITH p, COUNT { (:Evento)-[:OCURRE_EN]->(p) } AS eventos
+RETURN p.fase AS fase, p.estado AS estado, count(p) AS partidos, sum(eventos) AS eventos
+ORDER BY min(p.ordenGlobal);
+
+
+// ############################################################################
+//  BLOQUE 7 — CONSULTAS SOBRE LAS RELACIONES DEL ENUNCIADO
+//  PARTICIPA, ANOTA, ASISTE, RECIBE_TARJETA y REEMPLAZA (carga.cypher, paso
+//  18). Son la proyección del subgrafo de eventos: la misma pregunta se puede
+//  responder desde los :Evento con un salto más; acá se responde directo.
+// ############################################################################
+
+// ----------------------------------------------------------------------------
+//  7.1 · GOLEADORES CON SUS ASISTIDORES
+//
+//  OBJETIVO : tabla de goleadores del torneo y, para cada uno, quiénes le
+//             dieron los pases de gol y cuántos.
+//  RECORRIDO: 2 saltos por gol
+//             (Jugador)-[:ANOTA]->(Partido)  y  (Jugador)-[:ASISTE]->(Jugador)
+//             unidos por el evento de gol (ASISTE.golEventoId = ANOTA.eventoId)
+//  APORTE   : la sociedad asistidor-goleador es una relación ENTRE dos
+//             jugadores. En el módulo documental son dos contadores sueltos
+//             (`estadisticas.goles`, `estadisticas.asistencias`) que no dicen
+//             quién asistió a quién.
+// ----------------------------------------------------------------------------
+MATCH (goleador:Jugador)-[an:ANOTA]->(:Partido)
+MATCH (goleador)-[:JUEGA_EN]->(e:Equipo)
+OPTIONAL MATCH (asistidor:Jugador)-[:ASISTE {golEventoId: an.eventoId}]->(goleador)
+WITH goleador, e, asistidor, count(an) AS goles
+WITH goleador, e, sum(goles) AS goles,
+     collect(CASE WHEN asistidor IS NULL THEN null
+                  ELSE asistidor.apellido + ' #' + toString(asistidor.dorsal)
+                       + ' (' + toString(goles) + ')' END) AS asistidores
+RETURN goleador.apellido + ', ' + goleador.nombre AS goleador,
+       e.nombre AS equipo,
+       goles,
+       asistidores
+ORDER BY goles DESC, goleador
+LIMIT 15;
+
+
+// ----------------------------------------------------------------------------
+//  7.2 · TARJETAS POR PARTIDO
+//
+//  OBJETIVO : disciplina de cada partido jugado: cuántas amarillas y rojas,
+//             de qué equipo y a quién. Los partidos sin tarjetas también
+//             aparecen (con 0), por eso el OPTIONAL MATCH.
+//  RECORRIDO: (Partido)<-[:RECIBE_TARJETA]-(Jugador)-[:JUEGA_EN]->(Equipo)
+//  APORTE   : el tipo de tarjeta vive en la relación, así que "rojas por
+//             fase" es un filtro de arista y no un join con el catálogo.
+// ----------------------------------------------------------------------------
+MATCH (p:Partido {estado: 'FINALIZADO'})
+OPTIONAL MATCH (p)<-[t:RECIBE_TARJETA]-(j:Jugador)-[:JUEGA_EN]->(e:Equipo)
+WITH p, t, j, e ORDER BY t.minuto
+WITH p,
+     count(t) AS tarjetas,
+     sum(CASE t.tipo WHEN 'AMARILLA' THEN 1 ELSE 0 END) AS amarillas,
+     sum(CASE t.tipo WHEN 'ROJA'     THEN 1 ELSE 0 END) AS rojas,
+     collect(e.equipoId + ' · ' + j.apellido + ' #' + toString(j.dorsal) + ' · '
+             + t.tipo + ' ' + toString(t.minuto) + "'") AS detalle
+RETURN p.partidoId AS partido, p.fase AS fase, tarjetas, amarillas, rojas, detalle
+ORDER BY rojas DESC, p.ordenGlobal
+LIMIT 20;
+
+// Resumen por fase (todos los partidos jugados de la fase).
+MATCH (p:Partido {estado: 'FINALIZADO'})
+WITH p, COUNT { (p)<-[:RECIBE_TARJETA {tipo: 'AMARILLA'}]-() } AS am,
+        COUNT { (p)<-[:RECIBE_TARJETA {tipo: 'ROJA'}]-() }     AS ro
+RETURN p.fase AS fase, count(p) AS partidos, sum(am) AS amarillas, sum(ro) AS rojas,
+       round(toFloat(sum(am) + sum(ro)) / count(p), 2) AS tarjetasPorPartido
+ORDER BY min(p.ordenGlobal);
+
+
+// ----------------------------------------------------------------------------
+//  7.3 · CADENA DE REEMPLAZOS
+//
+//  OBJETIVO : encadenar sustituciones dentro de un plantel: A entró por B, y
+//             B (en otro partido) había entrado por C. Muestra qué jugadores
+//             rotan en el mismo puesto a lo largo del torneo.
+//  RECORRIDO: camino de longitud VARIABLE (Jugador)-[:REEMPLAZA*2..4]->(Jugador),
+//             maximal: nadie reemplaza al primero y el último no reemplaza a
+//             nadie.
+//  APORTE   : la cadena no existe en ningún documento ni en ningún evento por
+//             separado; aparece al recorrer reemplazos de partidos distintos.
+// ----------------------------------------------------------------------------
+MATCH ruta = (primero:Jugador)-[:REEMPLAZA*2..4]->(ultimo:Jugador)
+WHERE NOT EXISTS { ()-[:REEMPLAZA]->(primero) }
+  AND NOT EXISTS { (ultimo)-[:REEMPLAZA]->() }
+MATCH (primero)-[:JUEGA_EN]->(e:Equipo)
+WITH e, ruta,
+     [n IN nodes(ruta) | n.apellido + ' #' + toString(n.dorsal)] AS cadena
+RETURN e.nombre AS equipo,
+       cadena,
+       length(ruta) AS eslabones,
+       count(*) AS combinacionesDePartidos,
+       collect(DISTINCT [r IN relationships(ruta) | r.partidoId + ' ' + toString(r.minuto) + "'"])[0]
+         AS ejemplo
+ORDER BY eslabones DESC, equipo;
+
+
+// ----------------------------------------------------------------------------
+//  7.4 · RECORRIDO DE LOS FINALISTAS POR EL CUADRO
+//
+//  OBJETIVO : el camino de cada finalista desde dieciseisavos hasta la final:
+//             rival, resultado y quién convirtió en cada ronda.
+//  RECORRIDO: (Partido FINAL)<-[:PARTICIPA_EN]-(Equipo)-[:PARTICIPA_EN]->
+//             (Partido eliminatorio)<-[:PARTICIPA_EN]-(Rival), más
+//             (Jugador)-[:ANOTA]->(Partido) filtrado por el plantel del equipo.
+//  APORTE   : el cuadro es una cadena de partidos unidos por equipos; en el
+//             grafo se lee como un recorrido, sin reconstruir llaves a mano.
+// ----------------------------------------------------------------------------
+MATCH (:Partido {fase: 'FINAL'})<-[:PARTICIPA_EN]-(e:Equipo)
+MATCH (e)-[c:PARTICIPA_EN]->(p:Partido)<-[:PARTICIPA_EN]-(rival:Equipo)
+WHERE rival <> e AND p.fase <> 'GRUPOS'
+OPTIONAL MATCH (j:Jugador)-[an:ANOTA]->(p)
+  WHERE (j)-[:JUEGA_EN]->(e)
+WITH e, c, p, rival, an, j ORDER BY an.minuto
+WITH e, p, rival,
+     CASE c.condicion WHEN 'LOCAL' THEN p.golesLocal ELSE p.golesVisitante END AS propios,
+     CASE c.condicion WHEN 'LOCAL' THEN p.golesVisitante ELSE p.golesLocal END AS ajenos,
+     collect(j.apellido + ' ' + toString(an.minuto) + "'") AS goleadores
+RETURN e.nombre AS finalista,
+       p.fase AS ronda,
+       p.partidoId AS partido,
+       rival.nombre AS rival,
+       CASE WHEN propios IS NULL THEN 'por jugar'
+            ELSE toString(propios) + '-' + toString(ajenos) END AS resultado,
+       goleadores
+ORDER BY finalista, p.ordenGlobal;
+
+
+// ----------------------------------------------------------------------------
+//  7.5 · FICHA DE ACTUACIÓN POR JUGADOR CON LAS CINCO RELACIONES
+//
+//  OBJETIVO : en una sola consulta, partidos jugados, goles, asistencias,
+//             tarjetas y cambios (entró / salió) de cada jugador, y su aporte
+//             de gol por partido.
+//  RECORRIDO: 1 salto por cada una de las 5 relaciones desde el :Jugador
+//             (subconsultas COUNT, sin producto cartesiano entre ellas).
+//  APORTE   : las cinco preguntas salen del mismo nodo con un salto cada una;
+//             desde los eventos serían cinco filtros por tipo con dos saltos.
+// ----------------------------------------------------------------------------
+MATCH (j:Jugador)-[:JUEGA_EN]->(e:Equipo)
+WITH j, e,
+     COUNT { (j)-[:PARTICIPA]->(:Partido) }        AS partidos,
+     COUNT { (j)-[:ANOTA]->(:Partido) }            AS goles,
+     COUNT { (j)-[:ASISTE]->(:Jugador) }           AS asistencias,
+     COUNT { (j)-[:RECIBE_TARJETA]->(:Partido) }   AS tarjetas,
+     COUNT { (j)-[:REEMPLAZA]->(:Jugador) }        AS entroDesdeElBanco,
+     COUNT { (:Jugador)-[:REEMPLAZA]->(j) }        AS salioReemplazado
+WHERE partidos > 0
+RETURN j.apellido + ', ' + j.nombre AS jugador, e.nombre AS equipo, j.posicion AS posicion,
+       partidos, goles, asistencias, tarjetas, entroDesdeElBanco, salioReemplazado,
+       round(toFloat(goles + asistencias) / partidos, 2) AS aporteDeGolPorPartido
+ORDER BY goles + asistencias DESC, partidos DESC, jugador
+LIMIT 20;
+
+
+// ############################################################################
+//  BLOQUE 8 — ANÁLISIS DE LAS RELACIONES DEL ENUNCIADO
+//  Conteos por tipo, grados y patrones. La lectura de los resultados está en
+//  docs/decisiones.md §7.3.
+// ############################################################################
+
+// ----------------------------------------------------------------------------
+//  8.1 · CONTEO Y GRADO POR TIPO DE RELACIÓN
+//        Para cada tipo: aristas, nodos origen y destino distintos, y grado de
+//        salida medio y máximo de los nodos origen.
+// ----------------------------------------------------------------------------
+UNWIND ['PARTICIPA', 'ANOTA', 'ASISTE', 'RECIBE_TARJETA', 'REEMPLAZA'] AS tipo
+CALL (tipo) {
+  MATCH (a)-[r]->(b) WHERE type(r) = tipo
+  RETURN count(r) AS relaciones, count(DISTINCT a) AS origenes, count(DISTINCT b) AS destinos,
+         labels(a)[0] + ' -> ' + labels(b)[0] AS direccion
+}
+CALL (tipo) {
+  MATCH (a)-[r]->() WHERE type(r) = tipo
+  WITH a, count(r) AS grado
+  RETURN round(avg(grado), 2) AS gradoSalidaMedio, max(grado) AS gradoSalidaMax
+}
+RETURN tipo, direccion, relaciones, origenes, destinos, gradoSalidaMedio, gradoSalidaMax;
+
+
+// ----------------------------------------------------------------------------
+//  8.2 · DISTRIBUCIÓN DE GRADO DE PARTICIPA
+//        ¿Cuántos jugadores actuaron en 1, 2, 3, ... partidos? Y del otro
+//        lado: cuántos jugadores actúan por partido según la fase.
+// ----------------------------------------------------------------------------
+MATCH (j:Jugador)
+WITH j, COUNT { (j)-[:PARTICIPA]->() } AS partidos
+RETURN partidos AS partidosJugados, count(j) AS jugadores
+ORDER BY partidosJugados;
+
+MATCH (p:Partido {estado: 'FINALIZADO'})
+WITH p, COUNT { (p)<-[:PARTICIPA]-() } AS jugadores
+RETURN p.fase AS fase, min(jugadores) AS minimo, max(jugadores) AS maximo,
+       round(avg(jugadores), 2) AS promedio
+ORDER BY min(p.ordenGlobal);
+
+
+// ----------------------------------------------------------------------------
+//  8.3 · PATRONES ENTRE RELACIONES
+//        Combinaciones que solo se ven cruzando dos o más tipos de relación.
+// ----------------------------------------------------------------------------
+// (a) Sociedades: pares asistidor -> goleador que se repiten.
+MATCH (a:Jugador)-[s:ASISTE]->(g:Jugador)
+WITH a, g, count(s) AS goles
+RETURN goles AS golesDeLaSociedad, count(*) AS sociedades
+ORDER BY golesDeLaSociedad DESC;
+
+// (b) Patrones de actuación en un mismo partido.
+CALL () {
+  MATCH (j:Jugador)-[r:REEMPLAZA]->(), (j)-[:ANOTA]->(:Partido {partidoId: r.partidoId})
+  WITH count(*) AS casos
+  RETURN 'Entró desde el banco y convirtió' AS patron, casos
+  UNION ALL
+  MATCH (j:Jugador)-[:ANOTA]->(p:Partido)<-[:RECIBE_TARJETA]-(j)
+  WITH count(*) AS casos
+  RETURN 'Convirtió y fue amonestado o expulsado' AS patron, casos
+  UNION ALL
+  MATCH (j:Jugador)-[:ASISTE]->(:Jugador)-[:ASISTE]->(j)
+  WITH count(*) AS casos
+  RETURN 'Asistencia recíproca (A asiste a B y B a A)' AS patron, casos
+  UNION ALL
+  MATCH (j:Jugador)-[:RECIBE_TARJETA {tipo: 'ROJA'}]->(p:Partido)
+  MATCH (j)-[:JUEGA_EN]->(:Equipo)-[c:PARTICIPA_EN]->(p)
+  WHERE (c.condicion = 'LOCAL' AND p.golesLocal < p.golesVisitante)
+     OR (c.condicion = 'VISITANTE' AND p.golesVisitante < p.golesLocal)
+  WITH count(*) AS casos
+  RETURN 'Expulsado en un partido que su equipo perdió' AS patron, casos
+}
+RETURN patron, casos;

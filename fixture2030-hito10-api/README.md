@@ -46,7 +46,7 @@ curl -i "$BASE/equipos/ARG"
 curl "$BASE/equipos/ARG/jugadores?posicion=Delantero&limit=5"
 curl -i "$BASE/partidos/PAR-A-1"                         # X-Cache: MISS, después HIT
 curl "$BASE/partidos/PAR-A-1/eventos?tipo=GOL"
-curl "$BASE/partidos/PAR-D16-01/eventos"                 # 200 con items: [] (partido sin jugar)
+curl "$BASE/partidos/PAR-FINAL/eventos"                  # 200 con items: [] (la final, sin jugar)
 curl "$BASE/partidos/PAR-A-1/comentarios?limit=5"        # seguir con ?cursor=<nextCursor>
 curl -i "$BASE/sesiones/demo-ses-0000001-1"
 curl "$BASE/partidos/PAR-A-1/estadisticas?desde=2030-06-09T13:00:00Z&hasta=2030-06-09T13:30:00Z&agregacion=1m"

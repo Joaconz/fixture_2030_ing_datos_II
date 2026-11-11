@@ -23,9 +23,20 @@
 //  1.282 Jugadores     (18 a 22 por equipo, dentro del rango 15-26 del Hito 4)
 //     16 Grupos        (A..P, = equipos.grupo del Hito 4)
 //     16 Sedes         (estadios reales de la candidatura 2030)
-//    112 Partidos      (96 de grupos: 16 x 6 cruces + 16 dieciseisavos)
-//  1.152 Eventos       (10 a 13 por partido de grupos, encadenados causalmente)
+//    127 Partidos      (96 de grupos: 16 x 6 cruces + 16 dieciseisavos + 8
+//                       octavos + 4 cuartos + 2 semifinales + 1 final)
+//  1.572 Eventos       (1.152 en grupos, 10 a 13 por partido; 420 en los 30
+//                       partidos de eliminatoria jugados, 10 a 17 por partido)
 //     12 TipoEvento    (catálogo N8 del Hito 2/3)
+//
+//  FOTO DEL TORNEO: la víspera de la final. Grupos, dieciseisavos, octavos,
+//  cuartos y semifinales están FINALIZADO y con eventos; la final tiene sus
+//  dos equipos definidos y queda PROGRAMADO, sin eventos (pasos 13 a 17).
+//
+//  RELACIONES DEL ENUNCIADO (paso 18): PARTICIPA, ANOTA, ASISTE,
+//  RECIBE_TARJETA y REEMPLAZA se DERIVAN de los :Evento ya cargados. No
+//  reemplazan al modelo de eventos: son su proyección directa entre jugadores
+//  y partidos (ver docs/modelo_grafo.md §3.2).
 // ============================================================================
 
 
@@ -283,8 +294,13 @@ MERGE (p)-[:CORRESPONDE_A]->(g);
 //    · regionOrigen       -> región de ingesta (réplica multi-región asíncrona)
 //  El guion tiene 3 variantes deterministas según `ordenGlobal % 3`, para que
 //  los marcadores no sean todos iguales sin recurrir a rand().
+//  La SUSTITUCION lleva además `dorsalSaliente`: el dorsal protagonista es el
+//  que entra, y sin el que sale no se podría derivar REEMPLAZA (paso 18).
+//  Solo fase de GRUPOS: las eliminatorias tienen su propio guion (paso 15) y
+//  sin este filtro una segunda corrida le cargaría el guion de grupos a los
+//  partidos creados después (eliminatorias, o el PAR-DEMO-API de la API).
 // ============================================================================
-MATCH (p:Partido)-[:SE_JUEGA_EN]->(s:Sede)
+MATCH (p:Partido {fase: 'GRUPOS'})-[:SE_JUEGA_EN]->(s:Sede)
 WITH p, s,
   [ {sec:1, tipo:'INICIO_PARTIDO',   min:0,  cond:'LOCAL',     dorsal:1},
     {sec:2, tipo:'PASE',             min:12, cond:'LOCAL',     dorsal:5},
@@ -294,7 +310,7 @@ WITH p, s,
     {sec:6, tipo:'FALTA',            min:31, cond:'VISITANTE', dorsal:4},
     {sec:7, tipo:'TARJETA_AMARILLA', min:31, cond:'VISITANTE', dorsal:4},
     {sec:8, tipo:'ATAJADA',          min:58, cond:'VISITANTE', dorsal:1},
-    {sec:9, tipo:'SUSTITUCION',      min:62, cond:'LOCAL',     dorsal:16}
+    {sec:9, tipo:'SUSTITUCION',      min:62, cond:'LOCAL',     dorsal:16, sale:8}
   ] AS base,
   CASE
     WHEN p.ordenGlobal % 3 = 0 THEN []
@@ -313,12 +329,12 @@ UNWIND plantilla AS ev
 MERGE (n:Evento {eventoId: p.partidoId + '-EV-' + right('0' + toString(ev.sec), 2)})
   ON CREATE SET n.partidoId = p.partidoId, n.secuencia = ev.sec, n.tipo = ev.tipo,
                 n.minuto = ev.min, n.condicionEquipo = ev.cond,
-                n.dorsalProtagonista = ev.dorsal,
+                n.dorsalProtagonista = ev.dorsal, n.dorsalSaliente = ev.sale,
                 n.timestamp = p.fechaHora + duration({minutes: ev.min}),
                 n.regionOrigen = s.region
   ON MATCH  SET n.partidoId = p.partidoId, n.secuencia = ev.sec, n.tipo = ev.tipo,
                 n.minuto = ev.min, n.condicionEquipo = ev.cond,
-                n.dorsalProtagonista = ev.dorsal,
+                n.dorsalProtagonista = ev.dorsal, n.dorsalSaliente = ev.sale,
                 n.timestamp = p.fechaHora + duration({minutes: ev.min}),
                 n.regionOrigen = s.region
 MERGE (n)-[:OCURRE_EN]->(p);
@@ -365,8 +381,9 @@ MERGE (a)-[:SIGUIENTE_EVENTO]->(b);
 //     falta -> tarjeta amarilla               (sanción)
 //  Esta relación es la que hace verificable el invariante del Hito 3:
 //  "un evento no puede preceder a su causa".
+//  Los pares de las eliminatorias van en el paso 16, con su propio guion.
 // ============================================================================
-MATCH (p:Partido)
+MATCH (p:Partido {fase: 'GRUPOS'})
 WITH p,
      CASE WHEN p.ordenGlobal % 3 = 0
           THEN [[2,3],[3,4],[4,5],[6,7]]
@@ -399,20 +416,19 @@ SET p.golesLocal = golesL,
 
 
 // ============================================================================
-//  PASO 13 — DIECISEISAVOS DE FINAL (16 partidos, aún sin jugar)
+//  PASO 13 — DIECISEISAVOS DE FINAL (16 partidos)
 //  --------------------------------------------------------------------------
-//  POR QUÉ SE CARGAN, si el hito no los exige:
-//  sin fase eliminatoria, el grafo del torneo son 16 COMPONENTES CONEXAS
+//  Sin fase eliminatoria, el grafo del torneo son 16 COMPONENTES CONEXAS
 //  AISLADAS (un grupo cada una) y toda consulta de camino entre equipos de
 //  distinto grupo devuelve vacío. Los dieciseisavos son las aristas que unen
-//  esas componentes, y sin ellas las consultas de camino y conectividad del
-//  bloque 3 de consultas_grafo.cypher no tendrían nada que mostrar.
+//  esas componentes; el resto del cuadro (paso 14) completa los 127 partidos
+//  que pide el enunciado: 96 + 16 + 8 + 4 + 2 + 1 (sin tercer puesto).
 //
 //  Clasificados: 1° y 2° de cada grupo, calculados RECORRIENDO EL GRAFO
 //  (puntos, diferencia de gol, goles a favor y equipoId como desempate final,
 //  para que el resultado sea totalmente determinista y la carga siga siendo
 //  idempotente). Cruce: 1° del grupo N contra 2° del grupo N+1, en anillo.
-//  Quedan en estado PROGRAMADO y sin eventos: todavía no se jugaron.
+//  Se crean PROGRAMADO y sin eventos; se juegan en los pasos 15 a 17.
 // ============================================================================
 MATCH (e:Equipo)-[part:PARTICIPA_EN]->(p:Partido {fase: 'GRUPOS'})
 MATCH (e)-[:PERTENECE_A]->(g:Grupo)
@@ -448,7 +464,308 @@ MERGE (p)-[:SE_JUEGA_EN]->(s);
 
 
 // ============================================================================
-//  PASO 14 — VERIFICACIÓN DE LA CARGA (RF11 / RNF4 / RNF7)
+//  PASO 14 — RESTO DEL CUADRO: OCTAVOS (8), CUARTOS (4), SEMIFINALES (2) Y
+//            FINAL (1)
+//  --------------------------------------------------------------------------
+//  Cada ronda cruza a los ganadores de la anterior en orden: el partido i
+//  enfrenta al ganador del partido 2i+1 (LOCAL) con el del 2i+2 (VISITANTE).
+//
+//  QUIÉN GANA: en eliminatoria no hay empates. El guion de eventos del paso
+//  15 se elige con `ordenGlobal % 3`, igual que en grupos, y cada variante
+//  define al ganador: % 3 = 1 lo da vuelta el VISITANTE (1-2); 0 y 2 gana el
+//  LOCAL (1-0 y 2-0). Por eso el ganador se puede leer de `ordenGlobal` antes
+//  de que existan los eventos, y la ronda siguiente se arma sin esperar a que
+//  se juegue la anterior. La consulta 6.9 de consultas_grafo.cypher verifica
+//  que el marcador DERIVADO de los goles (paso 17) coincide con el equipo que
+//  pasó de ronda.
+//
+//  ESTADO: todos se crean PROGRAMADO. Octavos, cuartos y semifinales se
+//  juegan en los pasos 15 a 17; la FINAL queda PROGRAMADO, con sus dos
+//  equipos y sin eventos (es el partido que la API puede jugar y cerrar).
+// ============================================================================
+
+// 14.1 · Octavos de final: ganadores de dieciseisavos.
+MATCH (prev:Partido {fase: 'DIECISEISAVOS'})<-[c:PARTICIPA_EN]-(e:Equipo)
+WHERE c.condicion = CASE WHEN prev.ordenGlobal % 3 = 1 THEN 'VISITANTE' ELSE 'LOCAL' END
+WITH prev, e ORDER BY prev.ordenGlobal
+WITH collect(e) AS ganadores
+UNWIND range(0, 7) AS i
+WITH i, ganadores[2 * i] AS loc, ganadores[2 * i + 1] AS vis,
+     ['ESP-BER','POR-LUZ','MAR-HAS','ESP-CAM','ESP-MET','POR-DRA','MAR-MOU','ESP-CAR'][i] AS sid
+MATCH (s:Sede {sedeId: sid})
+MERGE (p:Partido {partidoId: 'PAR-OCT-' + right('0' + toString(i + 1), 2)})
+  ON CREATE SET p.fase = 'OCTAVOS', p.jornada = 5, p.ordenGlobal = 112 + i,
+                p.estado = 'PROGRAMADO',
+                p.fechaHora = datetime('2030-07-04T16:00:00Z')
+                             + duration({days: i / 2, hours: (i % 2) * 4})
+  ON MATCH  SET p.fase = 'OCTAVOS', p.jornada = 5, p.ordenGlobal = 112 + i,
+                p.fechaHora = datetime('2030-07-04T16:00:00Z')
+                             + duration({days: i / 2, hours: (i % 2) * 4})
+MERGE (loc)-[:PARTICIPA_EN {condicion: 'LOCAL'}]->(p)
+MERGE (vis)-[:PARTICIPA_EN {condicion: 'VISITANTE'}]->(p)
+MERGE (p)-[:SE_JUEGA_EN]->(s);
+
+// 14.2 · Cuartos de final: ganadores de octavos.
+MATCH (prev:Partido {fase: 'OCTAVOS'})<-[c:PARTICIPA_EN]-(e:Equipo)
+WHERE c.condicion = CASE WHEN prev.ordenGlobal % 3 = 1 THEN 'VISITANTE' ELSE 'LOCAL' END
+WITH prev, e ORDER BY prev.ordenGlobal
+WITH collect(e) AS ganadores
+UNWIND range(0, 3) AS i
+WITH i, ganadores[2 * i] AS loc, ganadores[2 * i + 1] AS vis,
+     ['ESP-CAM','POR-LUZ','MAR-HAS','ESP-BER'][i] AS sid
+MATCH (s:Sede {sedeId: sid})
+MERGE (p:Partido {partidoId: 'PAR-CUA-' + right('0' + toString(i + 1), 2)})
+  ON CREATE SET p.fase = 'CUARTOS', p.jornada = 6, p.ordenGlobal = 120 + i,
+                p.estado = 'PROGRAMADO',
+                p.fechaHora = datetime('2030-07-10T16:00:00Z')
+                             + duration({days: i / 2, hours: (i % 2) * 4})
+  ON MATCH  SET p.fase = 'CUARTOS', p.jornada = 6, p.ordenGlobal = 120 + i,
+                p.fechaHora = datetime('2030-07-10T16:00:00Z')
+                             + duration({days: i / 2, hours: (i % 2) * 4})
+MERGE (loc)-[:PARTICIPA_EN {condicion: 'LOCAL'}]->(p)
+MERGE (vis)-[:PARTICIPA_EN {condicion: 'VISITANTE'}]->(p)
+MERGE (p)-[:SE_JUEGA_EN]->(s);
+
+// 14.3 · Semifinales: ganadores de cuartos.
+MATCH (prev:Partido {fase: 'CUARTOS'})<-[c:PARTICIPA_EN]-(e:Equipo)
+WHERE c.condicion = CASE WHEN prev.ordenGlobal % 3 = 1 THEN 'VISITANTE' ELSE 'LOCAL' END
+WITH prev, e ORDER BY prev.ordenGlobal
+WITH collect(e) AS ganadores
+UNWIND range(0, 1) AS i
+WITH i, ganadores[2 * i] AS loc, ganadores[2 * i + 1] AS vis,
+     ['ESP-BER','MAR-HAS'][i] AS sid
+MATCH (s:Sede {sedeId: sid})
+MERGE (p:Partido {partidoId: 'PAR-SEM-' + right('0' + toString(i + 1), 2)})
+  ON CREATE SET p.fase = 'SEMIFINAL', p.jornada = 7, p.ordenGlobal = 124 + i,
+                p.estado = 'PROGRAMADO',
+                p.fechaHora = datetime('2030-07-15T19:00:00Z') + duration({days: i})
+  ON MATCH  SET p.fase = 'SEMIFINAL', p.jornada = 7, p.ordenGlobal = 124 + i,
+                p.fechaHora = datetime('2030-07-15T19:00:00Z') + duration({days: i})
+MERGE (loc)-[:PARTICIPA_EN {condicion: 'LOCAL'}]->(p)
+MERGE (vis)-[:PARTICIPA_EN {condicion: 'VISITANTE'}]->(p)
+MERGE (p)-[:SE_JUEGA_EN]->(s);
+
+// 14.4 · Final: ganadores de semifinales. No se juega en esta carga.
+MATCH (prev:Partido {fase: 'SEMIFINAL'})<-[c:PARTICIPA_EN]-(e:Equipo)
+WHERE c.condicion = CASE WHEN prev.ordenGlobal % 3 = 1 THEN 'VISITANTE' ELSE 'LOCAL' END
+WITH prev, e ORDER BY prev.ordenGlobal
+WITH collect(e) AS ganadores
+WITH ganadores[0] AS loc, ganadores[1] AS vis
+MATCH (s:Sede {sedeId: 'MAR-HAS'})
+MERGE (p:Partido {partidoId: 'PAR-FINAL'})
+  ON CREATE SET p.fase = 'FINAL', p.jornada = 8, p.ordenGlobal = 126,
+                p.estado = 'PROGRAMADO',
+                p.fechaHora = datetime('2030-07-21T19:00:00Z')
+  ON MATCH  SET p.fase = 'FINAL', p.jornada = 8, p.ordenGlobal = 126,
+                p.fechaHora = datetime('2030-07-21T19:00:00Z')
+MERGE (loc)-[:PARTICIPA_EN {condicion: 'LOCAL'}]->(p)
+MERGE (vis)-[:PARTICIPA_EN {condicion: 'VISITANTE'}]->(p)
+MERGE (p)-[:SE_JUEGA_EN]->(s);
+
+
+// ============================================================================
+//  PASO 15 — EVENTOS DE LAS ELIMINATORIAS JUGADAS (420, en 30 partidos)
+//  Mismo criterio que el paso 7 (partición, reloj lógico, región de origen) y
+//  el mismo guion base, con tres finales sin empate:
+//    % 3 = 0  ->  1-0, gana el LOCAL                         (10 eventos)
+//    % 3 = 1  ->  1-2, lo da vuelta el VISITANTE; el gol del
+//                 triunfo es del suplente que entró al 80'   (17 eventos)
+//    % 3 = 2  ->  2-0, gana el LOCAL; expulsión del visitante (15 eventos)
+// ============================================================================
+MATCH (p:Partido)-[:SE_JUEGA_EN]->(s:Sede)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+WITH p, s,
+  [ {sec:1, tipo:'INICIO_PARTIDO',   min:0,  cond:'LOCAL',     dorsal:1},
+    {sec:2, tipo:'PASE',             min:12, cond:'LOCAL',     dorsal:5},
+    {sec:3, tipo:'PASE',             min:12, cond:'LOCAL',     dorsal:8},
+    {sec:4, tipo:'ASISTENCIA',       min:13, cond:'LOCAL',     dorsal:10},
+    {sec:5, tipo:'GOL',              min:13, cond:'LOCAL',     dorsal:9},
+    {sec:6, tipo:'FALTA',            min:31, cond:'VISITANTE', dorsal:4},
+    {sec:7, tipo:'TARJETA_AMARILLA', min:31, cond:'VISITANTE', dorsal:4},
+    {sec:8, tipo:'ATAJADA',          min:58, cond:'VISITANTE', dorsal:1},
+    {sec:9, tipo:'SUSTITUCION',      min:62, cond:'LOCAL',     dorsal:16, sale:8}
+  ] AS base,
+  CASE
+    WHEN p.ordenGlobal % 3 = 0 THEN []
+    WHEN p.ordenGlobal % 3 = 1 THEN
+      [ {sec:10, tipo:'PASE',        min:74, cond:'VISITANTE', dorsal:6},
+        {sec:11, tipo:'ASISTENCIA',  min:75, cond:'VISITANTE', dorsal:7},
+        {sec:12, tipo:'GOL',         min:75, cond:'VISITANTE', dorsal:11},
+        {sec:13, tipo:'SUSTITUCION', min:80, cond:'VISITANTE', dorsal:17, sale:16},
+        {sec:14, tipo:'CORNER',      min:88, cond:'VISITANTE', dorsal:7},
+        {sec:15, tipo:'ASISTENCIA',  min:89, cond:'VISITANTE', dorsal:7},
+        {sec:16, tipo:'GOL',         min:89, cond:'VISITANTE', dorsal:17} ]
+    ELSE
+      [ {sec:10, tipo:'CORNER',       min:81, cond:'LOCAL',     dorsal:7},
+        {sec:11, tipo:'ASISTENCIA',   min:82, cond:'LOCAL',     dorsal:7},
+        {sec:12, tipo:'GOL',          min:82, cond:'LOCAL',     dorsal:15},
+        {sec:13, tipo:'FALTA',        min:86, cond:'VISITANTE', dorsal:5},
+        {sec:14, tipo:'TARJETA_ROJA', min:86, cond:'VISITANTE', dorsal:5} ]
+  END AS extra
+WITH p, s, base + extra AS parcial
+WITH p, s, parcial + [{sec: size(parcial) + 1, tipo:'FIN_PARTIDO', min:90, cond:'LOCAL', dorsal:1}] AS plantilla
+UNWIND plantilla AS ev
+MERGE (n:Evento {eventoId: p.partidoId + '-EV-' + right('0' + toString(ev.sec), 2)})
+  ON CREATE SET n.partidoId = p.partidoId, n.secuencia = ev.sec, n.tipo = ev.tipo,
+                n.minuto = ev.min, n.condicionEquipo = ev.cond,
+                n.dorsalProtagonista = ev.dorsal, n.dorsalSaliente = ev.sale,
+                n.timestamp = p.fechaHora + duration({minutes: ev.min}),
+                n.regionOrigen = s.region
+  ON MATCH  SET n.partidoId = p.partidoId, n.secuencia = ev.sec, n.tipo = ev.tipo,
+                n.minuto = ev.min, n.condicionEquipo = ev.cond,
+                n.dorsalProtagonista = ev.dorsal, n.dorsalSaliente = ev.sale,
+                n.timestamp = p.fechaHora + duration({minutes: ev.min}),
+                n.regionOrigen = s.region
+MERGE (n)-[:OCURRE_EN]->(p);
+
+
+// ============================================================================
+//  PASO 16 — RELACIONES DE LOS EVENTOS DE ELIMINATORIA
+//  Los pasos 8 a 11 corrieron antes de que existieran estos partidos; acá se
+//  aplican los mismos recorridos (tipo, protagonista, orden total) y los pares
+//  causales del guion de eliminatoria:
+//     pase -> asistencia -> gol, córner -> asistencia -> gol,
+//     falta -> tarjeta (amarilla o roja)
+// ============================================================================
+
+// 16.1 · Evento -> TipoEvento (como el paso 8)
+MATCH (n:Evento)-[:OCURRE_EN]->(p:Partido)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+MATCH (t:TipoEvento {tipoEventoId: n.tipo})
+MERGE (n)-[:ES_DE_TIPO]->(t);
+
+// 16.2 · Evento -> Jugador protagonista (como el paso 9)
+MATCH (n:Evento)-[:OCURRE_EN]->(p:Partido)<-[part:PARTICIPA_EN]-(eq:Equipo)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+  AND part.condicion = n.condicionEquipo
+MATCH (j:Jugador)-[jn:JUEGA_EN]->(eq)
+WHERE jn.dorsal = n.dorsalProtagonista
+MERGE (n)-[:PROTAGONIZADO_POR]->(j);
+
+// 16.3 · Orden total dentro de la partición (como el paso 10)
+MATCH (a:Evento)-[:OCURRE_EN]->(p:Partido)<-[:OCURRE_EN]-(b:Evento)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+  AND b.secuencia = a.secuencia + 1
+MERGE (a)-[:SIGUIENTE_EVENTO]->(b);
+
+// 16.4 · Dependencia causal (como el paso 11, con los pares de este guion)
+MATCH (p:Partido)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+WITH p,
+     CASE p.ordenGlobal % 3
+       WHEN 0 THEN [[2,3],[3,4],[4,5],[6,7]]
+       WHEN 1 THEN [[2,3],[3,4],[4,5],[6,7],[10,11],[11,12],[14,15],[15,16]]
+       ELSE        [[2,3],[3,4],[4,5],[6,7],[10,11],[11,12],[13,14]]
+     END AS pares
+UNWIND pares AS c
+MATCH (a:Evento {partidoId: p.partidoId, secuencia: c[0]})
+MATCH (b:Evento {partidoId: p.partidoId, secuencia: c[1]})
+MERGE (a)-[:CAUSA_DE]->(b);
+
+
+// ============================================================================
+//  PASO 17 — MARCADOR DE LAS ELIMINATORIAS JUGADAS (como el paso 12)
+//  Derivado de los eventos GOL, no cargado. La final no entra: no tiene
+//  eventos y queda PROGRAMADO.
+// ============================================================================
+MATCH (p:Partido)
+WHERE p.fase IN ['DIECISEISAVOS', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL']
+OPTIONAL MATCH (gl:Evento)-[:OCURRE_EN]->(p)
+  WHERE gl.tipo = 'GOL' AND gl.condicionEquipo = 'LOCAL'
+WITH p, count(gl) AS golesL
+OPTIONAL MATCH (gv:Evento)-[:OCURRE_EN]->(p)
+  WHERE gv.tipo = 'GOL' AND gv.condicionEquipo = 'VISITANTE'
+WITH p, golesL, count(gv) AS golesV
+SET p.golesLocal = golesL,
+    p.golesVisitante = golesV,
+    p.estado = 'FINALIZADO';
+
+
+// ============================================================================
+//  PASO 18 — RELACIONES DEL ENUNCIADO, DERIVADAS DE LOS EVENTOS
+//  --------------------------------------------------------------------------
+//  El enunciado pide PARTICIPA, ANOTA, ASISTE, RECIBE_TARJETA y REEMPLAZA.
+//  En este modelo el hecho deportivo es el :Evento (partición, reloj lógico,
+//  causalidad: Hito 3), así que estas relaciones NO son una segunda fuente:
+//  son la PROYECCIÓN del subgrafo de eventos sobre jugadores y partidos, que
+//  convierte "evento -> protagonista -> partido" (2 saltos) en 1 salto.
+//
+//    (:Jugador)-[:PARTICIPA {condicion, eventos}]->(:Partido)
+//    (:Jugador)-[:ANOTA {eventoId, minuto}]->(:Partido)
+//    (:Jugador asistidor)-[:ASISTE {eventoId, golEventoId, partidoId, minuto}]->(:Jugador goleador)
+//    (:Jugador)-[:RECIBE_TARJETA {eventoId, tipo, minuto}]->(:Partido)
+//    (:Jugador entra)-[:REEMPLAZA {eventoId, partidoId, minuto}]->(:Jugador sale)
+//
+//  IDEMPOTENCIA: las cuatro relaciones que nacen de UN evento llevan su
+//  `eventoId` en el patrón del MERGE (dos goles del mismo jugador en el mismo
+//  partido son dos ANOTA, y reejecutar no agrega una tercera). PARTICIPA es
+//  una por (jugador, partido) y su conteo se fija con SET, no se incrementa.
+//  Como son derivadas, el paso empieza borrando las proyecciones cuyo evento
+//  ya no existe (p. ej. un evento borrado por crud.cypher o por la API): así
+//  el paso converge al estado de los eventos, igual que el marcador.
+// ============================================================================
+
+// 18.1 · Limpieza: proyecciones sin su evento de origen.
+MATCH ()-[r:ANOTA|ASISTE|RECIBE_TARJETA|REEMPLAZA]->()
+WHERE NOT EXISTS { MATCH (n:Evento {eventoId: r.eventoId}) }
+DELETE r;
+
+MATCH (j:Jugador)-[r:PARTICIPA]->(p:Partido)
+WHERE NOT EXISTS { (p)<-[:OCURRE_EN]-(:Evento)-[:PROTAGONIZADO_POR]->(j) }
+  AND NOT EXISTS { (j)<-[:REEMPLAZA {partidoId: p.partidoId}]-(:Jugador) }
+DELETE r;
+
+// 18.2 · ANOTA: un evento GOL -> (goleador)-[:ANOTA]->(partido).
+MATCH (n:Evento {tipo: 'GOL'})-[:PROTAGONIZADO_POR]->(j:Jugador)
+MATCH (n)-[:OCURRE_EN]->(p:Partido)
+MERGE (j)-[r:ANOTA {eventoId: n.eventoId}]->(p)
+SET r.minuto = n.minuto;
+
+// 18.3 · ASISTE: la asistencia que es CAUSA_DE un gol une a los dos
+//        jugadores. Va de jugador a jugador porque lo que la relación agrega
+//        es justamente A QUIÉN se asistió; el partido queda como propiedad.
+MATCH (a:Evento {tipo: 'ASISTENCIA'})-[:CAUSA_DE]->(g:Evento {tipo: 'GOL'})
+MATCH (a)-[:PROTAGONIZADO_POR]->(asistidor:Jugador)
+MATCH (g)-[:PROTAGONIZADO_POR]->(goleador:Jugador)
+MERGE (asistidor)-[r:ASISTE {eventoId: a.eventoId}]->(goleador)
+SET r.golEventoId = g.eventoId, r.partidoId = a.partidoId, r.minuto = a.minuto;
+
+// 18.4 · RECIBE_TARJETA: amarilla o roja, con el tipo como propiedad (un solo
+//        tipo de relación, mismo criterio que PARTICIPA_EN {condicion}).
+MATCH (n:Evento)-[:PROTAGONIZADO_POR]->(j:Jugador)
+WHERE n.tipo IN ['TARJETA_AMARILLA', 'TARJETA_ROJA']
+MATCH (n)-[:OCURRE_EN]->(p:Partido)
+MERGE (j)-[r:RECIBE_TARJETA {eventoId: n.eventoId}]->(p)
+SET r.tipo = CASE n.tipo WHEN 'TARJETA_ROJA' THEN 'ROJA' ELSE 'AMARILLA' END,
+    r.minuto = n.minuto;
+
+// 18.5 · REEMPLAZA: el protagonista de la SUSTITUCION es el que entra; el que
+//        sale se resuelve por `dorsalSaliente` en el plantel del mismo equipo.
+MATCH (n:Evento {tipo: 'SUSTITUCION'})-[:PROTAGONIZADO_POR]->(entra:Jugador)-[:JUEGA_EN]->(eq:Equipo)
+WHERE n.dorsalSaliente IS NOT NULL
+MATCH (sale:Jugador)-[js:JUEGA_EN]->(eq)
+WHERE js.dorsal = n.dorsalSaliente
+MERGE (entra)-[r:REEMPLAZA {eventoId: n.eventoId}]->(sale)
+SET r.partidoId = n.partidoId, r.minuto = n.minuto;
+
+// 18.6 · PARTICIPA: jugó el partido quien protagonizó al menos un evento...
+MATCH (n:Evento)-[:PROTAGONIZADO_POR]->(j:Jugador)
+MATCH (n)-[:OCURRE_EN]->(p:Partido)
+WITH j, p, n.condicionEquipo AS condicion, count(n) AS eventos
+MERGE (j)-[r:PARTICIPA]->(p)
+SET r.condicion = condicion, r.eventos = eventos;
+
+//        ... o salió reemplazado (estuvo en cancha aunque no figure en ningún
+//        evento como protagonista).
+MATCH (:Jugador)-[rr:REEMPLAZA]->(sale:Jugador)-[:JUEGA_EN]->(eq:Equipo)
+MATCH (eq)-[c:PARTICIPA_EN]->(p:Partido {partidoId: rr.partidoId})
+MERGE (sale)-[r:PARTICIPA]->(p)
+  ON CREATE SET r.eventos = 0
+SET r.condicion = c.condicion;
+
+
+// ============================================================================
+//  PASO 19 — VERIFICACIÓN DE LA CARGA (RF11 / RNF4 / RNF7)
 //  Correr este bloque DOS VECES seguidas debe devolver los mismos números.
 //  Esa es la evidencia de idempotencia que pide el enunciado.
 // ============================================================================
@@ -459,3 +776,9 @@ ORDER BY etiqueta;
 MATCH ()-[r]->()
 RETURN type(r) AS relacion, count(*) AS cantidad
 ORDER BY relacion;
+
+// Partidos por fase y estado: 96 + 16 + 8 + 4 + 2 + 1 = 127.
+MATCH (p:Partido)
+WITH p, COUNT { (:Evento)-[:OCURRE_EN]->(p) } AS eventos
+RETURN p.fase AS fase, p.estado AS estado, count(p) AS partidos, sum(eventos) AS eventos
+ORDER BY min(p.ordenGlobal);

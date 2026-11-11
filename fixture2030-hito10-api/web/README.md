@@ -49,7 +49,7 @@ la versión anterior: status HTTP, `X-Request-Id`, `X-Cache`, `Idempotency-Key`,
 | Situación | Composición | Ejemplo real |
 |---|---|---|
 | Cargando | Líneas con altura reservada (sin saltos de layout). | Cualquier panel mientras responde la API. |
-| Vacío (200 con lista vacía) | Título + texto + acción (“Ver todos los eventos”). | `PAR-D16-01`: partido programado sin eventos. |
+| Vacío (200 con lista vacía) | Título + texto + acción (“Ver todos los eventos”). | `PAR-FINAL`: la final, programada y sin eventos. |
 | No encontrado (404) | “No encontramos…”, mensaje de la API y buscador FIFA o “Volver al inicio”. | `/equipos/URU` (está en el grafo, no tiene ficha: Hallazgo H1). |
 | Dato inválido (400) | Campo para corregir y mensaje. El código FIFA se valida en el navegador (`^[A-Z]{3}$`, el mismo patrón que la API) antes de pedir nada; un 400 de la API se muestra con “Ver detalle”. | `/equipos/12`, o “a1” en el buscador. |
 | Fuente no disponible (503/504) | “No pudimos cargar los datos de *comentarios* ahora”, botón **Reintentar** e **ID de solicitud** copiable. La parte de la app sale de `details[campo=dependencia]` sin nombrar la base. | Instancia de la API con Cassandra/InfluxDB inalcanzables (ver evidencia). |

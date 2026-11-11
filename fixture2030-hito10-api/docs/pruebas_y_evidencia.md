@@ -26,7 +26,7 @@
 | Una request válida por módulo | Integración: `test_equipo_coincide_con_mongosh`, `test_eventos_coinciden_con_cypher`, `test_comentarios_paginacion_completa_y_ordenada`, `test_sesion_coincide_con_redis_cli`, `test_estadisticas_raw_y_agregadas`; Newman: carpetas 01–05 |
 | Un parámetro inválido | `test_equipo_codigo_invalido_400`, `test_eventos_tipo_invalido_400`, `test_plantel_limite_fuera_de_rango_400`, `test_publicar_comentario_sin_zona_horaria_400`, `test_cierre_estado_no_permitido_400`; unitarias con `FuenteNoTocar` (la fuente no se llega a consultar) |
 | Un recurso inexistente | `test_equipo_inexistente_404`, `test_eventos_partido_inexistente_404`, `test_comentarios_partido_inexistente_404`, `test_cierre_partido_inexistente_404` |
-| Respuesta vacía válida | `test_eventos_partido_sin_eventos_200_vacio` (PAR-D16-01), `test_estadisticas_ventana_sin_datos_200_vacio` |
+| Respuesta vacía válida | `test_eventos_partido_sin_eventos_200_vacio` (PAR-FINAL), `test_estadisticas_ventana_sin_datos_200_vacio` |
 | Sesión ausente o expirada | `test_sesion_inexistente_404`; unitarias: hash parcial (vencida entre lectura y renovación) → 404; bloqueada → 403 |
 | Dependencia detenida o inaccesible | `prueba_dependencia_caida.sh` × 5 fuentes, `docker pause` × 3, unitarias con `FuenteCaida` en cada ruta |
 | Escritura repetida | `test_flujo_de_cierre_completo` (POST evento ×2 → 1 nodo en `cypher-shell`; misma clave con otro cuerpo → 409; cierre ×2 → 409), `test_publicar_comentario_idempotente` (POST ×2 → 1 fila en `cqlsh`), `test_cerrar_sesion_y_repetir` |

@@ -23,9 +23,15 @@
                                  │  └─────CAUSA_DE──────────▶(:Evento)   ← dependencia causal
                                  ▼
                            (:TipoEvento)
+
+  Relaciones del enunciado, DERIVADAS de los eventos (carga.cypher, paso 18):
+
+   (:Jugador)──PARTICIPA / ANOTA / RECIBE_TARJETA──▶(:Partido)
+   (:Jugador)──ASISTE──▶(:Jugador goleador)
+   (:Jugador entra)──REEMPLAZA──▶(:Jugador sale)
 ```
 
-Siete etiquetas, nueve tipos de relación. Todo el módulo se apoya en una idea:
+Siete etiquetas y quince tipos de relación: diez del modelo de eventos y las cinco que pide el enunciado (`PARTICIPA`, `ANOTA`, `ASISTE`, `RECIBE_TARJETA`, `REEMPLAZA`), que se derivan de los eventos (§3.2). Todo el módulo se apoya en una idea:
 **lo que en el módulo documental es un campo de referencia, acá es una arista recorrible.**
 
 ---
@@ -64,20 +70,32 @@ Siete etiquetas, nueve tipos de relación. Todo el módulo se apoya en una idea:
 **No se replica** `jugadores.equipoId`: es la relación `JUEGA_EN`.
 **No se replican** `jugadores.estadisticas.{goles, asistencias, partidos}`: se derivan del subgrafo de eventos (ver `consultas_grafo.cypher`, bloque 2.3).
 
-### 2.3 `:Partido` — 112 nodos (96 de grupos + 16 dieciseisavos)
+### 2.3 `:Partido` — 127 nodos (96 + 16 + 8 + 4 + 2 + 1)
 
 | Atributo | Tipo | Identificación |
 |---|---|---|
-| `partidoId` | String `PAR-<grupo>-<n>` / `PAR-D16-<nn>` | **UNIQUE** |
-| `fase` | String (GRUPOS / DIECISEISAVOS) | indexado (compuesto con `estado`) |
+| `partidoId` | String `PAR-<grupo>-<n>` / `PAR-D16-<nn>` / `PAR-OCT-<nn>` / `PAR-CUA-<nn>` / `PAR-SEM-<nn>` / `PAR-FINAL` | **UNIQUE** |
+| `fase` | String (GRUPOS / DIECISEISAVOS / OCTAVOS / CUARTOS / SEMIFINAL / FINAL) | indexado (compuesto con `estado`) |
 | `grupo` | String A–P | solo fase de grupos |
-| `jornada` | Integer 1–4 | — |
-| `ordenGlobal` | Integer 0–111 | orden determinista del torneo |
+| `jornada` | Integer 1–8 (1–3 grupos, 4 dieciseisavos … 8 final) | — |
+| `ordenGlobal` | Integer 0–126 | orden determinista del torneo; elige el guion de eventos |
 | `fechaHora` | DateTime | indexado |
 | `estado` | String (PROGRAMADO / FINALIZADO) | indexado |
 | `golesLocal`, `golesVisitante` | Integer | **derivados** del conteo de eventos `GOL` |
 
-### 2.4 `:Evento` — 1.152 nodos
+| Fase | Partidos | Estado tras la carga | Eventos |
+|---|---:|---|---:|
+| GRUPOS | 96 | FINALIZADO | 1.152 |
+| DIECISEISAVOS | 16 | FINALIZADO | 220 |
+| OCTAVOS | 8 | FINALIZADO | 116 |
+| CUARTOS | 4 | FINALIZADO | 52 |
+| SEMIFINAL | 2 | FINALIZADO | 32 |
+| FINAL | 1 | **PROGRAMADO** | 0 |
+| **Total** | **127** | | **1.572** |
+
+La carga es una foto del torneo **en la víspera de la final** (sin partido por el tercer puesto). Ver §5.
+
+### 2.4 `:Evento` — 1.572 nodos
 
 | Atributo | Tipo | Rol |
 |---|---|---|
@@ -88,7 +106,8 @@ Siete etiquetas, nueve tipos de relación. Todo el módulo se apoya en una idea:
 | `minuto` | Integer 0–90 | minuto de juego |
 | `timestamp` | DateTime | derivado de `fechaHora + minuto` |
 | `condicionEquipo` | String (LOCAL / VISITANTE) | resuelve el equipo protagonista |
-| `dorsalProtagonista` | Integer | resuelve el jugador protagonista |
+| `dorsalProtagonista` | Integer | resuelve el jugador protagonista (en `SUSTITUCION`, el que entra) |
+| `dorsalSaliente` | Integer | solo en `SUSTITUCION`: el que sale; resuelve `REEMPLAZA` |
 | `regionOrigen` | String (AMERICAS / EUROPA / AFRICA) | región de ingesta y de réplica (Hito 3) |
 
 `secuencia` **no es un timestamp de reloj de pared**: es un contador local a la partición. Esa distinción es central — un sistema AP no puede asumir un reloj global sincronizado, pero sí puede garantizar un orden local monótono.
@@ -130,10 +149,10 @@ Siete etiquetas, nueve tipos de relación. Todo el módulo se apoya en una idea:
 | `JUEGA_EN` | `(:Jugador)` → `(:Equipo)` | N:1 (1.282 → 64) | `dorsal`, `desde`, `rol` | El jugador es el lado que cambia de equipo; el equipo es el destino estable. Además refleja el sentido de la referencia del Hito 4 (`jugadores.equipoId → equipos._id`). |
 | `PERTENECE_A` | `(:Equipo)` → `(:Grupo)` | N:1 (64 → 16) | — | El equipo pertenece al grupo, no al revés. |
 | `PARTICIPA_EN` | `(:Equipo)` → `(:Partido)` | N:M, **exactamente 2 por partido** | `condicion` (LOCAL / VISITANTE) | Un solo tipo de relación con una propiedad discriminante, en lugar de dos tipos `ES_LOCAL` / `ES_VISITANTE`. Ver §5. |
-| `SE_JUEGA_EN` | `(:Partido)` → `(:Sede)` | N:1 (112 → 16) | — | El partido se programa en una sede; la sede preexiste al partido. |
+| `SE_JUEGA_EN` | `(:Partido)` → `(:Sede)` | N:1 (127 → 16) | — | El partido se programa en una sede; la sede preexiste al partido. |
 | `CORRESPONDE_A` | `(:Partido)` → `(:Grupo)` | N:1 (96 → 16) | — | Solo para partidos de fase de grupos. |
-| `OCURRE_EN` | `(:Evento)` → `(:Partido)` | N:1 (1.152 → 96) | — | **Materializa la partición.** El evento apunta a su partido: la partición es una propiedad del evento, no del partido. |
-| `ES_DE_TIPO` | `(:Evento)` → `(:TipoEvento)` | N:1 (1.152 → 12) | — | Validación contra el catálogo. |
+| `OCURRE_EN` | `(:Evento)` → `(:Partido)` | N:1 (1.572 → 126) | — | **Materializa la partición.** El evento apunta a su partido: la partición es una propiedad del evento, no del partido. |
+| `ES_DE_TIPO` | `(:Evento)` → `(:TipoEvento)` | N:1 (1.572 → 12) | — | Validación contra el catálogo. |
 | `PROTAGONIZADO_POR` | `(:Evento)` → `(:Jugador)` | N:1 | — | El evento identifica a su autor. |
 | `SIGUIENTE_EVENTO` | `(:Evento)` → `(:Evento)` | 1:1, **dentro del mismo partido** | — | **Orden total** de la partición. Cadena lineal: `sec n → sec n+1`. |
 | `CAUSA_DE` | `(:Evento causa)` → `(:Evento efecto)` | N:M, **dentro del mismo partido** | — | **Orden causal.** Subconjunto estricto del orden total: solo los pares donde un evento es causa del otro. |
@@ -144,10 +163,42 @@ Siete etiquetas, nueve tipos de relación. Todo el módulo se apoya en una idea:
 |---|---|---|
 | Qué expresa | "pasó justo después" | "pasó *por causa de*" |
 | Estructura | cadena lineal, 1 sucesor | grafo dirigido acíclico |
-| Cantidad | 1.056 | 512 |
+| Cantidad | 1.446 | 702 |
 | Se puede reordenar sin romper nada | sí, es solo presentación | **no**, invertirla es una inconsistencia |
 
 Colapsarlas en una sola perdería exactamente la distinción que el Hito 3 necesita: la sustitución del minuto 62 es **posterior** al gol del minuto 13 pero no es **consecuencia** suya. La consistencia causal solo obliga a respetar `CAUSA_DE`; el orden total puede reordenarse al reconciliar réplicas sin violar nada.
+
+### 3.2 Relaciones del enunciado: `PARTICIPA`, `ANOTA`, `ASISTE`, `RECIBE_TARJETA`, `REEMPLAZA`
+
+El enunciado pide estas cinco relaciones. En este modelo el hecho deportivo ya existe como `:Evento` (con partición, reloj lógico y causalidad, que son el eje del Hito 3), así que las cinco se cargan como **proyección derivada** del subgrafo de eventos (`carga.cypher`, paso 18) y no como una segunda fuente cargada a mano. El modelo de eventos **no se quita**: la API (Hito 10) sigue leyendo y escribiendo eventos.
+
+| Relación | Dirección | Se deriva de | Cardinalidad | Propiedades | Cantidad |
+|---|---|---|---|---|---:|
+| `PARTICIPA` | `(:Jugador)` → `(:Partido)` | protagonista de al menos un evento del partido, o jugador que salió reemplazado | N:M, a lo sumo 1 por (jugador, partido) | `condicion` (LOCAL / VISITANTE), `eventos` (cuántos protagonizó) | 1.248 |
+| `ANOTA` | `(:Jugador)` → `(:Partido)` | evento `GOL` + `PROTAGONIZADO_POR` | N:M, 1 por gol | `eventoId`, `minuto` | 220 |
+| `ASISTE` | `(:Jugador asistidor)` → `(:Jugador goleador)` | evento `ASISTENCIA` que es `CAUSA_DE` un `GOL` | N:M, 1 por asistencia | `eventoId`, `golEventoId`, `partidoId`, `minuto` | 220 |
+| `RECIBE_TARJETA` | `(:Jugador)` → `(:Partido)` | evento `TARJETA_AMARILLA` / `TARJETA_ROJA` | N:M, 1 por tarjeta | `eventoId`, `tipo` (AMARILLA / ROJA), `minuto` | 136 |
+| `REEMPLAZA` | `(:Jugador entra)` → `(:Jugador sale)` | evento `SUSTITUCION` (`dorsalProtagonista` entra, `dorsalSaliente` sale) | N:M, 1 por sustitución | `eventoId`, `partidoId`, `minuto` | 136 |
+
+**Origen y destino.** Las que describen lo que un jugador hizo *en un partido* (participar, convertir, ser amonestado) van de `:Jugador` a `:Partido`: es el mismo criterio "de lo que varía hacia lo estable" del resto del modelo, y deja el partido a un salto. Las que vinculan **a dos jugadores** van de jugador a jugador, porque ese es el dato que agregan: `ASISTE` dice *a quién* se asistió (el partido queda como propiedad) y `REEMPLAZA` dice *quién entró por quién*. Con `ASISTE` hacia `:Partido` se perdería la sociedad asistidor-goleador, que es la pregunta de la consulta 7.1; con `REEMPLAZA` hacia `:Partido`, la cadena de reemplazos de la 7.3 no existiría.
+
+**`PARTICIPA` no es `PARTICIPA_EN`.** Son dos niveles del mismo partido:
+
+| | `PARTICIPA_EN` | `PARTICIPA` |
+|---|---|---|
+| Origen | `:Equipo` | `:Jugador` |
+| Qué dice | el equipo **está programado** en el partido (fixture) | el jugador **actuó** en el partido |
+| Existe desde | que se arma el cruce (también en la final sin jugar) | que hay eventos del partido |
+| Cantidad | exactamente 2 por partido (254) | entre 8 y 13 por partido jugado (1.248) |
+| Propiedades | `condicion` | `condicion`, `eventos` |
+
+Se usa el nombre del enunciado para la relación del jugador. La del equipo ya existía y la usan la API y todas las consultas de fixture: renombrarla rompería contratos sin aportar nada.
+
+**`PARTICIPA` se deriva de los eventos, no del plantel.** "Jugó" = protagonizó al menos un evento o salió reemplazado. Derivarla del plantel (`JUEGA_EN` × `PARTICIPA_EN`) daría unos 20 jugadores por equipo y por partido sin ningún dato que lo respalde; con eventos, cada arista tiene su evidencia. El costo: los que estuvieron en cancha sin figurar en ningún evento no aparecen (ver `decisiones.md` §4.3).
+
+**Idempotencia.** Las cuatro relaciones que nacen de un evento llevan su `eventoId` en el patrón del `MERGE`: dos goles del mismo jugador en el mismo partido son dos `ANOTA`, y reejecutar la carga no agrega una tercera. `PARTICIPA` es una por (jugador, partido) y su conteo se fija con `SET` a un valor calculado. Antes de derivar, el paso 18 borra las proyecciones cuyo evento ya no existe, así que converge al estado de los eventos, igual que el marcador.
+
+**Coherencia.** Como son derivadas, se auditan contra su origen: la consulta 6.7 de `consultas_grafo.cypher` verifica que cada gol tenga su `ANOTA`, cada asistencia causal su `ASISTE`, cada tarjeta su `RECIBE_TARJETA` y cada sustitución su `REEMPLAZA`; que ninguna proyección quede sin su evento, y que todo goleador o amonestado tenga `PARTICIPA`. Todo da 0.
 
 ---
 
@@ -200,23 +251,36 @@ El Hito 3 asignó los tipos de evento (N8) a un motor de objetos con prioridad *
 **El marcador es derivado, no cargado.**
 `golesLocal` / `golesVisitante` se calculan contando eventos `GOL`. Así el marcador nunca puede contradecir al timeline. En el Hito 4 el equivalente (`estadisticas`) está denormalizado y se documentó como una limitación ("si se insertan o eliminan jugadores fuera del flujo estándar, debe recalcularse"). Acá esa clase de desincronización es estructuralmente imposible, y la consulta 6.6 lo verifica.
 
-**Los dieciseisavos se cargan aunque el hito no los pida.**
-Sin fase eliminatoria el grafo del torneo son 16 componentes conexas aisladas y toda consulta de camino entre grupos distintos devuelve vacío. Las 16 llaves son las aristas que unen las componentes, y son lo que hace demostrable la consulta de conectividad de RF9.
+**El cuadro eliminatorio completo: 127 partidos, foto en la víspera de la final.**
+El enunciado pide 127 partidos: 96 de grupos + 16 dieciseisavos + 8 octavos + 4 cuartos + 2 semifinales + 1 final (sin tercer puesto). Sin fase eliminatoria el grafo del torneo son 16 componentes conexas aisladas; las llaves son las aristas que las unen y hacen demostrable la conectividad de RF9. Hasta semifinales todo está **jugado** (FINALIZADO, con eventos); la **final queda PROGRAMADO**, con sus dos equipos y sin eventos.
+
+Por qué no todas las eliminatorias sin jugar: cada `:Partido` necesita un LOCAL y un VISITANTE (lo exige la API y lo audita la consulta 6.4), y los equipos de una ronda solo se conocen si la anterior se jugó. Por qué no la final también jugada: así queda un partido real del torneo que la API puede jugar y cerrar, y que sirve de estado vacío (`GET /partidos/PAR-FINAL/eventos` → 200 con `[]`).
+
+**El ganador de cada llave lo fija el guion.** En eliminatoria no hay empates. El guion de eventos se elige con `ordenGlobal % 3`, como en grupos, y cada variante tiene un ganador (`% 3 = 1` gana el visitante 1-2; si no, el local 1-0 o 2-0). Así la ronda siguiente se arma de forma determinista sin esperar a que la anterior tenga eventos, y la consulta 6.8 verifica que quien pasó de ronda es quien ganó según el marcador **derivado** de los goles.
 
 ---
 
 ## 6. Volumen cargado
 
-| Etiqueta | Nodos | | Relación | Aristas (aprox.) |
-|---|---:|---|---|---:|
-| `:Jugador` | 1.282 | | `:SIGUIENTE_EVENTO` | 1.056 |
-| `:Evento` | 1.152 | | `:JUEGA_EN` | 1.282 |
-| `:Partido` | 112 | | `:OCURRE_EN` | 1.152 |
-| `:Equipo` | 64 | | `:ES_DE_TIPO` | 1.152 |
-| `:Sede` | 16 | | `:PROTAGONIZADO_POR` | 1.152 |
-| `:Grupo` | 16 | | `:CAUSA_DE` | 512 |
-| `:TipoEvento` | 12 | | `:PARTICIPA_EN` | 224 |
-| **Total** | **2.654** | | `:SE_JUEGA_EN` | 112 |
-| | | | `:PERTENECE_A` / `:CORRESPONDE_A` | 64 / 96 |
+Valores reales de la carga desde una base vacía (salida completa en [`evidencia/127_partidos_relaciones_20261111.md`](./evidencia/127_partidos_relaciones_20261111.md)):
 
-Los valores exactos se obtienen con el bloque 6.7 de `consultas_grafo.cypher`, y **deben ser idénticos después de reejecutar `carga.cypher`** (RNF4).
+| Etiqueta | Nodos | | Relación | Aristas |
+|---|---:|---|---|---:|
+| `:Evento` | 1.572 | | `:ES_DE_TIPO` | 1.572 |
+| `:Jugador` | 1.282 | | `:OCURRE_EN` | 1.572 |
+| `:Partido` | 127 | | `:PROTAGONIZADO_POR` | 1.572 |
+| `:Equipo` | 64 | | `:SIGUIENTE_EVENTO` | 1.446 |
+| `:Sede` | 16 | | `:JUEGA_EN` | 1.282 |
+| `:Grupo` | 16 | | `:PARTICIPA` *(enunciado)* | 1.248 |
+| `:TipoEvento` | 12 | | `:CAUSA_DE` | 702 |
+| **Total** | **3.089** | | `:PARTICIPA_EN` | 254 |
+| | | | `:ANOTA` *(enunciado)* | 220 |
+| | | | `:ASISTE` *(enunciado)* | 220 |
+| | | | `:RECIBE_TARJETA` *(enunciado)* | 136 |
+| | | | `:REEMPLAZA` *(enunciado)* | 136 |
+| | | | `:SE_JUEGA_EN` | 127 |
+| | | | `:CORRESPONDE_A` | 96 |
+| | | | `:PERTENECE_A` | 64 |
+| | | | **Total** | **10.647** |
+
+Los valores exactos se obtienen con el paso 19 de `carga.cypher` o el bloque 6.9 de `consultas_grafo.cypher`, y **son idénticos después de reejecutar `carga.cypher`** (RNF4).
