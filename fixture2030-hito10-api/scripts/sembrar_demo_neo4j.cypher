@@ -10,10 +10,10 @@
 //
 //  POR QUÉ UN PARTIDO APARTE
 //  -------------------------
-//  Los 96 partidos de grupos de carga.cypher están FINALIZADO y los 16
-//  dieciseisavos (PAR-D16-*) no tienen eventos. Escribir sobre ellos alteraría
+//  carga.cypher deja 126 de sus 127 partidos FINALIZADO y con eventos, y la
+//  final (PAR-FINAL) PROGRAMADO y sin eventos. Escribir sobre ellos alteraría
 //  el grafo que es evidencia del Hito 5. `PAR-DEMO-API` (fase 'DEMO') queda
-//  fuera de cualquier consulta por fase GRUPOS/DIECISEISAVOS.
+//  fuera de cualquier consulta por fase del torneo.
 //
 //  IDEMPOTENTE Y RESETEABLE
 //  ------------------------
@@ -21,9 +21,8 @@
 //  además, cada corrida DEJA EL PARTIDO EN EL ESTADO INICIAL de la demo:
 //    · estado 'PROGRAMADO', sin golesLocal/golesVisitante/cerradoEn;
 //    · se borran todos sus eventos salvo los 3 de carga (los de origen 'API'
-//      que dejó una demo anterior, y también los que crearía el paso 7 de
-//      carga.cypher si se re-ejecuta después de este script, porque ese paso
-//      recorre TODOS los :Partido con sede);
+//      que dejó una demo anterior; el paso 7 de carga.cypher ya no le agrega
+//      eventos: filtra por fase GRUPOS);
 //    · quedan exactamente PAR-DEMO-API-EV-01..03, sin FIN_PARTIDO.
 //
 //  FLUJO DE DEMO ESPERADO (Postman / curl)

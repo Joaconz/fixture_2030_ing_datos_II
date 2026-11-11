@@ -29,7 +29,7 @@ Este módulo **no reemplaza** al del Hito 4. Equipos y jugadores siguen siendo d
 
 ## 2. Modelo propuesto
 
-Siete etiquetas y nueve tipos de relación. El detalle completo (atributos, tipos, cardinalidades e índices) está en [`modelo_grafo.md`](./modelo_grafo.md); acá va el resumen y la lógica.
+Siete etiquetas y quince tipos de relación: diez del modelo de eventos y las cinco del enunciado, derivadas de los eventos. El detalle completo (atributos, tipos, cardinalidades e índices) está en [`modelo_grafo.md`](./modelo_grafo.md); acá va el resumen y la lógica.
 
 **Nodos.** `:Equipo`, `:Jugador`, `:Partido`, `:Sede`, `:Evento`, `:Grupo`, `:TipoEvento`.
 
@@ -44,7 +44,20 @@ Siete etiquetas y nueve tipos de relación. El detalle completo (atributos, tipo
 (:Evento)-[:PROTAGONIZADO_POR]->(:Jugador)
 (:Evento)-[:SIGUIENTE_EVENTO]->(:Evento)     ← orden total, dentro del partido
 (:Evento)-[:CAUSA_DE]->(:Evento)             ← orden causal, dentro del partido
+
+// Relaciones del enunciado, derivadas de los eventos (carga.cypher, paso 18)
+(:Jugador)-[:PARTICIPA {condicion, eventos}]->(:Partido)
+(:Jugador)-[:ANOTA {eventoId, minuto}]->(:Partido)
+(:Jugador)-[:ASISTE {eventoId, golEventoId, partidoId, minuto}]->(:Jugador)
+(:Jugador)-[:RECIBE_TARJETA {eventoId, tipo, minuto}]->(:Partido)
+(:Jugador)-[:REEMPLAZA {eventoId, partidoId, minuto}]->(:Jugador)   ← entra -> sale
 ```
+
+**Por qué las cinco relaciones del enunciado son derivadas.** El enunciado pide `PARTICIPA`, `ANOTA`, `ASISTE`, `RECIBE_TARJETA` y `REEMPLAZA`. Este módulo ya registraba esos hechos como `:Evento`, que es donde viven la partición, el reloj lógico y la causalidad del Hito 3, y la API los lee y escribe así. Cargarlas como datos propios crearía dos fuentes del mismo hecho que pueden contradecirse (un gol con `ANOTA` y sin evento, o al revés). Se derivan del evento con `MERGE` sobre su `eventoId` y se auditan contra él (consulta 6.7), con el mismo argumento que el marcador derivado: no pueden desincronizarse. Lo que aportan es el salto directo: "goles de X" pasa de `(:Evento {tipo:'GOL'})-[:PROTAGONIZADO_POR]->(X)` + `OCURRE_EN` a `(X)-[:ANOTA]->(:Partido)`.
+
+**Origen y destino de cada una.** Lo que un jugador hace *en un partido* va `(:Jugador)` → `(:Partido)` (`PARTICIPA`, `ANOTA`, `RECIBE_TARJETA`); lo que vincula **a dos jugadores** va de jugador a jugador (`ASISTE`: asistidor → goleador; `REEMPLAZA`: el que entra → el que sale), con el partido como propiedad. Detalle y tabla en [`modelo_grafo.md` §3.2](./modelo_grafo.md#32-relaciones-del-enunciado-participa-anota-asiste-recibe_tarjeta-reemplaza).
+
+**`PARTICIPA` y `PARTICIPA_EN` conviven a propósito.** `PARTICIPA_EN` es del **equipo** y es fixture: dice quién está programado en el partido, existe antes de jugarlo (la final la tiene) y son exactamente dos por partido. `PARTICIPA` es del **jugador** y es actuación: dice quién jugó, se deriva de los eventos y solo existe en partidos jugados. Renombrar la del equipo rompería la API y todas las consultas de fixture.
 
 **Criterio de dirección.** Cada relación apunta desde lo que varía hacia lo que es estable: el jugador cambia de equipo, no el equipo de jugador; el partido se asigna a una sede que ya existía; el evento pertenece a un partido. Ese criterio también hace que las direcciones coincidan con el sentido de las referencias del Hito 4 (`jugadores.equipoId → equipos._id`), lo que mantiene la lectura del modelo coherente entre módulos.
 
@@ -118,6 +131,10 @@ El punto 4 es el que valida la decisión del Hito 3, y la consulta 3.2 lo muestr
 | Grupo | (a) propiedad `grupo` en `:Equipo` · (b) nodo `:Grupo` | **(b)** | En Mongo la pregunta es "equipos del grupo A" (filtro); en el grafo es "qué separa a estos equipos" (recorrido), y ahí el grupo es un punto de paso. |
 | Estadísticas de jugador | (a) replicar `estadisticas` del Hito 4 · (b) derivarlas del grafo | **(b)** | (a) importaría una limitación que el propio Hito 4 documentó (el contador se desincroniza). (b) las hace imposibles de desincronizar y es el argumento concreto de por qué N3 conviene como grafo. |
 | Carga | (a) `CREATE` + limpiar antes · (b) `LOAD CSV` · (c) `MERGE` con datos generados | **(c)** | (a) no es idempotente. (b) agrega un artefacto externo sin aportar nada al modelo. (c) es la traducción directa del `bulkWrite` con upsert del Hito 4. |
+| Relaciones del enunciado | (a) reemplazar los `:Evento` por `ANOTA`, `RECIBE_TARJETA`, etc. · (b) cargarlas además, como datos propios · (c) derivarlas de los eventos | **(c)** | (a) perdería partición, reloj lógico y `CAUSA_DE` (el Hito 3) y rompería la API, que lee y escribe eventos. (b) serían dos fuentes del mismo hecho que pueden contradecirse. (c) da el salto directo que pide el enunciado sin una segunda fuente, y se audita (consulta 6.7). |
+| `ASISTE` | (a) `(:Jugador)` → `(:Partido)` · (b) asistidor → goleador | **(b)** | Lo que la asistencia agrega es *a quién* se asistió. Con (a) la sociedad asistidor-goleador (consultas 7.1 y 8.3) no se puede recorrer. El partido queda como propiedad. |
+| `REEMPLAZA` | (a) `(:Jugador)` → `(:Partido)` con el saliente como propiedad · (b) entra → sale | **(b)** | (a) guarda una referencia a un jugador como texto, justo lo que el modelo evita. Con (b) la cadena de reemplazos (7.3) es un camino. Exigió agregar `dorsalSaliente` al evento `SUSTITUCION`: sin el que sale, la relación no se puede derivar. |
+| Eliminatorias | (a) todas PROGRAMADO, sin eventos · (b) todas jugadas · (c) jugadas hasta semifinales, final PROGRAMADO | **(c)** | (a) deja octavos en adelante sin equipos: no se sabe quién gana una llave sin jugar, y todo `:Partido` necesita LOCAL y VISITANTE (la API devuelve 500 si no, consulta 6.4). (b) no deja ningún partido real del torneo por jugar para la escritura de la API y el estado vacío. (c) es una foto coherente: la víspera de la final. |
 
 ---
 
@@ -130,8 +147,9 @@ El punto 4 es el que valida la decisión del Hito 3, y la consulta 3.2 lo muestr
 | 64 equipos | Códigos FIFA reales, confederación real, entrenadores reales | `equipoId` = `equipos._id`; enum de confederación idéntico; grupos `A`–`P` (patrón `^[A-P]$`) |
 | 1.282 jugadores | Sintéticos, generados con fórmulas deterministas | `dni` con patrón `^[0-9]{7,8}$`; enum de `posicion` idéntico; dorsal 1–99; plantel de 18 a 22 (dentro del rango 15–26 declarado en el Hito 4) |
 | 16 sedes | Estadios reales de la candidatura conjunta 2030 (España, Portugal, Marruecos + los tres partidos del centenario en Uruguay, Argentina y Paraguay) | — |
-| 112 partidos | Generados: 96 de grupos (16 × 6 cruces) + 16 dieciseisavos | — |
-| 1.152 eventos | Generados con 3 guiones deterministas por partido | — |
+| 127 partidos | Generados: 96 de grupos (16 × 6 cruces) + 16 dieciseisavos + 8 octavos + 4 cuartos + 2 semifinales + 1 final, sin tercer puesto. Jugados hasta semifinales; la final, PROGRAMADO | — |
+| 1.572 eventos | Generados con 3 guiones deterministas por fase: 1.152 en grupos (10 a 13 por partido) y 420 en las 30 llaves jugadas (10 a 17, sin empates) | — |
+| 1.960 relaciones del enunciado | Derivadas de los eventos: 1.248 `PARTICIPA`, 220 `ANOTA`, 220 `ASISTE`, 136 `RECIBE_TARJETA`, 136 `REEMPLAZA` | — |
 | 12 tipos de evento | Catálogo N8 replicado | — |
 
 Los jugadores son sintéticos por la misma razón que en el Hito 4: se necesita volumen (>1.000) y no hay una fuente de planteles reales de 2030. Está declarado, igual que allá.
@@ -140,16 +158,20 @@ Los jugadores son sintéticos por la misma razón que en el Hito 4: se necesita 
 
 **Determinismo total.** Ni un solo valor usa `rand()`, `randomUUID()`, `timestamp()` ni `datetime()` "de ahora". Todo deriva de fórmulas sobre el índice de la entidad. Es la condición para que la carga sea idempotente de verdad y no solo "sin errores".
 
-**Idempotencia (RNF4).** Todo se escribe con `MERGE` sobre clave natural, con `ON CREATE SET` / `ON MATCH SET`. La verificación es directa: correr `carga.cypher` dos veces y comparar los conteos del paso 14. Deben ser idénticos. Los `MERGE` de relación incluyen la propiedad discriminante en el patrón (`MERGE (e)-[:PARTICIPA_EN {condicion:'LOCAL'}]->(p)`), que es lo que evita que una segunda corrida agregue una arista paralela.
+**Idempotencia (RNF4).** Todo se escribe con `MERGE` sobre clave natural, con `ON CREATE SET` / `ON MATCH SET`. La verificación es directa: correr `carga.cypher` dos veces y comparar los conteos del paso 19. Deben ser idénticos (lo son: ver [`evidencia/127_partidos_relaciones_20261111.md`](./evidencia/127_partidos_relaciones_20261111.md)). Las relaciones del enunciado llevan el `eventoId` de su evento en el patrón del `MERGE`, por la misma razón. Los `MERGE` de relación incluyen la propiedad discriminante en el patrón (`MERGE (e)-[:PARTICIPA_EN {condicion:'LOCAL'}]->(p)`), que es lo que evita que una segunda corrida agregue una arista paralela.
 
-**Valores derivados y no cargados.** El marcador se calcula contando eventos. Los clasificados a dieciseisavos se calculan recorriendo la tabla de posiciones, con desempate final por `equipoId` para que el resultado sea determinista incluso ante empates.
+**Valores derivados y no cargados.** El marcador se calcula contando eventos. Los clasificados a dieciseisavos se calculan recorriendo la tabla de posiciones, con desempate final por `equipoId` para que el resultado sea determinista incluso ante empates. En las rondas siguientes pasa el ganador que fija el guion de la llave (`ordenGlobal % 3 = 1` gana el visitante, si no el local), y la consulta 6.8 comprueba que coincide con el marcador derivado. Las cinco relaciones del enunciado se derivan de los eventos (paso 18).
 
 ### 4.3 Limitaciones declaradas
 
 - Los planteles y los eventos son sintéticos; no representan datos reales.
 - El sorteo de grupos es determinista (`índice % 16`), no el sorteo real: puede haber dos equipos de la misma confederación en un grupo.
-- Todos los partidos de grupos siguen uno de tres guiones de eventos. Alcanza para validar los recorridos, pero la distribución de goles no es realista.
-- Solo se cargan dieciseisavos, no la eliminatoria completa. Se cargan porque sin ellos el grafo queda desconectado entre grupos y las consultas de camino no tendrían nada que mostrar.
+- Todos los partidos de grupos siguen uno de tres guiones de eventos, y las eliminatorias otros tres. Alcanza para validar los recorridos, pero la distribución de goles no es realista: el mismo equipo gana todas sus llaves con el mismo marcador si le toca la misma variante (Ucrania llega a la final ganando 2-1 cuatro veces).
+- En eliminatoria el ganador lo fija el guion (`ordenGlobal % 3`), no la fuerza de los equipos.
+- La final queda PROGRAMADO a propósito; no hay partido por el tercer puesto (127 = 96 + 16 + 8 + 4 + 2 + 1).
+- `PARTICIPA` se deriva de los eventos: un jugador que estuvo en cancha sin protagonizar ningún evento no aparece (796 de los 1.282 jugadores no tienen ninguna). Derivarla del plantel inventaría participaciones sin respaldo.
+- Las relaciones del enunciado son una proyección que se recalcula al correr `carga.cypher` (paso 18). Un evento que la API registra después **no** genera su `ANOTA` / `RECIBE_TARJETA` / etc. hasta la siguiente corrida, y un `SUSTITUCION` de la API no trae `dorsalSaliente`, así que no deriva `REEMPLAZA`. Los eventos siguen siendo la fuente.
+- La consulta 7.3 (cadena de reemplazos) encadena reemplazos de partidos distintos sin exigir orden temporal entre ellos: muestra rotación en el puesto, no una secuencia cronológica.
 - Community Edition no soporta restricciones de existencia; se sustituyen por auditoría (§6).
 
 ---
@@ -173,9 +195,17 @@ Los jugadores son sintéticos por la misma razón que en el Hito 4: se necesita 
 | `consultas` 4.1 | Centralidad de grado en la red de causalidad | variable | **RF9 (centralidad)** |
 | `consultas` 4.2 | Centralidad de sedes | 2 | RF9 |
 | `consultas` 5.1–5.2 | Cruces de una jornada; conflictos de programación | 2–3 | Programación del fixture |
-| `consultas` 6.1–6.7 | Auditoría de integridad (6 chequeos, todos esperan 0) + conteos finales | 1–2 | RNF7, RF11 |
+| `consultas` 7.1 | **Goleadores con sus asistidores** (`ANOTA` + `ASISTE`) | 2 | Relaciones del enunciado |
+| `consultas` 7.2 | **Tarjetas por partido** y resumen por fase (`RECIBE_TARJETA`) | 2 | Relaciones del enunciado |
+| `consultas` 7.3 | **Cadena de reemplazos** (`REEMPLAZA*2..4`) | variable | Relaciones del enunciado |
+| `consultas` 7.4 | **Recorrido de los finalistas por el cuadro** hasta la final, con goleadores (`PARTICIPA_EN` + `ANOTA`) | 3 | Relaciones del enunciado + fixture |
+| `consultas` 7.5 | Ficha de actuación por jugador con las cinco relaciones | 1 × 5 | Relaciones del enunciado |
+| `consultas` 8.1–8.3 | **Análisis de relaciones**: conteos y grados por tipo, distribución de grado de `PARTICIPA`, patrones entre relaciones | 1–2 | §7.3 |
+| `consultas` 6.1–6.9 | Auditoría de integridad (8 chequeos, todos esperan 0) + conteos finales | 1–2 | RNF7, RF11 |
 
-Las capturas de resultados van en `docs/evidencia/`.
+Son **19 consultas numeradas** (1.1–1.3, 2.1–2.3, 3.1–3.3, 4.1–4.2, 5.1–5.2, 7.1–7.5), más el análisis de relaciones (8.1–8.3) y la auditoría (6.1–6.9). La salida real de todas está en [`evidencia/127_partidos_relaciones_20261111.md`](./evidencia/127_partidos_relaciones_20261111.md); las capturas de la entrega original del Hito 5 siguen en `docs/evidencia/`.
+
+**Corrección en 5.2.** Con las eliminatorias en julio, la consulta de conflictos de programación marcaba un falso conflicto (`PAR-C-2` el 11/06 y `PAR-CUA-03` el 11/07 en la misma sede): `duration.between(...).days` ignora el componente de meses (`P1M` tiene `days = 0`). Ahora mide la diferencia con `duration.inSeconds`.
 
 ---
 
@@ -187,7 +217,7 @@ Las capturas de resultados van en `docs/evidencia/`.
 
 **Lo que el motor no puede garantizar en Community Edition:** las restricciones de existencia y de tipo, que son el equivalente de los `$jsonSchema` con `validationLevel: strict` del Hito 4. Quedan escritas y comentadas en `estructura.cypher`.
 
-**Cómo se cubre esa brecha:** con el bloque 6 de `consultas_grafo.cypher`, seis auditorías que deben devolver `0`:
+**Cómo se cubre esa brecha:** con el bloque 6 de `consultas_grafo.cypher`, ocho auditorías que deben devolver `0` (y devuelven `0`, ver la evidencia):
 
 | Chequeo | Qué detecta |
 |---|---|
@@ -197,6 +227,8 @@ Las capturas de resultados van en `docs/evidencia/`.
 | 6.4 Partidos mal formados | Un partido sin exactamente un local y un visitante (la cardinalidad que el modelo no puede imponer) |
 | 6.5 Cadenas rotas | Un evento sin sucesor que no sea el `FIN_PARTIDO` |
 | 6.6 Marcador inconsistente | El marcador almacenado no coincide con el conteo de goles del grafo |
+| 6.7 Relaciones del enunciado vs. eventos | Un gol sin `ANOTA`, una asistencia causal sin `ASISTE`, una tarjeta sin `RECIBE_TARJETA`, una sustitución sin `REEMPLAZA`, una proyección cuyo evento ya no existe, o un goleador/amonestado sin `PARTICIPA` |
+| 6.8 Cuadro eliminatorio | Una llave jugada que terminó empatada, o un ganador (según el marcador derivado) que no aparece en la ronda siguiente |
 
 Es una degradación consciente: se cambia validación *en escritura* por auditoría *verificable y repetible*. En un despliegue real, además, buena parte de la validación en escritura se pierde igual por ser un sistema AP — la reconciliación ocurre después del hecho.
 
@@ -220,13 +252,13 @@ Es una degradación consciente: se cambia validación *en escritura* por auditor
 
 **Verificación del plan.** El equivalente en Neo4j del `explain("executionStats")` del Hito 4 es `PROFILE`. Anteponer `PROFILE` a cualquier consulta muestra `db hits` y filas por operador; lo que hay que buscar es `NodeIndexSeek` en lugar de `NodeByLabelScan` (equivalente de `IXSCAN` vs `COLLSCAN`). La comparación antes/después de crear el índice compuesto va en `docs/evidencia/`.
 
-**Escala.** Con ~2.650 nodes y ~6.600 aristas, el subgrafo entra entero en la *page cache* de 512 MB configurada. El rendimiento acá no prueba nada sobre producción; lo que sí es extrapolable es la **forma** de los recorridos: todos acotados a una partición o a una componente pequeña, ninguno recorriendo el grafo completo.
+**Escala.** Con ~3.090 nodos y ~10.650 aristas (127 partidos, 1.572 eventos), el subgrafo entra entero en la *page cache* de 512 MB configurada. El rendimiento acá no prueba nada sobre producción; lo que sí es extrapolable es la **forma** de los recorridos: todos acotados a una partición o a una componente pequeña, ninguno recorriendo el grafo completo.
 
 ---
 
 ## 7. Análisis relacional
 
-Se seleccionaron dos análisis. El primero es el que da sentido al hito; el segundo es el que valida una decisión del Hito 3.
+Se seleccionaron dos análisis. El primero es el que da sentido al hito; el segundo es el que valida una decisión del Hito 3. El §7.3 agrega el análisis de las cinco relaciones del enunciado.
 
 ### 7.1 Centralidad de grado en la red de causalidad
 
@@ -244,11 +276,46 @@ Se seleccionaron dos análisis. El primero es el que da sentido al hito; el segu
 **Consultas:** `consultas_grafo.cypher` 3.1, 3.2 y 3.3.
 **Objetivo:** medir la estructura de componentes del grafo de rivalidades.
 
-**Resultado:** con solo la fase de grupos, desde cualquier equipo se alcanzan exactamente 3 equipos: los de su propio grupo. **El fixture de grupos no es un grafo conexo: son 16 componentes aisladas de 4 nodos.** Al agregar los dieciseisavos, las componentes se unen y el camino más corto entre equipos de grupos distintos pasa a existir y a ser medible.
+**Resultado:** con solo la fase de grupos, desde cualquier equipo se alcanzan exactamente 3 equipos: los de su propio grupo. **El fixture de grupos no es un grafo conexo: son 16 componentes aisladas de 4 nodos.** Al agregar las eliminatorias, las componentes se unen y el camino más corto entre equipos de grupos distintos pasa a existir y a ser medible: desde Argentina se alcanzan 44 equipos con la cota `*1..8` de la consulta 3.2 (b).
 
 **Interpretación en el Fixture 2030 — y por qué importa para la arquitectura:** ese resultado es la **validación empírica de la partición por partido** definida en el Hito 3. La estructura real del torneo ya está fragmentada; la decisión de particionar no impone una frontera artificial, reconoce una que existe en el dominio. Ningún recorrido frecuente (plantel, timeline, jugada del gol, tabla de un grupo) cruza esa frontera, así que ninguna consulta caliente exige coordinación entre particiones — que es exactamente la condición que hace viable un diseño AP sin degradar la experiencia.
 
 Y funciona también como **advertencia**: si en una revisión futura apareciera una consulta frecuente que sí cruza particiones, esta misma medición la haría visible y obligaría a revisar el criterio del Hito 3. El análisis no solo confirma la decisión: da la herramienta para saber cuándo dejaría de ser correcta.
+
+### 7.3 Análisis de las relaciones del enunciado
+
+**Consultas:** `consultas_grafo.cypher` 8.1 (conteos y grados), 8.2 (distribución de grado), 8.3 (patrones) y las 7.1–7.5. Los números son de la corrida desde vacío registrada en [`evidencia/127_partidos_relaciones_20261111.md`](./evidencia/127_partidos_relaciones_20261111.md).
+
+**Conteos y grados (8.1).**
+
+| Relación | Dirección | Aristas | Orígenes distintos | Destinos distintos | Grado de salida medio | Máximo |
+|---|---|---:|---:|---:|---:|---:|
+| `PARTICIPA` | Jugador → Partido | 1.248 | 486 | 126 | 2,57 | 7 |
+| `ANOTA` | Jugador → Partido | 220 | 106 | 126 | 2,08 | 7 |
+| `ASISTE` | Jugador → Jugador | 220 | 96 | 106 | 2,29 | 9 |
+| `RECIBE_TARJETA` | Jugador → Partido | 136 | 65 | 126 | 2,09 | 5 |
+| `REEMPLAZA` | Jugador → Jugador | 136 | 53 | 53 | 2,57 | 7 |
+
+- Los 126 destinos de `PARTICIPA`, `ANOTA` y `RECIBE_TARJETA` son exactamente los partidos jugados: la final (PROGRAMADO) no tiene ninguna. En cambio, `PARTICIPA_EN` sí llega a la final, que es la diferencia entre fixture y actuación (§2).
+- `ANOTA` = `ASISTE` = 220: en estos guiones todo gol viene de una asistencia (la consulta 6.7 lo confirma desde el otro lado: ninguna asistencia causal sin su `ASISTE`).
+- El grado máximo de `ASISTE` (9) es un mediocampista de Ucrania que no convierte ningún gol: es el mismo perfil que la centralidad del §7.1 encuentra por la red causal, ahora a un salto.
+
+**Distribución de grado de `PARTICIPA` (8.2).** 486 jugadores actúan en al menos un partido y 796 en ninguno (protagonizan eventos solo los dorsales que usan los guiones). Por partidos jugados: 142 jugadores con 1, 142 con 2, 67 con 3, 78 con 4, 42 con 5, 6 con 6 y 9 con 7; siete partidos es el máximo posible (3 de grupos + 4 llaves), así que esos nueve son de los finalistas. Del lado del partido: entre 8 y 11 jugadores con actuación por partido en grupos (9,67 de promedio) y entre 8 y 13 en eliminatorias (12 en semifinales), porque los guiones de eliminatoria suman la segunda sustitución, la expulsión y el segundo gol.
+
+**Patrones (8.3 y bloque 7).**
+
+| Patrón | Resultado | Lectura |
+|---|---:|---|
+| Sociedades asistidor → goleador | 106 pares; 1 de 7 goles, 6 de 5, 14 de 4, 4 de 3, 34 de 2, 47 de 1 | Hay tantas sociedades como goleadores (106): cada goleador tiene **un solo** asistidor. La red de asistencias es un emparejamiento, efecto de los guiones (cada rol lo cumple siempre el mismo dorsal). Con datos reales es la consulta que mostraría de quién depende cada goleador. |
+| Entró desde el banco y convirtió en el mismo partido | 10 | Los 10 partidos de eliminatoria que gana el visitante 1-2: el gol del triunfo es del #17 que entró al 80'. |
+| Convirtió y recibió tarjeta en el mismo partido | 0 | Goleadores y amonestados son dorsales distintos en todos los guiones. |
+| Asistencia recíproca (A asiste a B y B a A) | 0 | Consecuencia del emparejamiento anterior. |
+| Expulsado en un partido que su equipo perdió | 10 | Las 10 rojas son del visitante en llaves que pierde 2-0. |
+| Tarjetas por partido (7.2) | 1,00 en grupos; 1,31 dieciseisavos; 1,38 octavos; 1,25 cuartos; 1,50 semifinales | Solo amarillas en grupos; las 10 rojas están en eliminatorias. |
+| Cadenas de reemplazos (7.3) | 5 cadenas de 2 eslabones (Croacia, Hungría, Polonia, Suecia, Ucrania) | #17 entra por #16 en una llave de visitante, y #16 había entrado por #8 cuando el equipo fue local. |
+| Recorrido de los finalistas (7.4) | Ucrania: cuatro 2-1 de visitante; Bolivia: cuatro 2-0 de local | El cuadro se recorre como camino de partidos unidos por el equipo. Ucrania llega con los goles de Kovac (75') y Costa (89'), el suplente. |
+
+**Qué aporta.** Las cinco relaciones no agregan información que no estuviera en los eventos, pero cambian la forma de preguntar: lo que antes eran dos saltos filtrando por tipo de evento (`Evento -[:PROTAGONIZADO_POR]-> Jugador` + `OCURRE_EN`) pasa a ser una arista con nombre, y aparecen preguntas **entre jugadores** (quién asiste a quién, quién entra por quién) que con eventos sueltos exigían juntar dos eventos a mano. Los patrones de arriba también dejan a la vista los límites del dataset sintético: los guiones son pocos y repetitivos, y eso se ve en la estructura (emparejamientos, cadenas cortas, marcadores repetidos).
 
 ---
 
@@ -258,3 +325,4 @@ Y funciona también como **advertencia**: si en una revisión futura apareciera 
 2. **`Evento.partidoId` está denormalizado** respecto de `OCURRE_EN`. Está justificado (§3.4), pero es la única redundancia del modelo y debe auditarse: si divergieran, la propiedad y la arista dirían cosas distintas sobre la partición.
 3. **La cardinalidad "1 local + 1 visitante"** no la impone el motor. En Community solo se audita. Es el precio de haber elegido un tipo de relación con propiedad discriminante.
 4. **El límite de saltos** en los recorridos de longitud variable (`*1..5`, `*1..4`) está fijado por la profundidad de los guiones de eventos actuales. Con jugadas más largas habría que revisarlo, y conviene medirlo antes de subirlo.
+5. **Refresco de las relaciones del enunciado.** Hoy se recalculan al correr `carga.cypher` (paso 18). Si se quisieran al día con cada evento que registra la API, habría que derivarlas en la misma transacción del alta (o al cerrar el partido), y pedir `dorsalSaliente` en las sustituciones para poder derivar `REEMPLAZA`.

@@ -105,7 +105,8 @@ def test_eventos_coinciden_con_cypher(api):
 
 
 def test_eventos_partido_sin_eventos_200_vacio(api):
-    r = api.get("/partidos/PAR-D16-01/eventos")
+    # La final es el único partido del torneo que carga.cypher deja PROGRAMADO y sin eventos.
+    r = api.get("/partidos/PAR-FINAL/eventos")
     assert r.status_code == 200 and r.json()["items"] == []
 
 
