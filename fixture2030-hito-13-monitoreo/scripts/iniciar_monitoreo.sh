@@ -19,7 +19,7 @@ esperar_url "$GRAFANA_URL/api/health" 90 || falla "Grafana no respondió en 90 s
 
 echo
 echo "Prometheus  $PROM_URL           (Status → Targets, Alerts)"
-echo "Grafana     $GRAFANA_URL           dashboard 'Fixture 2030 — Monitoreo'"
+echo "Grafana     $GRAFANA_URL           5 dashboards (abre en '1. Resumen y SLAs')"
 echo
 docker ps --format '{{.Names}}' | grep -qx fixture2030-cassandra-jmx-agent \
   || docker inspect fixture2030-cassandra --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -q '^JVM_EXTRA_OPTS=-javaagent' \

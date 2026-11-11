@@ -1,6 +1,6 @@
 # Alertas y umbrales (§5.4, RF9)
 
-Las cinco reglas viven en [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) y se validan con `promtool check rules`. Prometheus las evalúa cada 15 s. **No hay Alertmanager**: nadie recibe un mensaje; el estado se ve en http://localhost:9090/alerts y en el panel "Alertas activas" de Grafana. En un despliegue real, el paso siguiente sería enrutar `critica` a quien está de guardia y `advertencia` a un canal del equipo.
+Las cinco reglas viven en [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) y se validan con `promtool check rules`. Prometheus las evalúa cada 15 s. **No hay Alertmanager**: nadie recibe un mensaje; el estado se ve en http://localhost:9090/alerts y en el panel "Alertas activas" del dashboard *1. Resumen y SLAs* de Grafana. En un despliegue real, el paso siguiente sería enrutar `critica` a quien está de guardia y `advertencia` a un canal del equipo.
 
 Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó el tiempo `for`) y después a `firing`.
 
@@ -43,7 +43,7 @@ Cada alerta pasa por `pending` (la condición se cumple pero todavía no pasó e
 | Componente | API REST (y la base que la arrastra) |
 | Impacto | Usuarios que reciben errores en vez de datos del partido. |
 | Quién la atiende | quien opera la API; si Q6 apunta a una base, quien opera esa base |
-| Acción | Panel "Llamadas por segundo a cada base, por resultado": qué `dependencia` pasa a `no_disponible` o `timeout`. |
+| Acción | Panel "Llamadas por segundo a cada base, por resultado" (dashboard *3. Comparación entre bases*): qué `dependencia` pasa a `no_disponible` o `timeout`. |
 | Por qué el umbral | El Hito 12 midió **0 errores** con 364 req/s, así que cualquier 5xx sostenido es una anomalía. 1 % deja margen para un error aislado. **Observado:** se activó (pending) con Neo4j rechazando credenciales e InfluxDB sin token (18,6 % de 5xx). |
 
 ## ApiLatenciaAlta

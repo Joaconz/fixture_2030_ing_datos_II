@@ -22,7 +22,7 @@ bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh
 curl -s localhost:8000/health/dependencias
 ```
 
-Abrir en pestañas: Grafana (http://localhost:3000, dashboard *Fixture 2030 — Monitoreo*, rango "Last 15 minutes"), Prometheus `/alerts`, Swagger (http://localhost:8000/docs). **Ocultar** cualquier `.env` o terminal con credenciales (RNF6).
+Abrir en pestañas: Grafana (http://localhost:3000, dashboard *Fixture 2030 — 1. Resumen y SLAs*, rango "Last 15 minutes"; los otros cuatro se abren con los links de arriba de cada dashboard), Prometheus `/alerts`, Swagger (http://localhost:8000/docs). **Ocultar** cualquier `.env` o terminal con credenciales (RNF6).
 
 ## 2. Secuencia en vivo (bloques "Operación" y "Evidencia")
 
@@ -31,7 +31,7 @@ Abrir en pestañas: Grafana (http://localhost:3000, dashboard *Fixture 2030 — 
 | 1 | Swagger: `GET /partidos/PAR-D16-01/comentarios?limit=50` | Cassandra: lee la ventana del partido repartida en buckets; nunca escanea todo el partido |
 | 2 | Swagger: `GET /equipos/ARG` | MongoDB: un documento por equipo, lectura por clave |
 | 3 | Swagger: `GET /health/dependencias` | La API ve cada base por separado; si una cae, solo esa queda DOWN |
-| 4 | Lanzar la carga: `bash fixture2030-hito-13-monitoreo/scripts/ejecutar_carga_observada.sh` (2 min; seguir hablando) | Mientras corre, en Grafana: *Requests por segundo* sube a ~400; *Latencia p95 de cada base* muestra Cassandra; fila Cassandra: p99 interno en ~1 ms |
+| 4 | Lanzar la carga: `bash fixture2030-hito-13-monitoreo/scripts/ejecutar_carga_observada.sh` (2 min; seguir hablando) | Mientras corre, en Grafana: *Requests por segundo* (dashboard 2) sube a ~400; *Latencia p95 de cada base* (dashboard 3) muestra Cassandra; fila Cassandra del dashboard 4: p99 interno en ~1 ms. Al terminar, el 1 muestra si la API quedó dentro del SLA de 100 ms |
 | 5 | Al terminar, abrir el informe que imprime | Cassandra 1 ms por dentro, la API 42–91 ms al 97 % de CPU: el cuello es la API, la base tiene margen |
 | 6 | (Si sobra tiempo) `bash fixture2030-hito-13-monitoreo/scripts/ejecutar_prueba_controlada.sh redis` (4 min) | Redis pasa a CAÍDA, la alerta a firing, sesiones da 503 y equipos sigue en 200: la falla queda en su módulo |
 

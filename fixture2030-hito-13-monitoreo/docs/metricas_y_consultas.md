@@ -32,21 +32,25 @@ Targets, exporters y etiquetas: ver la tabla "Relación job → componente" en [
 
 ## 2. Consultas PromQL del sistema (RF8)
 
-Las consultas que usan el dashboard y las alertas. "Período" es la ventana del `rate()` o del percentil; el rango del gráfico lo elige el usuario en Grafana (por defecto, últimos 30 minutos).
+Las consultas que usan los cinco dashboards y las alertas. "Período" es la ventana del `rate()` o del percentil; el rango del gráfico lo elige el usuario en Grafana (por defecto, últimos 30 minutos). La última columna dice en qué dashboard está cada una ([`grafana/README.md`](../grafana/README.md)): **1** Resumen y SLAs · **2** API integrada · **3** Comparación entre bases · **4** Bases por dentro · **5** Infraestructura.
 
-| # | Consulta | Qué mide | Unidad | Período | Tipo (RNF3) |
-|---|---|---|---|---|---|
-| Q1 | `max by (base) (probe_success{job="salud-bases"})` | Si cada base acepta conexiones (TCP) o responde su endpoint de salud (HTTP) | 0 / 1 | instantáneo (último scrape, 15 s) | Sonda |
-| Q2 | `sum by (status) (rate(fixture2030_http_requests_total[1m]))` | Requests por segundo que atiende la API, separadas por status HTTP | req/s | 1 minuto | Directo |
-| Q3 | `histogram_quantile(0.95, sum by (le, ruta) (rate(fixture2030_http_request_duration_seconds_bucket[5m])))` | Tiempo bajo el cual responde el 95 % de las requests de cada ruta, medido en la API (incluye la espera a las bases) | segundos | 5 minutos | Directo |
-| Q4 | `100 * sum(rate(fixture2030_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(fixture2030_http_requests_total[5m])), 1e-9)` | Porcentaje de respuestas 5xx sobre el total | % | 5 minutos | Directo |
-| Q5 | `histogram_quantile(0.95, sum by (le, dependencia) (rate(fixture2030_dependencia_duration_seconds_bucket[5m])))` | p95 del tiempo de cada llamada de la API a cada base: **compara bases entre sí** (RF7) | segundos | 5 minutos | Inferido (medido en el adaptador, no en la base) |
-| Q6 | `sum by (dependencia, resultado) (rate(fixture2030_dependencia_duration_seconds_count[1m]))` | Llamadas por segundo a cada base, por resultado (`ok`, `no_disponible`, `timeout`, `dominio:*`) | llamadas/s | 1 minuto | Directo |
-| Q7 | `cassandra_clientrequest_latency_seconds{operacion=~"Read\|Write",quantile="0.99"}` | p99 de lecturas y escrituras vistas por el coordinador de Cassandra (sin red ni API) | segundos | la calcula Cassandra con un reservorio que da más peso a lo reciente (no es un `rate` de Prometheus): reacciona en minutos, no al instante | Exporter |
-| Q8 | `rate(cassandra_clientrequest_total{operacion=~"Read\|Write"}[1m])` | Peticiones por segundo que recibe Cassandra | req/s | 1 minuto | Exporter |
-| Q9 | `cassandra_threadpool_pendingtasks{pool="MutationStage"}` | Escrituras esperando en cola dentro de Cassandra | tareas | instantáneo | Exporter |
-| Q10 | `rate(redis_keyspace_hits_total[1m]) / clamp_min(rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]), 1e-9)` | Proporción de lecturas de Redis que encontraron la clave | 0–1 | 1 minuto | Exporter |
-| Q11 | `sum by (type) (rate(mongodb_op_counters_total[1m]))` | Operaciones por segundo en MongoDB, por tipo | ops/s | 1 minuto | Exporter |
+| # | Consulta | Qué mide | Unidad | Período | Tipo (RNF3) | Dashboard |
+|---|---|---|---|---|---|---|
+| Q1 | `max by (base) (probe_success{job="salud-bases"})` | Si cada base acepta conexiones (TCP) o responde su endpoint de salud (HTTP) | 0 / 1 | instantáneo (último scrape, 15 s) | Sonda | 1 |
+| Q2 | `sum by (status) (rate(fixture2030_http_requests_total[1m]))` | Requests por segundo que atiende la API, separadas por status HTTP | req/s | 1 minuto | Directo | 2 |
+| Q3 | `histogram_quantile(0.95, sum by (le, ruta) (rate(fixture2030_http_request_duration_seconds_bucket[5m])))` | Tiempo bajo el cual responde el 95 % de las requests de cada ruta, medido en la API (incluye la espera a las bases) | segundos | 5 minutos | Directo | 2 |
+| Q4 | `100 * sum(rate(fixture2030_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(fixture2030_http_requests_total[5m])), 1e-9)` | Porcentaje de respuestas 5xx sobre el total | % | 5 minutos | Directo | 2 |
+| Q5 | `histogram_quantile(0.95, sum by (le, dependencia) (rate(fixture2030_dependencia_duration_seconds_bucket[5m])))` | p95 del tiempo de cada llamada de la API a cada base: **compara bases entre sí** (RF7) | segundos | 5 minutos | Inferido (medido en el adaptador, no en la base) | 3 |
+| Q6 | `sum by (dependencia, resultado) (rate(fixture2030_dependencia_duration_seconds_count[1m]))` | Llamadas por segundo a cada base, por resultado (`ok`, `no_disponible`, `timeout`, `dominio:*`) | llamadas/s | 1 minuto | Directo | 3 |
+| Q7 | `cassandra_clientrequest_latency_seconds{operacion=~"Read\|Write",quantile="0.99"}` | p99 de lecturas y escrituras vistas por el coordinador de Cassandra (sin red ni API) | segundos | la calcula Cassandra con un reservorio que da más peso a lo reciente (no es un `rate` de Prometheus): reacciona en minutos, no al instante | Exporter | 4 |
+| Q8 | `rate(cassandra_clientrequest_total{operacion=~"Read\|Write"}[1m])` | Peticiones por segundo que recibe Cassandra | req/s | 1 minuto | Exporter | 4 |
+| Q9 | `cassandra_threadpool_pendingtasks{pool="MutationStage"}` | Escrituras esperando en cola dentro de Cassandra | tareas | instantáneo | Exporter | 4 |
+| Q10 | `rate(redis_keyspace_hits_total[1m]) / clamp_min(rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]), 1e-9)` | Proporción de lecturas de Redis que encontraron la clave | 0–1 | 1 minuto | Exporter | 4 |
+| Q11 | `sum by (type) (rate(mongodb_op_counters_total[1m]))` | Operaciones por segundo en MongoDB, por tipo | ops/s | 1 minuto | Exporter | 4 |
+| Q12 | `histogram_quantile(0.95, sum by (le) (rate(fixture2030_http_request_duration_seconds_bucket[5m])))` | p95 de todas las requests de la API (Q3 sin separar por ruta), contra el SLA de 100 ms | segundos | 5 minutos | Directo | 1 |
+| Q13 | `100 * sum(rate(fixture2030_http_request_duration_seconds_bucket{le="0.1"}[5m])) / clamp_min(sum(rate(fixture2030_http_request_duration_seconds_count[5m])), 1e-9)` | Disponibilidad efectiva del Hito 3: porcentaje de requests respondidas en menos de 100 ms (objetivo 99,99 %) | % | 5 minutos | Directo | 1 |
+| Q14 | `100 * (1 - (sum(increase(fixture2030_http_requests_total{status=~"5.."}[$__range])) or vector(0)) / clamp_min(sum(increase(fixture2030_http_requests_total[$__range])), 1e-9))` | Porcentaje de respuestas de la API que no fueron 5xx (objetivo 99,99 %) | % | el rango elegido en Grafana | Directo | 1 |
+| Q15 | `100 * avg by (base) (avg_over_time(probe_success{job="salud-bases"}[$__range]))` | Porcentaje de sondas exitosas de cada base (objetivo 99,99 %) | % | el rango elegido en Grafana | Sonda | 1 |
 
 ### Cómo se leen juntas: ¿API o base? (§6.5)
 

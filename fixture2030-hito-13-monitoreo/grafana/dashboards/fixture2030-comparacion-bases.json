@@ -1,0 +1,172 @@
+{
+  "uid": "fixture2030-comparacion-bases",
+  "title": "Fixture 2030 — 3. Comparación entre bases",
+  "description": "Tiempo y resultado de cada llamada de la API a cada base (fixture2030_dependencia_*): compara las bases entre sí con la misma vara (RF7).",
+  "tags": [
+    "fixture2030",
+    "hito13"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Dashboards del Fixture 2030",
+      "type": "dashboards",
+      "tags": [
+        "fixture2030"
+      ],
+      "asDropdown": false,
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 31,
+      "type": "row",
+      "title": "Comparación entre bases (tiempo de cada llamada desde la API)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "title": "Latencia p95 de cada base",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, dependencia) (rate(fixture2030_dependencia_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{dependencia}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Medido en adapters/base.py alrededor de cada llamada al driver (RF7). Si la latencia de la API sube y esta no, el cuello está en la API; si suben las dos, en la base."
+    },
+    {
+      "id": 33,
+      "title": "Llamadas por segundo a cada base, por resultado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (dependencia, resultado) (rate(fixture2030_dependencia_duration_seconds_count[1m]))",
+          "legendFormat": "{{dependencia}} {{resultado}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "ok = respondió; no_disponible / timeout = la API devolvió 503/504 por esa base; dominio:* = error de negocio (p. ej. no encontrado)."
+    }
+  ]
+}

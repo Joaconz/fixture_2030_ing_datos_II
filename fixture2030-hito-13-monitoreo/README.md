@@ -1,6 +1,6 @@
 # Hito 13 · Monitoreo con Prometheus + Grafana y defensa final
 
-Capa de observabilidad del Fixture 2030: **Prometheus** recolecta métricas (modelo *pull*) de la API y de las bases, **Grafana** las muestra en un dashboard provisionado, y un conjunto de **alertas** dice cuándo actuar. Sobre esa evidencia se arma la defensa ante la FIFA.
+Capa de observabilidad del Fixture 2030: **Prometheus** recolecta métricas (modelo *pull*) de la API y de las bases, **Grafana** las muestra en cinco dashboards provisionados, y un conjunto de **alertas** dice cuándo actuar. Sobre esa evidencia se arma la defensa ante la FIFA.
 
 | Qué buscás | Dónde |
 |---|---|
@@ -20,7 +20,7 @@ fixture2030-hito-13-monitoreo/
 ├── grafana/{provisioning,dashboards,README.md}
 ├── scripts/                    iniciar_monitoreo · verificar_targets · ejecutar_prueba_controlada · limpiar_entorno
 ├── docs/                       inventario, métricas, alertas, limitaciones, decisiones, defensa
-├── evidencia/                  targets, prueba de falla, capturas del dashboard
+├── evidencia/                  targets, prueba de falla, capturas de los dashboards
 └── defensa/                    guion de 20 minutos, demo, presentación
 ```
 
@@ -71,10 +71,20 @@ bash fixture2030-hito-13-monitoreo/scripts/iniciar_monitoreo.sh
 
 | Servicio | URL |
 |---|---|
-| Grafana | http://localhost:3000 — `admin` / `fixture2030` (desarrollo) — abre en el dashboard *Fixture 2030 — Monitoreo* |
+| Grafana | http://localhost:3000 — `admin` / `fixture2030` (desarrollo) — abre en el dashboard *Fixture 2030 — 1. Resumen y SLAs* |
 | Prometheus | http://localhost:9090 — *Status → Targets* y *Alerts* |
 | Métricas de la API | http://localhost:8000/metrics |
 | Métricas de Cassandra | http://localhost:7070/metrics |
+
+Los cinco dashboards están en la carpeta *Fixture 2030* de Grafana; cada uno tiene arriba los links a los demás (conservan el rango de tiempo):
+
+| Dashboard | URL | Qué responde |
+|---|---|---|
+| 1. Resumen y SLAs | `/d/fixture2030-monitoreo` | ¿Está todo arriba? ¿Hay alertas? ¿Se cumplen latencia < 100 ms y disponibilidad 99,99 %? |
+| 2. API integrada | `/d/fixture2030-api` | Tráfico, latencia por ruta y errores de la API del Hito 10 |
+| 3. Comparación entre bases | `/d/fixture2030-comparacion-bases` | Cuánto tarda y cómo termina cada llamada de la API a cada base |
+| 4. Bases por dentro | `/d/fixture2030-bases` | Métricas internas de MongoDB, Redis y Cassandra |
+| 5. Infraestructura | `/d/fixture2030-infraestructura` | Recursos del host y salud del propio Prometheus |
 
 ## 4. Verificar
 
@@ -87,8 +97,8 @@ Esperado con todo arriba: 11 targets UP y las 5 bases con `probe_success = 1`.
 
 ## 5. Repetir la demostración
 
-1. **Estado:** dashboard, fila *Estado de salud* (todo OK).
-2. **Tráfico:** usar el front, Swagger (http://localhost:8000/docs) o la colección de Postman del Hito 10; los paneles de la API y de *Comparación entre bases* se mueven.
+1. **Estado:** dashboard *1. Resumen y SLAs*, fila *Estado de salud* (todo OK).
+2. **Tráfico:** usar el front, Swagger (http://localhost:8000/docs) o la colección de Postman del Hito 10; se mueven los dashboards *2. API integrada* y *3. Comparación entre bases*, y los SLAs del *1*.
 3. **Falla controlada** (≈ 4 minutos; solo `docker stop` / `docker start`, no toca datos):
 
    ```bash

@@ -88,7 +88,7 @@ INF="$EVID/carga_observada_$(sello).md"
   grep -E "checks|http_req_duration|http_reqs|http_req_failed" "$SAL/k6.txt" | sed 's/^ *//'
   echo '```'
   echo
-  echo "Ver en Grafana: $GRAFANA_URL/d/fixture2030-monitoreo?from=${T0}000&to=${T1}000"
+  echo "Ver en Grafana: $GRAFANA_URL/d/fixture2030-comparacion-bases?from=${T0}000&to=${T1}000"
 } > "$INF"
 cat "$INF"
 echo; echo "Informe: ${INF#$REPO_DIR/}"
