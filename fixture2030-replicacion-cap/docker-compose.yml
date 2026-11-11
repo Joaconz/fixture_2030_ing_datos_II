@@ -44,7 +44,10 @@ x-mongo: &mongo
 x-cassandra: &cassandra
   image: cassandra:latest                  # misma imagen que fixture2030-cassandra (5.0.x, SAI)
   profiles: ["cassandra"]
-  mem_limit: 900m
+  # 1100 MB: el nodo usa ~810 MB y cada `nodetool` que corren los scripts dentro
+  # del contenedor levanta OTRA JVM que cuenta para el mismo límite. Con 900 MB
+  # el cgroup mató a cas1 (OOMKilled) en medio de una prueba.
+  mem_limit: 1100m
   restart: "no"
   environment:
     CASSANDRA_CLUSTER_NAME: "Fixture2030-Replicacion"

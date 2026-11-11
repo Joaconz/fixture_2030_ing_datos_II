@@ -26,7 +26,10 @@
 evidencia cassandra_consistencia_eventual "bash scripts/cassandra_consistencia_eventual.sh"
 C1=fixture2030-rep-cas1; C2=fixture2030-rep-cas2; C3=fixture2030-rep-cas3
 TS="2030-06-09 13:04:00.000+0000"
-ID_A="PAR-A-1-REP-EVENTUAL-HINT"; ID_B="PAR-A-1-REP-EVENTUAL-REPAIR"
+# Identificadores únicos por corrida: una fila de una corrida anterior (o su
+# tombstone) no puede contaminar la lectura de esta.
+SUF="$(date +%Y%m%d%H%M%S)"
+ID_A="PAR-A-1-REP-EVENTUAL-HINT-$SUF"; ID_B="PAR-A-1-REP-EVENTUAL-REPAIR-$SUF"
 
 restablecer() {
   docker ps --format '{{.Names}}' | grep -qx $C3 || docker start $C3 >/dev/null 2>&1 || true
@@ -34,29 +37,32 @@ restablecer() {
 }
 trap restablecer EXIT
 
-# leer_en_cas3 ID — lectura con coordinador cas3 y CONSISTENCY ONE, con
-# TRACING ON. Con ONE el coordinador consulta UNA réplica, pero no siempre la
+# leer_local NODO ID — lectura con ese NODO como coordinador, CONSISTENCY ONE
+# y TRACING ON. Con ONE el coordinador consulta UNA réplica, pero no siempre la
 # propia: el dynamic snitch puede elegir otra (pasó en la primera corrida: la
-# traza mostraba READ_REQ a cas2). Por eso se repite la lectura (hasta 10
-# veces) hasta que la traza muestre que la partición la leyó solo cas3, y se
-# informa cuántos intentos hicieron falta. Así se ve lo que tiene cas3.
-leer_en_cas3() {
-  local out traza n ip; ip="$(ip3)"
+# traza mostraba READ_REQ a cas2, y una lectura "desde cas1" la contestó cas3).
+# Por eso se repite la lectura (hasta 10 veces) hasta que la traza muestre que
+# la partición la leyó solo ese nodo, y se informa si se logró y en qué
+# intento. Así se ve lo que tiene ESA réplica.
+leer_local() {
+  local out traza n ip local="no"; ip="$(ip_de "$1")"
   for n in $(seq 1 10); do
-    out="$(dk exec $C3 cqlsh -e "CONSISTENCY ONE; TRACING ON;
-      SELECT comentario_id, contenido FROM $KS.comentarios_por_partido WHERE $PART AND creado_en = '$TS' AND comentario_id = '$1';" 2>&1)" || true
+    out="$(dk exec "$1" cqlsh -e "CONSISTENCY ONE; TRACING ON;
+      SELECT comentario_id, contenido FROM $KS.comentarios_por_partido WHERE $PART AND creado_en = '$TS' AND comentario_id = '$2';" 2>&1)" || true
     traza="$(echo "$out" | grep -E 'single-partition|Sending READ_REQ|Read [0-9]+ live' |       awk -F'|' '{gsub(/^ +| +$/, "", $1); gsub(/^ +| +$/, "", $3); print $3 "  " $1}')"
-    if echo "$traza" | grep -q "^$ip .*single-partition" && ! echo "$traza" | grep -q 'READ_REQ'; then break; fi
+    if echo "$traza" | grep -q "^$ip .*single-partition" && ! echo "$traza" | grep -q 'READ_REQ'; then local="sí"; break; fi
   done
-  echo "$out" | grep -qE "^ *$1 " && echo "   resultado: 1 fila -> $(echo "$out" | grep -E "^ *$1 " | sed 's/  */ /g')"                                    || echo "   resultado: 0 filas (cas3 no tiene el comentario)"
-  echo "   traza (intento $n; qué nodo leyó la partición):"
+  echo "$out" | grep -qE "^ *$2 " && echo "   resultado: 1 fila -> $(echo "$out" | grep -E "^ *$2 " | sed 's/  */ /g')"                                    || echo "   resultado: 0 filas"
+  echo "   ¿la leyó solo ${1#fixture2030-rep-} ($ip)? $local · traza del intento $n:"
   echo "$traza" | sed 's/^/     /' | sort -u
 }
+leer_en_cas3() { leer_local $C3 "$1"; }
 # esperar_en_cas3 ID SEGUNDOS — repite leer_en_cas3 hasta ver la fila.
 esperar_en_cas3() {
-  local t0; t0=$(date +%s)
+  local t0 r; t0=$(date +%s)
   while [ $(( $(date +%s) - t0 )) -lt "$2" ]; do
-    leer_en_cas3 "$1" | grep -q 'resultado: 1 fila' && { echo $(( $(date +%s) - t0 )); return 0; }
+    r="$(leer_en_cas3 "$1")"
+    echo "$r" | grep -q 'resultado: 1 fila' && echo "$r" | grep -q 'solo cas3 .*sí' && { echo $(( $(date +%s) - t0 )); return 0; }
     sleep 2
   done
   echo "más de $2"; return 1
@@ -86,14 +92,15 @@ echo "   cas1 ve a cas3 ($(ip3)) UN a los $(esperar_estado_cas $C1 "$(ip3)" UN 1
 
 titulo "A4. Lectura en cas3 ANTES de la reparación"
 leer_en_cas3 "$ID_A"
-echo "   misma lectura con coordinador cas1 (tiene el dato):"
-leer_comentario $C1 ONE "$ID_A" "$TS" | grep -E '^ +[0-9]+$' | sed 's/^ */     filas: /'
+echo "   la misma fila leída solo en cas1 (recibió la escritura):"
+leer_local $C1 "$ID_A" | sed 's/^/  /'
 
 titulo "A5. Se reanuda la entrega de hints (resumehandoff)"
 DESDE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 for c in $C1 $C2; do nodetool $c resumehandoff; done
+echo "   entrega reanudada a las $DESDE (UTC)"
 echo "   cas3 tiene el comentario (lectura local) a los $(esperar_en_cas3 "$ID_A" 180) s de reanudar"
-echo "   log de cas1: $(esperar_log $C1 "$DESDE" 'Finished hinted handoff' 30)"
+echo "   log de cas1: $(esperar_log $C1 "$DESDE" 'Finished hinted handoff' 60 | sed 's/^[0-9]* s · //')"
 echo "   archivos de hints que quedan en cas1:"
 hints_en_disco $C1
 

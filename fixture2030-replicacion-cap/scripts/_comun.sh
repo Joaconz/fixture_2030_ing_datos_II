@@ -128,7 +128,7 @@ esperar_estado_cas() {
 # escribiendo (réplica todavía caída) no aparece, aunque el hint exista.
 hints_en_disco() {
   local l
-  l="$(dk exec "$1" sh -c 'cd /var/lib/cassandra/hints && ls -l --time-style=+%H:%M:%S *.hints 2>/dev/null' | awk '{print $5 " bytes  " $6 "  " $7}')"
+  l="$(dk exec "$1" sh -c 'cd /var/lib/cassandra/hints && ls -l --time-style=+%H:%M:%S *.hints 2>/dev/null || true' | awk '{print $5 " bytes  " $6 "  " $7}')"
   [ -n "$l" ] && echo "$l" | sed 's/^/     /' || echo "     (ninguno)"
 }
 # esperar_log CONTENEDOR DESDE_ISO 'regex' SEGUNDOS — espera una línea del log
@@ -136,7 +136,7 @@ hints_en_disco() {
 esperar_log() {
   local t0 l; t0=$(date +%s)
   while [ $(( $(date +%s) - t0 )) -lt "$4" ]; do
-    l="$(docker logs --since "$2" "$1" 2>&1 | grep -E "$3" | head -1)"
+    l="$(docker logs --since "$2" "$1" 2>&1 | grep -E "$3" | head -1 || true)"
     [ -n "$l" ] && { echo "$(( $(date +%s) - t0 )) s · $l"; return 0; }
     sleep 2
   done

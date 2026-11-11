@@ -10,7 +10,7 @@
 #  2. `docker stop fixture2030-rep-cas3` y, con cas1 como coordinador, otra vez
 #     escritura y lectura con cada nivel: ONE y QUORUM siguen, ALL no.
 #  3. Las escrituras aceptadas mientras cas3 estaba caído quedan como HINTS en
-#     el coordinador (nodetool listpendinghints).
+#     el coordinador (archivos en /var/lib/cassandra/hints de cas1).
 #  4. `docker start`: cas3 vuelve, el coordinador le entrega los hints
 #     (hinted handoff) y ALL vuelve a funcionar.
 #  Al final borra las filas de prueba (CONSISTENCY ALL). No borra volúmenes.
