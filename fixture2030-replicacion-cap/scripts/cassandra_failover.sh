@@ -24,22 +24,20 @@ ts_de() { case $1 in ONE) echo "2030-06-09 13:01:00.000+0000" ;; QUORUM) echo "2
 
 # matriz ETIQUETA — escribe una fila y la lee con cada nivel, coordinador cas1.
 matriz() {
-  local cl id ts res
-  printf '   %-8s %-62s %s\n' "nivel" "escritura" "lectura de esa fila"
+  local cl id ts res errores=""
+  printf '   %-8s %-12s %s\n' "nivel" "escritura" "lectura de esa fila"
   for cl in ONE QUORUM ALL; do
     id="PAR-A-1-REP-$1-$cl"; ts="$(ts_de $cl)"
-    if res="$(insertar_comentario $C1 $cl "$id" "$ts" "prueba $1 CL=$cl")"; then res="OK"; else res="FALLA"; ERRORES="$ERRORES
-     escritura $cl: $(motivo "$res")"; fi
+    if res="$(insertar_comentario $C1 $cl "$id" "$ts" "prueba $1 CL=$cl")"; then res="OK"
+    else errores="$errores     escritura $cl: $(motivo "$res")"$'\n'; res="FALLA"; fi
     printf '   %-8s %-12s ' "$cl" "$res"
     if res="$(leer_comentario $C1 $cl "$id" "$ts")"; then
       echo "OK ($(echo "$res" | grep -E '^ +[0-9]+$' | tr -d ' ') fila)"
     else
-      echo "FALLA"; ERRORES="$ERRORES
-     lectura   $cl: $(motivo "$res")"
+      echo "FALLA"; errores="$errores     lectura   $cl: $(motivo "$res")"$'\n'
     fi
   done
-  [ -z "$ERRORES" ] || printf "   errores que devolvió Cassandra:$ERRORES
-"
+  [ -z "$errores" ] || printf '   errores que devolvió Cassandra:\n%s' "$errores"
 }
 
 titulo "Anillo antes de la prueba"
