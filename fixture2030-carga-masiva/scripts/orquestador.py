@@ -82,6 +82,10 @@ def ejecutar_pipeline(base, t0: float, resultado: dict, leidos: dict, op: dict) 
                                 "segundos": round(time.perf_counter() - ini, 1)}
             r.setdefault("fallas", []).append(f"{fase}: {e.__class__.__name__}: {e}")
             log(f"{base.nombre:<9} ✖ {fase}: {e.__class__.__name__}: {e}")
+            if fase == "verificacion":   # sin validación no hay integridad comprobada: cuenta como falla
+                r["validacion"] = {"chequeos": r.get("validacion", {}).get("chequeos", []) + [
+                    {"chequeo": f"{base.nombre} · verificación completa", "esperado": "sin error",
+                     "obtenido": f"{e.__class__.__name__}: {str(e)[:160]}", "ok": False}], "datos": {}}
             if fase in ("arranque", "preparacion", "carga"):
                 r["estado"] = f"falló en {fase}"
                 if op["liberar"]:

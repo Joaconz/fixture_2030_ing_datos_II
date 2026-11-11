@@ -1,0 +1,958 @@
+[20:04:10] # Ejecutado: 2026-11-11T20:04:04+00:00 | commit: 67e7db3 | comando: python fixture2030-carga-masiva/scripts/orquestador.py --modo paralelo
+[20:04:10] # VM de Docker: 12 CPUs, 7869 MiB · contenedores ajenos: 17 (5220 MiB) · RAM libre del host: 779 MiB · presupuesto: 1881 MiB
+[20:04:10] == 0. Limpieza: proyectos f30cm-* abajo, volúmenes y carpetas de datos borrados
+[20:04:37] == 1. Insumos de InfluxDB (data/lp/completo, deterministas)
+[20:04:38]    ya existían: se reutilizan (no cuentan como carga)
+[20:04:38] == 2. Carga en modo paralelo · orden mongodb → neo4j → cassandra → influxdb → redis
+[20:04:38] mongodb   admitida · reservado 1152/1881 MiB · 1 en curso
+[20:04:38] mongodb   ▶ arranque
+[20:04:38] redis     admitida · reservado 1664/1881 MiB · 2 en curso
+[20:04:38] redis     ▶ arranque
+[20:04:58]   redis | 
+[20:04:58]   redis |  Network f30cm-redis_default  Creating
+[20:04:58]   redis |  Network f30cm-redis_default  Created
+[20:04:58]   redis |  Volume "f30cm_redis_data"  Creating
+[20:04:58]   redis |  Volume "f30cm_redis_data"  Created
+[20:04:58]   redis |  Container f30cm-redis  Creating
+[20:04:58]   redis |  Container f30cm-redis  Created
+[20:04:58]   redis |  Container f30cm-redis  Starting
+[20:04:58]   redis |  Container f30cm-redis  Started
+[20:04:58]   redis |  Container f30cm-redis  Waiting
+[20:04:58]   redis |  Container f30cm-redis  Healthy
+[20:04:58] redis     ✔ arranque en 20.0 s
+[20:04:58] redis     ▶ preparacion
+[20:04:58] redis     ✔ preparacion en 0.0 s
+[20:04:58] redis     ▶ carga
+[20:05:15]   redis | == 2.1 Estado previo (DBSIZE es O(1), no recorre claves) ==
+[20:05:15]   redis | 0
+[20:05:15]   redis | == 2.2 Generación determinista: 2000 usuarios, tendencia de 112 partidos, 500 votos MVP ==
+[20:05:15]   redis | == 2.3 Verificación de lo cargado ==
+[20:05:15]   redis | 4202
+[20:05:15]   redis | 2
+[20:05:15]   redis | 112
+[20:05:15]   redis | 500
+[20:05:15]   redis | ARG-10
+[20:05:15]   redis | 99
+[20:05:15]   redis | FRA-7
+[20:05:15]   redis | 99
+[20:05:15]   redis | ARG-9
+[20:05:15]   redis | 100
+[20:05:15]   redis | BRA-11
+[20:05:15]   redis | 101
+[20:05:15]   redis | FRA-10
+[20:05:15]   redis | 101
+[20:05:15]   redis | == 2.4 Una sesión cargada: atributos y TTL restante ==
+[20:05:15]   redis | session_id
+[20:05:15]   redis | demo-ses-0000001-1
+[20:05:15]   redis | usuario_id
+[20:05:15]   redis | USR-0000001
+[20:05:15]   redis | rol
+[20:05:15]   redis | HINCHA
+[20:05:15]   redis | region
+[20:05:15]   redis | EU
+[20:05:15]   redis | dispositivo
+[20:05:15]   redis | ios
+[20:05:15]   redis | estado
+[20:05:15]   redis | ACTIVA
+[20:05:15]   redis | creada_en
+[20:05:15]   redis | 1908979133
+[20:05:15]   redis | ultima_actividad
+[20:05:15]   redis | 1908979193
+[20:05:15]   redis | expira_absoluta
+[20:05:15]   redis | 1909022333
+[20:05:15]   redis | solicitudes
+[20:05:15]   redis | 13
+[20:05:15]   redis | 1780
+[20:05:15]   redis | == 2.5 Sesión bloqueada de muestra (usuario 33) ==
+[20:05:15]   redis | BLOQUEADA
+[20:05:15]   redis | == 2.6 Caché fría a propósito: no existe copia de ningún partido todavía ==
+[20:05:15]   redis | 0
+[20:05:24]   redis | == V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+[20:05:24]   redis | DBSIZE: 4202 | used_memory: 2793144 bytes
+[20:05:24]   redis | == V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+[20:05:24]   redis | errors: 0, replies: 1000000
+[20:05:24]   redis | tiempo de carga: 6415 ms | 15588 usuarios/s, 171473 comandos/s (11 por usuario)
+[20:05:24]   redis | == V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+[20:05:24]   redis | conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+[20:05:24]   redis | INFO keyspace (expires = claves con TTL): db0:keys=304202,expires=304200,avg_ttl=17663001,subexpiry=0
+[20:05:24]   redis | huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+[20:05:24]   redis | -- primer usuario --
+[20:05:25]   redis | session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+[20:05:25]   redis | nombre Usuario 1000000 idioma es region AM
+[20:05:25]   redis | TTL sesión: 1793 | TTL índice: 43193 | TTL perfil: 893
+[20:05:25]   redis | -- último usuario (USR-1099999) --
+[20:05:25]   redis | sesiones: vol-ses-000000099999 | TTL sesión: 1406
+[20:05:25]   redis | == V.4 Memoria ==
+[20:05:25]   redis | used_memory antes: 2793144 | después: 81433256 (77.66M) | maxmemory: 268435456
+[20:05:25]   redis | por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): 786 bytes
+[20:05:25]   redis | evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+[20:05:25] redis     ✔ carga en 27.4 s · 100,000 usuarios · 3,653.8 /s
+[20:05:25] redis     ▶ verificacion
+[20:05:25] validación · Redis
+[20:05:39]   mongodb | 
+[20:05:39]   mongodb |  Network f30cm-mongodb_default  Creating
+[20:05:39]   mongodb |  Network f30cm-mongodb_default  Created
+[20:05:39]   mongodb |  Volume "f30cm_mongo_data"  Creating
+[20:05:39]   mongodb |  Volume "f30cm_mongo_data"  Created
+[20:05:39]   mongodb |  Container f30cm-mongodb  Creating
+[20:05:39]   mongodb |  Container f30cm-mongodb  Created
+[20:05:39]   mongodb |  Container f30cm-mongodb  Starting
+[20:05:39]   mongodb |  Container f30cm-mongodb  Started
+[20:05:39]   mongodb |  Container f30cm-mongodb  Waiting
+[20:05:39]   mongodb |  Container f30cm-mongodb  Healthy
+[20:05:39] mongodb   ✔ arranque en 61.2 s
+[20:05:39] mongodb   ▶ preparacion
+[20:05:47]   mongodb | 
+[20:05:47]   mongodb |  Container f30cm-mongodb-cargador  Creating
+[20:05:47]   mongodb |  Container f30cm-mongodb-cargador  Created
+[20:05:47]   mongodb |  Container f30cm-mongodb-cargador  Starting
+[20:05:47]   mongodb |  Container f30cm-mongodb-cargador  Started
+[20:05:54] distribución · redis
+[20:06:00]   mongodb | 
+[20:06:00]   mongodb | added 13 packages in 12s
+[20:06:00]   mongodb | 
+[20:06:00]   mongodb | npm notice
+[20:06:00]   mongodb | npm notice New major version of npm available! 10.8.2 -> 12.2.2
+[20:06:00]   mongodb | npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+[20:06:00]   mongodb | npm notice To update run: npm install -g npm@12.2.2
+[20:06:00]   mongodb | npm notice
+[20:06:00] mongodb   ✔ preparacion en 21.0 s
+[20:06:00] mongodb   ▶ carga
+[20:06:02]   mongodb | ✔ Conectado a MongoDB en mongodb://mongodb:27017
+[20:06:02]   mongodb | 
+[20:06:02]   mongodb | ── Cargando equipos ──
+[20:06:02]   mongodb |   Equipos insertados: 64
+[20:06:02]   mongodb |   Equipos actualizados: 0
+[20:06:02]   mongodb | 
+[20:06:02]   mongodb | ── Cargando jugadores ──
+[20:06:02]   mongodb |   Jugadores insertados: 1664
+[20:06:02]   mongodb |   Jugadores actualizados: 0
+[20:06:02]   mongodb |   Total de operaciones: 1664
+[20:06:02]   mongodb | 
+[20:06:02]   mongodb | ── Actualizando cantidadJugadores por equipo ──
+[20:06:02]   mongodb |   Equipos actualizados con conteo de jugadores: 64
+[20:06:02]   mongodb | 
+[20:06:02]   mongodb | ══════════════════════════════════════════════
+[20:06:02]   mongodb |   VERIFICACIÓN FINAL
+[20:06:02]   mongodb | ══════════════════════════════════════════════
+[20:06:02]   mongodb |   Cantidad de equipos:   64   (esperado: 64)
+[20:06:02]   mongodb |   Cantidad de jugadores: 1664 (esperado: 1664)
+[20:06:02]   mongodb |   Jugadores huérfanos:   0   (esperado: 0)
+[20:06:02]   mongodb | ══════════════════════════════════════════════
+[20:06:02]   mongodb | 
+[20:06:02]   mongodb | ✔ Carga completada exitosamente.
+[20:06:02]   mongodb | ✔ Conexión cerrada.
+[20:06:04] mongodb   ✔ carga en 4.3 s · 1,728 documentos · 403.8 /s
+[20:06:04] mongodb   ▶ verificacion
+[20:06:04] validación · MongoDB
+[20:06:06] ⚠ vigía: RAM disponible del host 169 MiB (< 250) (1/3)
+[20:06:09] distribución · mongodb
+[20:06:10] mongodb   ✔ verificacion en 6.0 s
+[20:06:10] mongodb   ▶ apagado
+[20:06:12] redis     ✔ verificacion en 46.5 s
+[20:06:12] redis     ▶ apagado
+[20:06:25]   redis | 
+[20:06:25]   redis |  Container f30cm-redis  Stopping
+[20:06:25]   redis |  Container f30cm-redis  Stopped
+[20:06:25]   redis |  Container f30cm-redis  Removing
+[20:06:25]   redis |  Container f30cm-redis  Removed
+[20:06:25]   redis |  Network f30cm-redis_default  Removing
+[20:06:25]   redis |  Volume f30cm_redis_data  Removing
+[20:06:25]   redis |  Volume f30cm_redis_data  Removed
+[20:06:25]   redis |  Network f30cm-redis_default  Removed
+[20:06:25] redis     ✔ apagado en 13.3 s
+[20:06:28]   mongodb | 
+[20:06:28]   mongodb |  Container f30cm-mongodb  Stopping
+[20:06:28]   mongodb |  Container f30cm-mongodb-cargador  Stopping
+[20:06:28]   mongodb |  Container f30cm-mongodb  Stopped
+[20:06:28]   mongodb |  Container f30cm-mongodb  Removing
+[20:06:28]   mongodb |  Container f30cm-mongodb  Removed
+[20:06:28]   mongodb |  Container f30cm-mongodb-cargador  Stopped
+[20:06:28]   mongodb |  Container f30cm-mongodb-cargador  Removing
+[20:06:28]   mongodb |  Container f30cm-mongodb-cargador  Removed
+[20:06:28]   mongodb |  Volume f30cm_mongo_data  Removing
+[20:06:28]   mongodb |  Network f30cm-mongodb_default  Removing
+[20:06:28]   mongodb |  Volume f30cm_mongo_data  Removed
+[20:06:28]   mongodb |  Network f30cm-mongodb_default  Removed
+[20:06:28] mongodb   ✔ apagado en 17.6 s
+[20:06:28] ⚠ neo4j: reserva 2048 MiB + reservado 0 MiB supera el presupuesto (1881 MiB); arranca sola
+[20:06:28] neo4j     admitida · reservado 2048/1881 MiB · 1 en curso
+[20:06:28] neo4j     ▶ arranque
+[20:07:35] ⚠ vigía: RAM disponible del host 238 MiB (< 250) (1/3)
+[20:09:40] ⚠ vigía: RAM disponible del host 249 MiB (< 250) (1/3)
+[20:11:31]   neo4j | 
+[20:11:36]   neo4j |  Network f30cm-neo4j-net  Creating
+[20:11:36]   neo4j |  Network f30cm-neo4j-net  Created
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_logs"  Creating
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_logs"  Created
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_plugins"  Creating
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_plugins"  Created
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_data"  Creating
+[20:11:36]   neo4j |  Volume "f30cm_neo4j_data"  Created
+[20:11:36]   neo4j |  Container f30cm-neo4j  Creating
+[20:11:36]   neo4j |  Container f30cm-neo4j  Created
+[20:11:36]   neo4j |  Container f30cm-neo4j  Starting
+[20:11:36]   neo4j |  Container f30cm-neo4j  Started
+[20:11:36]   neo4j |  Container f30cm-neo4j  Waiting
+[20:11:36]   neo4j |  Container f30cm-neo4j  Healthy
+[20:11:37] neo4j     ✔ arranque en 308.7 s
+[20:11:37] neo4j     ▶ preparacion
+[20:11:53]   neo4j | name, type, labelsOrTypes, properties
+[20:11:53]   neo4j | "equipo_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Equipo"], ["equipoId"]
+[20:11:53]   neo4j | "evento_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Evento"], ["eventoId"]
+[20:11:53]   neo4j | "grupo_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Grupo"], ["grupoId"]
+[20:11:53]   neo4j | "jugador_dni_unico", "NODE_PROPERTY_UNIQUENESS", ["Jugador"], ["dni"]
+[20:11:53]   neo4j | "partido_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Partido"], ["partidoId"]
+[20:11:53]   neo4j | "sede_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Sede"], ["sedeId"]
+[20:11:53]   neo4j | "tipoevento_id_unico", "NODE_PROPERTY_UNIQUENESS", ["TipoEvento"], ["tipoEventoId"]
+[20:11:53]   neo4j | name, type, entityType, labelsOrTypes, properties
+[20:11:53]   neo4j | "equipo_confederacion", "RANGE", "NODE", ["Equipo"], ["confederacion"]
+[20:11:53]   neo4j | "equipo_id_unico", "RANGE", "NODE", ["Equipo"], ["equipoId"]
+[20:11:53]   neo4j | "evento_id_unico", "RANGE", "NODE", ["Evento"], ["eventoId"]
+[20:11:53]   neo4j | "evento_particion_partido", "RANGE", "NODE", ["Evento"], ["partidoId", "secuencia"]
+[20:11:53]   neo4j | "evento_tipo", "RANGE", "NODE", ["Evento"], ["tipo"]
+[20:11:53]   neo4j | "grupo_id_unico", "RANGE", "NODE", ["Grupo"], ["grupoId"]
+[20:11:53]   neo4j | "index_1b9dcc97", "LOOKUP", "RELATIONSHIP", NULL, NULL
+[20:11:53]   neo4j | "index_460996c0", "LOOKUP", "NODE", NULL, NULL
+[20:11:53]   neo4j | "jugador_apellido_nombre", "RANGE", "NODE", ["Jugador"], ["apellido", "nombre"]
+[20:11:53]   neo4j | "jugador_dni_unico", "RANGE", "NODE", ["Jugador"], ["dni"]
+[20:11:53]   neo4j | "jugador_posicion", "RANGE", "NODE", ["Jugador"], ["posicion"]
+[20:11:53]   neo4j | "participa_condicion", "RANGE", "RELATIONSHIP", ["PARTICIPA_EN"], ["condicion"]
+[20:11:53]   neo4j | "partido_fase_estado", "RANGE", "NODE", ["Partido"], ["fase", "estado"]
+[20:11:53]   neo4j | "partido_fecha", "RANGE", "NODE", ["Partido"], ["fechaHora"]
+[20:11:53]   neo4j | "partido_id_unico", "RANGE", "NODE", ["Partido"], ["partidoId"]
+[20:11:53]   neo4j | "sede_id_unico", "RANGE", "NODE", ["Sede"], ["sedeId"]
+[20:11:53]   neo4j | "sede_region", "RANGE", "NODE", ["Sede"], ["region"]
+[20:11:53]   neo4j | "tipoevento_id_unico", "RANGE", "NODE", ["TipoEvento"], ["tipoEventoId"]
+[20:11:53] neo4j     ✔ preparacion en 16.8 s
+[20:11:53] neo4j     ▶ carga
+[20:12:22]   neo4j | etiqueta, cantidad
+[20:12:22]   neo4j | "Equipo", 64
+[20:12:22]   neo4j | "Evento", 1572
+[20:12:22]   neo4j | "Grupo", 16
+[20:12:22]   neo4j | "Jugador", 1282
+[20:12:22]   neo4j | "Partido", 127
+[20:12:22]   neo4j | "Sede", 16
+[20:12:22]   neo4j | "TipoEvento", 12
+[20:12:22]   neo4j | relacion, cantidad
+[20:12:22]   neo4j | "ANOTA", 220
+[20:12:22]   neo4j | "ASISTE", 220
+[20:12:22]   neo4j | "CAUSA_DE", 702
+[20:12:22]   neo4j | "CORRESPONDE_A", 96
+[20:12:22]   neo4j | "ES_DE_TIPO", 1572
+[20:12:22]   neo4j | "JUEGA_EN", 1282
+[20:12:22]   neo4j | "OCURRE_EN", 1572
+[20:12:22]   neo4j | "PARTICIPA", 1248
+[20:12:22]   neo4j | "PARTICIPA_EN", 254
+[20:12:22]   neo4j | "PERTENECE_A", 64
+[20:12:22]   neo4j | "PROTAGONIZADO_POR", 1572
+[20:12:22]   neo4j | "RECIBE_TARJETA", 136
+[20:12:22]   neo4j | "REEMPLAZA", 136
+[20:12:22]   neo4j | "SE_JUEGA_EN", 127
+[20:12:22]   neo4j | "SIGUIENTE_EVENTO", 1446
+[20:12:22]   neo4j | fase, estado, partidos, eventos
+[20:12:22]   neo4j | "GRUPOS", "FINALIZADO", 96, 1152
+[20:12:22]   neo4j | "DIECISEISAVOS", "FINALIZADO", 16, 220
+[20:12:22]   neo4j | "OCTAVOS", "FINALIZADO", 8, 116
+[20:12:22]   neo4j | "CUARTOS", "FINALIZADO", 4, 52
+[20:12:22]   neo4j | "SEMIFINAL", "FINALIZADO", 2, 32
+[20:12:22]   neo4j | "FINAL", "PROGRAMADO", 1, 0
+[20:12:23] neo4j     ✔ carga en 29.2 s · 13,736 nodos+relaciones · 471.2 /s
+[20:12:23] neo4j     ▶ verificacion
+[20:12:23] validación · Neo4j
+[20:12:24] distribución · neo4j
+[20:12:26] neo4j     ✔ verificacion en 3.6 s
+[20:12:26] neo4j     ▶ apagado
+[20:12:43]   neo4j | 
+[20:12:43]   neo4j |  Container f30cm-neo4j  Stopping
+[20:12:43]   neo4j |  Container f30cm-neo4j  Stopped
+[20:12:43]   neo4j |  Container f30cm-neo4j  Removing
+[20:12:43]   neo4j |  Container f30cm-neo4j  Removed
+[20:12:43]   neo4j |  Network f30cm-neo4j-net  Removing
+[20:12:43]   neo4j |  Volume f30cm_neo4j_logs  Removing
+[20:12:43]   neo4j |  Volume f30cm_neo4j_data  Removing
+[20:12:43]   neo4j |  Volume f30cm_neo4j_plugins  Removing
+[20:12:43]   neo4j |  Volume f30cm_neo4j_logs  Removed
+[20:12:43]   neo4j |  Volume f30cm_neo4j_plugins  Removed
+[20:12:43]   neo4j |  Volume f30cm_neo4j_data  Removed
+[20:12:43]   neo4j |  Network f30cm-neo4j-net  Removed
+[20:12:43] neo4j     ✔ apagado en 16.8 s
+[20:12:43] ⚠ cassandra: reserva 2816 MiB + reservado 0 MiB supera el presupuesto (1881 MiB); arranca sola
+[20:12:43] cassandra admitida · reservado 2816/1881 MiB · 1 en curso
+[20:12:43] cassandra ▶ arranque
+[20:13:38] ⚠ vigía: RAM disponible del host 138 MiB (< 250) (1/3)
+[20:15:17]   cassandra | 
+[20:15:17]   cassandra |  Network f30cm-cassandra-net  Creating
+[20:15:17]   cassandra |  Network f30cm-cassandra-net  Created
+[20:15:17]   cassandra |  Volume "f30cm_cassandra_data"  Creating
+[20:15:17]   cassandra |  Volume "f30cm_cassandra_data"  Created
+[20:15:17]   cassandra |  Container f30cm-cassandra  Creating
+[20:15:17]   cassandra |  Container f30cm-cassandra  Created
+[20:15:17]   cassandra |  Container f30cm-cassandra  Starting
+[20:15:17]   cassandra |  Container f30cm-cassandra  Started
+[20:15:17]   cassandra |  Container f30cm-cassandra  Waiting
+[20:15:17]   cassandra |  Container f30cm-cassandra  Healthy
+[20:15:17] cassandra ✔ arranque en 153.5 s
+[20:15:17] cassandra ▶ preparacion
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE KEYSPACE fixture2030_comentarios WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': '1'}  AND durable_writes = true;
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_partido (
+[20:15:42]   cassandra |     partido_id text,
+[20:15:42]   cassandra |     ventana timestamp,
+[20:15:42]   cassandra |     bucket int,
+[20:15:42]   cassandra |     creado_en timestamp,
+[20:15:42]   cassandra |     comentario_id text,
+[20:15:42]   cassandra |     alias_usuario text,
+[20:15:42]   cassandra |     contenido text,
+[20:15:42]   cassandra |     editado boolean,
+[20:15:42]   cassandra |     estado_moderacion text,
+[20:15:42]   cassandra |     hinchada text,
+[20:15:42]   cassandra |     idioma text,
+[20:15:42]   cassandra |     minuto_partido int,
+[20:15:42]   cassandra |     moderado_en timestamp,
+[20:15:42]   cassandra |     moderado_por text,
+[20:15:42]   cassandra |     motivo_moderacion text,
+[20:15:42]   cassandra |     responde_a text,
+[20:15:42]   cassandra |     usuario_id text,
+[20:15:42]   cassandra |     PRIMARY KEY ((partido_id, ventana, bucket), creado_en, comentario_id)
+[20:15:42]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:15:42]   cassandra |     AND additional_write_policy = '99p'
+[20:15:42]   cassandra |     AND allow_auto_snapshot = true
+[20:15:42]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:15:42]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:15:42]   cassandra |     AND cdc = false
+[20:15:42]   cassandra |     AND comment = 'Q1 Q2 Q3 Q4 - comentarios de un partido por ventana de 10 min y bucket, del mas reciente al mas antiguo'
+[20:15:42]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:15:42]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:15:42]   cassandra |     AND memtable = 'default'
+[20:15:42]   cassandra |     AND crc_check_chance = 1.0
+[20:15:42]   cassandra |     AND default_time_to_live = 0
+[20:15:42]   cassandra |     AND extensions = {}
+[20:15:42]   cassandra |     AND gc_grace_seconds = 864000
+[20:15:42]   cassandra |     AND incremental_backups = true
+[20:15:42]   cassandra |     AND max_index_interval = 2048
+[20:15:42]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:15:42]   cassandra |     AND min_index_interval = 128
+[20:15:42]   cassandra |     AND read_repair = 'BLOCKING'
+[20:15:42]   cassandra |     AND speculative_retry = '99p';
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE CUSTOM INDEX idx_comentarios_estado ON fixture2030_comentarios.comentarios_por_partido (estado_moderacion) USING 'sai';
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_usuario (
+[20:15:42]   cassandra |     usuario_id text,
+[20:15:42]   cassandra |     mes text,
+[20:15:42]   cassandra |     creado_en timestamp,
+[20:15:42]   cassandra |     comentario_id text,
+[20:15:42]   cassandra |     bucket int,
+[20:15:42]   cassandra |     contenido text,
+[20:15:42]   cassandra |     estado_moderacion text,
+[20:15:42]   cassandra |     minuto_partido int,
+[20:15:42]   cassandra |     partido_id text,
+[20:15:42]   cassandra |     ventana timestamp,
+[20:15:42]   cassandra |     PRIMARY KEY ((usuario_id, mes), creado_en, comentario_id)
+[20:15:42]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:15:42]   cassandra |     AND additional_write_policy = '99p'
+[20:15:42]   cassandra |     AND allow_auto_snapshot = true
+[20:15:42]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:15:42]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:15:42]   cassandra |     AND cdc = false
+[20:15:42]   cassandra |     AND comment = 'Q5 - historial de comentarios de un usuario por mes (vista duplicada)'
+[20:15:42]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:15:42]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:15:42]   cassandra |     AND memtable = 'default'
+[20:15:42]   cassandra |     AND crc_check_chance = 1.0
+[20:15:42]   cassandra |     AND default_time_to_live = 0
+[20:15:42]   cassandra |     AND extensions = {}
+[20:15:42]   cassandra |     AND gc_grace_seconds = 864000
+[20:15:42]   cassandra |     AND incremental_backups = true
+[20:15:42]   cassandra |     AND max_index_interval = 2048
+[20:15:42]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:15:42]   cassandra |     AND min_index_interval = 128
+[20:15:42]   cassandra |     AND read_repair = 'BLOCKING'
+[20:15:42]   cassandra |     AND speculative_retry = '99p';
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE TABLE fixture2030_comentarios.config_particion_partido (
+[20:15:42]   cassandra |     partido_id text PRIMARY KEY,
+[20:15:42]   cassandra |     audiencia text,
+[20:15:42]   cassandra |     buckets int,
+[20:15:42]   cassandra |     fase text,
+[20:15:42]   cassandra |     inicio timestamp,
+[20:15:42]   cassandra |     ventana_minutos int
+[20:15:42]   cassandra | ) WITH additional_write_policy = '99p'
+[20:15:42]   cassandra |     AND allow_auto_snapshot = true
+[20:15:42]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:15:42]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:15:42]   cassandra |     AND cdc = false
+[20:15:42]   cassandra |     AND comment = 'Q0 - parametros de particion de cada partido (fijados antes del partido)'
+[20:15:42]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:15:42]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:15:42]   cassandra |     AND memtable = 'default'
+[20:15:42]   cassandra |     AND crc_check_chance = 1.0
+[20:15:42]   cassandra |     AND default_time_to_live = 0
+[20:15:42]   cassandra |     AND extensions = {}
+[20:15:42]   cassandra |     AND gc_grace_seconds = 864000
+[20:15:42]   cassandra |     AND incremental_backups = true
+[20:15:42]   cassandra |     AND max_index_interval = 2048
+[20:15:42]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:15:42]   cassandra |     AND min_index_interval = 128
+[20:15:42]   cassandra |     AND read_repair = 'BLOCKING'
+[20:15:42]   cassandra |     AND speculative_retry = '99p';
+[20:15:42]   cassandra | 
+[20:15:42]   cassandra | CREATE TABLE fixture2030_comentarios.interacciones_por_comentario (
+[20:15:42]   cassandra |     comentario_id text PRIMARY KEY,
+[20:15:42]   cassandra |     me_gusta counter,
+[20:15:42]   cassandra |     reportes counter,
+[20:15:42]   cassandra |     respuestas counter
+[20:15:42]   cassandra | ) WITH additional_write_policy = '99p'
+[20:15:42]   cassandra |     AND allow_auto_snapshot = true
+[20:15:42]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:15:42]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:15:42]   cassandra |     AND cdc = false
+[20:15:42]   cassandra |     AND comment = 'Q6 - contadores de interaccion por comentario'
+[20:15:42]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:15:42]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:15:42]   cassandra |     AND memtable = 'default'
+[20:15:42]   cassandra |     AND crc_check_chance = 1.0
+[20:15:42]   cassandra |     AND default_time_to_live = 0
+[20:15:42]   cassandra |     AND extensions = {}
+[20:15:42]   cassandra |     AND gc_grace_seconds = 864000
+[20:15:42]   cassandra |     AND incremental_backups = true
+[20:15:42]   cassandra |     AND max_index_interval = 2048
+[20:15:42]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:15:42]   cassandra |     AND min_index_interval = 128
+[20:15:42]   cassandra |     AND read_repair = 'BLOCKING'
+[20:15:42]   cassandra |     AND speculative_retry = '99p';
+[20:15:51]   cassandra | 
+[20:15:51]   cassandra |  Container f30cm-cassandra  Running
+[20:15:51]   cassandra |  Container f30cm-cassandra-cargador  Creating
+[20:15:51]   cassandra |  Container f30cm-cassandra-cargador  Created
+[20:15:51]   cassandra |  Container f30cm-cassandra  Waiting
+[20:15:51]   cassandra |  Container f30cm-cassandra  Healthy
+[20:15:51]   cassandra |  Container f30cm-cassandra-cargador  Starting
+[20:15:51]   cassandra |  Container f30cm-cassandra-cargador  Started
+[20:16:28]   cassandra | 
+[20:16:28]   cassandra | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[20:16:28] cassandra ✔ preparacion en 71.2 s
+[20:16:28] cassandra ▶ carga
+[20:28:38]   cassandra | Cassandra 5.0.9 · objetivo 1,050,000 comentarios · concurrencia 128
+[20:28:38]   cassandra |      10,000 comentarios · lote     2,148 escr/s · acumulado     2,148 escr/s · errores 0
+[20:28:38]   cassandra |      20,000 comentarios · lote     1,915 escr/s · acumulado     2,025 escr/s · errores 0
+[20:28:38]   cassandra |      30,000 comentarios · lote     2,517 escr/s · acumulado     2,166 escr/s · errores 0
+[20:28:38]   cassandra |      40,000 comentarios · lote     2,593 escr/s · acumulado     2,259 escr/s · errores 0
+[20:28:38]   cassandra |      50,000 comentarios · lote     2,663 escr/s · acumulado     2,330 escr/s · errores 0
+[20:28:38]   cassandra |      60,000 comentarios · lote     2,480 escr/s · acumulado     2,354 escr/s · errores 0
+[20:28:38]   cassandra |      70,000 comentarios · lote     2,947 escr/s · acumulado     2,423 escr/s · errores 0
+[20:28:38]   cassandra |      80,000 comentarios · lote     3,096 escr/s · acumulado     2,491 escr/s · errores 0
+[20:28:38]   cassandra |      90,000 comentarios · lote     3,946 escr/s · acumulado     2,597 escr/s · errores 0
+[20:28:38]   cassandra |     100,000 comentarios · lote     3,278 escr/s · acumulado     2,652 escr/s · errores 0
+[20:28:38]   cassandra |     110,000 comentarios · lote     2,862 escr/s · acumulado     2,670 escr/s · errores 0
+[20:28:38]   cassandra |     120,000 comentarios · lote     3,864 escr/s · acumulado     2,741 escr/s · errores 0
+[20:28:38]   cassandra |     130,000 comentarios · lote     2,875 escr/s · acumulado     2,751 escr/s · errores 0
+[20:28:38]   cassandra |     140,000 comentarios · lote     3,030 escr/s · acumulado     2,769 escr/s · errores 0
+[20:28:38]   cassandra |     150,000 comentarios · lote     3,130 escr/s · acumulado     2,790 escr/s · errores 0
+[20:28:38]   cassandra |     160,000 comentarios · lote     3,218 escr/s · acumulado     2,814 escr/s · errores 0
+[20:28:38]   cassandra |     170,000 comentarios · lote     2,505 escr/s · acumulado     2,793 escr/s · errores 0
+[20:28:38]   cassandra |     180,000 comentarios · lote     2,499 escr/s · acumulado     2,775 escr/s · errores 0
+[20:28:38]   cassandra |     190,000 comentarios · lote     2,190 escr/s · acumulado     2,737 escr/s · errores 2
+[20:28:38]   cassandra |     200,000 comentarios · lote     2,616 escr/s · acumulado     2,731 escr/s · errores 2
+[20:28:38]   cassandra |     210,000 comentarios · lote     2,988 escr/s · acumulado     2,742 escr/s · errores 2
+[20:28:38]   cassandra |     220,000 comentarios · lote     2,289 escr/s · acumulado     2,717 escr/s · errores 2
+[20:28:38]   cassandra |     230,000 comentarios · lote     2,899 escr/s · acumulado     2,725 escr/s · errores 2
+[20:28:38]   cassandra |     240,000 comentarios · lote     2,215 escr/s · acumulado     2,699 escr/s · errores 2
+[20:28:38]   cassandra |     250,000 comentarios · lote     1,951 escr/s · acumulado     2,658 escr/s · errores 2
+[20:28:38]   cassandra |     260,000 comentarios · lote     1,866 escr/s · acumulado     2,615 escr/s · errores 2
+[20:28:38]   cassandra |     270,000 comentarios · lote     1,830 escr/s · acumulado     2,574 escr/s · errores 2
+[20:28:38]   cassandra |     280,000 comentarios · lote     2,791 escr/s · acumulado     2,582 escr/s · errores 2
+[20:28:38]   cassandra |     290,000 comentarios · lote     2,398 escr/s · acumulado     2,575 escr/s · errores 2
+[20:28:38]   cassandra |     300,000 comentarios · lote     2,745 escr/s · acumulado     2,580 escr/s · errores 2
+[20:28:38]   cassandra |     310,000 comentarios · lote     2,907 escr/s · acumulado     2,590 escr/s · errores 2
+[20:28:38]   cassandra |     320,000 comentarios · lote     2,884 escr/s · acumulado     2,598 escr/s · errores 2
+[20:28:38]   cassandra |     330,000 comentarios · lote     4,013 escr/s · acumulado     2,626 escr/s · errores 2
+[20:28:38]   cassandra |     340,000 comentarios · lote     2,311 escr/s · acumulado     2,615 escr/s · errores 2
+[20:28:38]   cassandra |     350,000 comentarios · lote     2,523 escr/s · acumulado     2,613 escr/s · errores 2
+[20:28:38]   cassandra |     360,000 comentarios · lote     2,711 escr/s · acumulado     2,615 escr/s · errores 2
+[20:28:38]   cassandra |     370,000 comentarios · lote     2,973 escr/s · acumulado     2,624 escr/s · errores 2
+[20:28:38]   cassandra |     380,000 comentarios · lote     2,843 escr/s · acumulado     2,629 escr/s · errores 2
+[20:28:38]   cassandra |     390,000 comentarios · lote     2,818 escr/s · acumulado     2,634 escr/s · errores 2
+[20:28:38]   cassandra |     400,000 comentarios · lote     3,007 escr/s · acumulado     2,642 escr/s · errores 2
+[20:28:38]   cassandra |     410,000 comentarios · lote     2,724 escr/s · acumulado     2,644 escr/s · errores 2
+[20:28:38]   cassandra |     420,000 comentarios · lote     3,047 escr/s · acumulado     2,652 escr/s · errores 2
+[20:28:38]   cassandra |     430,000 comentarios · lote     4,289 escr/s · acumulado     2,676 escr/s · errores 2
+[20:28:38]   cassandra |     440,000 comentarios · lote     4,668 escr/s · acumulado     2,702 escr/s · errores 2
+[20:28:38]   cassandra |     450,000 comentarios · lote     2,273 escr/s · acumulado     2,691 escr/s · errores 2
+[20:28:38]   cassandra |     460,000 comentarios · lote     3,385 escr/s · acumulado     2,703 escr/s · errores 2
+[20:28:38]   cassandra |     470,000 comentarios · lote     3,120 escr/s · acumulado     2,711 escr/s · errores 2
+[20:28:38]   cassandra |     480,000 comentarios · lote     2,614 escr/s · acumulado     2,709 escr/s · errores 2
+[20:28:38]   cassandra |     490,000 comentarios · lote     2,938 escr/s · acumulado     2,713 escr/s · errores 2
+[20:28:38]   cassandra |     500,000 comentarios · lote     2,884 escr/s · acumulado     2,716 escr/s · errores 2
+[20:28:38]   cassandra |     510,000 comentarios · lote     3,067 escr/s · acumulado     2,722 escr/s · errores 2
+[20:28:38]   cassandra |     520,000 comentarios · lote     3,595 escr/s · acumulado     2,735 escr/s · errores 2
+[20:28:38]   cassandra |     530,000 comentarios · lote     3,126 escr/s · acumulado     2,741 escr/s · errores 2
+[20:28:38]   cassandra |     540,000 comentarios · lote     4,488 escr/s · acumulado     2,761 escr/s · errores 2
+[20:28:38]   cassandra |     550,000 comentarios · lote     2,969 escr/s · acumulado     2,765 escr/s · errores 2
+[20:28:38]   cassandra |     560,000 comentarios · lote     5,726 escr/s · acumulado     2,791 escr/s · errores 2
+[20:28:38]   cassandra |     570,000 comentarios · lote     5,224 escr/s · acumulado     2,814 escr/s · errores 2
+[20:28:38]   cassandra |     580,000 comentarios · lote     4,983 escr/s · acumulado     2,835 escr/s · errores 2
+[20:28:38]   cassandra |     590,000 comentarios · lote     4,703 escr/s · acumulado     2,854 escr/s · errores 2
+[20:28:38]   cassandra |     600,000 comentarios · lote     2,549 escr/s · acumulado     2,848 escr/s · errores 10
+[20:28:38]   cassandra |     610,000 comentarios · lote     4,560 escr/s · acumulado     2,866 escr/s · errores 10
+[20:28:38]   cassandra |     620,000 comentarios · lote     5,526 escr/s · acumulado     2,889 escr/s · errores 10
+[20:28:38]   cassandra |     630,000 comentarios · lote     2,562 escr/s · acumulado     2,883 escr/s · errores 108
+[20:28:38]   cassandra |     640,000 comentarios · lote     3,292 escr/s · acumulado     2,888 escr/s · errores 108
+[20:28:38]   cassandra |     650,000 comentarios · lote     3,573 escr/s · acumulado     2,897 escr/s · errores 108
+[20:28:38]   cassandra |     660,000 comentarios · lote     2,380 escr/s · acumulado     2,887 escr/s · errores 210
+[20:28:38]   cassandra |     670,000 comentarios · lote     3,041 escr/s · acumulado     2,890 escr/s · errores 210
+[20:28:38]   cassandra |     680,000 comentarios · lote     5,007 escr/s · acumulado     2,908 escr/s · errores 210
+[20:28:38]   cassandra |     690,000 comentarios · lote     3,606 escr/s · acumulado     2,916 escr/s · errores 210
+[20:28:38]   cassandra |     700,000 comentarios · lote     3,530 escr/s · acumulado     2,923 escr/s · errores 210
+[20:28:38]   cassandra |     710,000 comentarios · lote     5,364 escr/s · acumulado     2,942 escr/s · errores 210
+[20:28:38]   cassandra |     720,000 comentarios · lote     4,303 escr/s · acumulado     2,955 escr/s · errores 210
+[20:28:38]   cassandra |     730,000 comentarios · lote     4,769 escr/s · acumulado     2,970 escr/s · errores 210
+[20:28:38]   cassandra |     740,000 comentarios · lote     3,928 escr/s · acumulado     2,980 escr/s · errores 210
+[20:28:38]   cassandra |     750,000 comentarios · lote     3,330 escr/s · acumulado     2,984 escr/s · errores 210
+[20:28:38]   cassandra |     760,000 comentarios · lote     3,415 escr/s · acumulado     2,989 escr/s · errores 210
+[20:28:38]   cassandra |     770,000 comentarios · lote     4,218 escr/s · acumulado     3,001 escr/s · errores 210
+[20:28:38]   cassandra |     780,000 comentarios · lote     3,066 escr/s · acumulado     3,002 escr/s · errores 210
+[20:28:38]   cassandra |     790,000 comentarios · lote     2,444 escr/s · acumulado     2,993 escr/s · errores 210
+[20:28:38]   cassandra |     800,000 comentarios · lote     2,753 escr/s · acumulado     2,990 escr/s · errores 210
+[20:28:38]   cassandra |     810,000 comentarios · lote     2,951 escr/s · acumulado     2,989 escr/s · errores 210
+[20:28:38]   cassandra |     820,000 comentarios · lote     2,797 escr/s · acumulado     2,987 escr/s · errores 210
+[20:28:38]   cassandra |     830,000 comentarios · lote     3,502 escr/s · acumulado     2,992 escr/s · errores 210
+[20:28:38]   cassandra |     840,000 comentarios · lote     3,034 escr/s · acumulado     2,992 escr/s · errores 210
+[20:28:38]   cassandra |     850,000 comentarios · lote     3,417 escr/s · acumulado     2,997 escr/s · errores 210
+[20:28:38]   cassandra |     860,000 comentarios · lote     2,380 escr/s · acumulado     2,988 escr/s · errores 210
+[20:28:38]   cassandra |     870,000 comentarios · lote     3,479 escr/s · acumulado     2,993 escr/s · errores 210
+[20:28:38]   cassandra |     880,000 comentarios · lote     3,034 escr/s · acumulado     2,993 escr/s · errores 210
+[20:28:38]   cassandra |     890,000 comentarios · lote     2,163 escr/s · acumulado     2,980 escr/s · errores 210
+[20:28:38]   cassandra |     900,000 comentarios · lote     5,220 escr/s · acumulado     2,995 escr/s · errores 210
+[20:28:38]   cassandra |     910,000 comentarios · lote     3,856 escr/s · acumulado     3,002 escr/s · errores 210
+[20:28:38]   cassandra |     920,000 comentarios · lote     4,183 escr/s · acumulado     3,011 escr/s · errores 210
+[20:28:38]   cassandra |     930,000 comentarios · lote     3,512 escr/s · acumulado     3,016 escr/s · errores 210
+[20:28:38]   cassandra |     940,000 comentarios · lote     3,800 escr/s · acumulado     3,022 escr/s · errores 210
+[20:28:38]   cassandra |     950,000 comentarios · lote     2,777 escr/s · acumulado     3,020 escr/s · errores 210
+[20:28:38]   cassandra |     960,000 comentarios · lote     3,132 escr/s · acumulado     3,021 escr/s · errores 210
+[20:28:38]   cassandra |     970,000 comentarios · lote     3,384 escr/s · acumulado     3,024 escr/s · errores 210
+[20:28:38]   cassandra |     980,000 comentarios · lote     3,738 escr/s · acumulado     3,030 escr/s · errores 210
+[20:28:38]   cassandra |     990,000 comentarios · lote     2,846 escr/s · acumulado     3,028 escr/s · errores 210
+[20:28:38]   cassandra |   1,000,000 comentarios · lote     2,657 escr/s · acumulado     3,024 escr/s · errores 210
+[20:28:38]   cassandra |   1,010,000 comentarios · lote     2,676 escr/s · acumulado     3,020 escr/s · errores 210
+[20:28:38]   cassandra |   1,020,000 comentarios · lote     4,346 escr/s · acumulado     3,029 escr/s · errores 210
+[20:28:38]   cassandra |   1,030,000 comentarios · lote     4,656 escr/s · acumulado     3,039 escr/s · errores 210
+[20:28:38]   cassandra |   1,040,000 comentarios · lote     5,988 escr/s · acumulado     3,054 escr/s · errores 210
+[20:28:38]   cassandra |   1,050,000 comentarios · lote     4,036 escr/s · acumulado     3,061 escr/s · errores 210
+[20:28:38]   cassandra | # Carga masiva — 2026-11-11T20:28:37+00:00
+[20:28:39]   cassandra | 
+[20:28:39]   cassandra | | Dato | Valor |
+[20:28:39]   cassandra | |---|---|
+[20:28:39]   cassandra | | Versión de Cassandra | 5.0.9 |
+[20:28:39]   cassandra | | CPUs visibles / RAM | 12 / 7.7 GB |
+[20:28:39]   cassandra | | Concurrencia | 128 |
+[20:28:39]   cassandra | | Comentarios cargados | 1,050,000 |
+[20:28:39]   cassandra | | Escrituras OK / errores | 2,099,790 / 210 |
+[20:28:39]   cassandra | | Tiempo de escritura | 686.01 s |
+[20:28:39]   cassandra | | **Tasa de escritura** | **3,060.9 escrituras/s** |
+[20:28:39]   cassandra | | Tasa por lote (mín / mediana / máx) | 1829.5 / 3033.7 / 5987.7 |
+[20:28:39]   cassandra | | ¿Alcanza 10.000 escr/s? | No |
+[20:28:39]   cassandra | 
+[20:28:39]   cassandra | ## Distribución (filas por partición de comentarios_por_partido)
+[20:28:39]   cassandra | 
+[20:28:39]   cassandra | particiones 1725 · mín 49 · p50 258 · p90 1051 · p99 5883 · máx 16161
+[20:28:39]   cassandra | 
+[20:28:39]   cassandra | Top 5: ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 0) = 16,161; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 1) = 16,160; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 2) = 16,160; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 3) = 16,159; ('PAR-D16-01', '2030-06-29T17:20:00+00:00', 0) = 9,993
+[20:28:39]   cassandra | 
+[20:28:39]   cassandra | Evidencia guardada en /app/evidencia/20261111-200356_paralelo/carga_masiva_20261111-202837.(md|json)
+[20:28:39] cassandra ✔ carga en 731.1 s · 1,050,000 comentarios · 1,436.2 /s
+[20:28:39] cassandra ▶ verificacion
+[20:28:39] validación · Cassandra (recorrido completo de las dos tablas)
+[20:29:46] distribución · cassandra
+[20:29:58] cassandra ✔ verificacion en 78.6 s
+[20:29:58] cassandra ▶ apagado
+[20:30:23]   cassandra | 
+[20:30:23]   cassandra |  Container f30cm-cassandra-cargador  Stopping
+[20:30:23]   cassandra |  Container f30cm-cassandra-cargador  Stopped
+[20:30:23]   cassandra |  Container f30cm-cassandra-cargador  Removing
+[20:30:23]   cassandra |  Container f30cm-cassandra-cargador  Removed
+[20:30:23]   cassandra |  Container f30cm-cassandra  Stopping
+[20:30:23]   cassandra |  Container f30cm-cassandra  Stopped
+[20:30:23]   cassandra |  Container f30cm-cassandra  Removing
+[20:30:23]   cassandra |  Container f30cm-cassandra  Removed
+[20:30:23]   cassandra |  Network f30cm-cassandra-net  Removing
+[20:30:23]   cassandra |  Volume f30cm_cassandra_data  Removing
+[20:30:23]   cassandra |  Volume f30cm_cassandra_data  Removed
+[20:30:23]   cassandra |  Network f30cm-cassandra-net  Removed
+[20:30:23] cassandra ✔ apagado en 25.6 s
+[20:30:23] ⚠ influxdb: reserva 2560 MiB + reservado 0 MiB supera el presupuesto (1881 MiB); arranca sola
+[20:30:23] influxdb  admitida · reservado 2560/1881 MiB · 1 en curso
+[20:30:23] influxdb  ▶ arranque
+[20:30:39]   influxdb | 
+[20:30:39]   influxdb |  influxdb Pulling 
+[20:30:39]   influxdb |  influxdb Pulled 
+[20:30:39]   influxdb |  Network f30cm-influxdb-net  Creating
+[20:30:39]   influxdb |  Network f30cm-influxdb-net  Created
+[20:30:39]   influxdb |  Volume "f30cm_influxdb_data"  Creating
+[20:30:39]   influxdb |  Volume "f30cm_influxdb_data"  Created
+[20:30:39]   influxdb |  Container f30cm-influxdb  Creating
+[20:30:39]   influxdb |  Container f30cm-influxdb  Created
+[20:30:39]   influxdb |  Container f30cm-influxdb  Starting
+[20:30:39]   influxdb |  Container f30cm-influxdb  Started
+[20:30:39]   influxdb |  Container f30cm-influxdb  Waiting
+[20:30:39]   influxdb |  Container f30cm-influxdb  Healthy
+[20:30:39] influxdb  ✔ arranque en 16.2 s
+[20:30:39] influxdb  ▶ preparacion
+[20:31:14]   influxdb | == 1. Carpeta de datos (RNF2)
+[20:31:14]   influxdb |    C:/Users/santi/docker/data/f30cm/influxdb
+[20:31:14]   influxdb | == 2. Servidor: docker compose up -d
+[20:31:14]   influxdb |    esperando a que esté healthy ok
+[20:31:14]   influxdb | == 3. Disponibilidad con la CLI del contenedor (RF1)
+[20:31:14]   influxdb | influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
+[20:31:14]   influxdb | OK
+[20:31:14]   influxdb | == 4. Autorización local
+[20:31:14]   influxdb |    influxdb3 create token --admin: token de administración -> ../fixture2030-carga-masiva/.secrets/influxdb/admin-token.json (no se muestra)
+[20:31:14]   influxdb | == 5. Bases de datos y retención (RF10)
+[20:31:14]   influxdb |    fixture2030_vivo creada, retención 45d
+[20:31:14]   influxdb |    fixture2030_historico creada, sin vencimiento
+[20:31:14]   influxdb |    fixture2030_prueba_retencion creada, retención 1h
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | | database_name                | retention_period |
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | | _internal                    | 7.0000d          |
+[20:31:14]   influxdb | | fixture2030_historico        | infinite         |
+[20:31:14]   influxdb | | fixture2030_prueba_retencion | 1.0000h          |
+[20:31:14]   influxdb | | fixture2030_vivo             | 45.0000d         |
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | == 6. Evidencia del ambiente -> ../fixture2030-carga-masiva/evidencia/modulos/influxdb/01_inicializacion.txt
+[20:31:14]   influxdb | # Inicialización — 2026-11-11T20:31:04Z
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | ## Versión observada de influxdb:3-core (RNF1)
+[20:31:14]   influxdb | influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
+[20:31:14]   influxdb | Imagen: influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990  creada 2026-10-29T23:33:04.031684419Z
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | ## Disponibilidad del servicio (RF1)
+[20:31:14]   influxdb | OK
+[20:31:14]   influxdb | NAME             IMAGE             COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+[20:31:14]   influxdb | f30cm-influxdb   influxdb:3-core   "/usr/bin/entrypoint…"   influxdb   41 seconds ago   Up 40 seconds (healthy)   127.0.0.1:18182->8181/tcp
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | ## Bases de datos y período de retención (RF10)
+[20:31:14]   influxdb | +------------------------------+
+[20:31:14]   influxdb | | iox::database                |
+[20:31:14]   influxdb | +------------------------------+
+[20:31:14]   influxdb | | _internal                    |
+[20:31:14]   influxdb | | fixture2030_historico        |
+[20:31:14]   influxdb | | fixture2030_prueba_retencion |
+[20:31:14]   influxdb | | fixture2030_vivo             |
+[20:31:14]   influxdb | +------------------------------+
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | | database_name                | retention_period |
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | | _internal                    | 7.0000d          |
+[20:31:14]   influxdb | | fixture2030_historico        | infinite         |
+[20:31:14]   influxdb | | fixture2030_prueba_retencion | 1.0000h          |
+[20:31:14]   influxdb | | fixture2030_vivo             | 45.0000d         |
+[20:31:14]   influxdb | +------------------------------+------------------+
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | ## Persistencia (RNF2): volumen nombrado y carpeta que lo respalda
+[20:31:14]   influxdb | f30cm_influxdb_data -> C:/Users/santi/docker/data/f30cm/influxdb
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | ## Recursos de Docker
+[20:31:14]   influxdb | CPUs: 12  Memoria: 8251424768 bytes  SO: Docker Desktop
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb | API: http://localhost:8181 (token en ../fixture2030-carga-masiva/.secrets/influxdb/admin-token.json)
+[20:31:14]   influxdb | Siguiente paso: docker compose run --rm herramientas scripts/generacion_puntos.py --perfil muestra
+[20:31:14]   influxdb | 
+[20:31:14]   influxdb |  influxdb Pulling 
+[20:31:14]   influxdb |  influxdb Pulled 
+[20:31:14]   influxdb |  Container f30cm-influxdb  Running
+[20:31:14] influxdb  ✔ preparacion en 34.9 s
+[20:31:14] influxdb  ▶ carga
+[20:32:13]   influxdb | InfluxDB 3 Core 3.12.2 (revisión cc9769917a) · perfil completo · 10,094,400 puntos · lote 50000 · hilos 8
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-1.lp.gz                 11,400 · acumulado      11,400 ·   305,946 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-1.lp.gz                 69,600 · acumulado      81,000 ·   368,312 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-2.lp.gz                 11,400 · acumulado      92,400 ·   311,823 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-2.lp.gz                 69,600 · acumulado     162,000 ·   326,836 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-1.lp.gz                 11,400 · acumulado     173,400 ·   320,532 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-1.lp.gz                 69,600 · acumulado     243,000 ·   343,593 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-2.lp.gz                 11,400 · acumulado     254,400 ·   346,975 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-2.lp.gz                 69,600 · acumulado     324,000 ·   354,308 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-1.lp.gz                 11,400 · acumulado     335,400 ·   353,690 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-1.lp.gz                 69,600 · acumulado     405,000 ·   366,864 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-2.lp.gz                 11,400 · acumulado     416,400 ·   362,023 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-2.lp.gz                 69,600 · acumulado     486,000 ·   271,497 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-1.lp.gz                 11,400 · acumulado     497,400 ·   271,576 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-1.lp.gz                 69,600 · acumulado     567,000 ·   286,835 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-2.lp.gz                 11,400 · acumulado     578,400 ·   289,233 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-2.lp.gz                 69,600 · acumulado     648,000 ·   307,412 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-1.lp.gz                 11,400 · acumulado     659,400 ·   298,912 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-1.lp.gz                 69,600 · acumulado     729,000 ·   289,246 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-2.lp.gz                 11,400 · acumulado     740,400 ·   289,922 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-2.lp.gz                 69,600 · acumulado     810,000 ·   302,007 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-1.lp.gz                 11,400 · acumulado     821,400 ·   241,422 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-1.lp.gz                 69,600 · acumulado     891,000 ·   252,166 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-2.lp.gz                 11,400 · acumulado     902,400 ·   253,545 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-2.lp.gz                 69,600 · acumulado     972,000 ·   262,860 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-1.lp.gz                 11,400 · acumulado     983,400 ·   264,160 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-1.lp.gz                 69,600 · acumulado   1,053,000 ·   241,303 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-2.lp.gz                 11,400 · acumulado   1,064,400 ·   240,396 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-2.lp.gz                 69,600 · acumulado   1,134,000 ·   247,920 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-1.lp.gz                 11,400 · acumulado   1,145,400 ·   248,562 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-1.lp.gz                 69,600 · acumulado   1,215,000 ·   256,663 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-2.lp.gz                 11,400 · acumulado   1,226,400 ·   257,915 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-2.lp.gz                 69,600 · acumulado   1,296,000 ·   236,372 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-1.lp.gz                 11,400 · acumulado   1,307,400 ·   236,211 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-1.lp.gz                 69,600 · acumulado   1,377,000 ·   241,561 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-2.lp.gz                 11,400 · acumulado   1,388,400 ·   241,466 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-2.lp.gz                 69,600 · acumulado   1,458,000 ·   243,743 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-1.lp.gz                 11,400 · acumulado   1,469,400 ·   227,091 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-1.lp.gz                 69,600 · acumulado   1,539,000 ·   225,217 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-2.lp.gz                 11,400 · acumulado   1,550,400 ·   225,803 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-2.lp.gz                 69,600 · acumulado   1,620,000 ·   230,683 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-1.lp.gz                 11,400 · acumulado   1,631,400 ·   231,419 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-1.lp.gz                 69,600 · acumulado   1,701,000 ·   229,104 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-2.lp.gz                 11,400 · acumulado   1,712,400 ·   228,628 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-2.lp.gz                 69,600 · acumulado   1,782,000 ·   231,516 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-1.lp.gz                 11,400 · acumulado   1,793,400 ·   232,223 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-1.lp.gz                 69,600 · acumulado   1,863,000 ·   236,660 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-2.lp.gz                 11,400 · acumulado   1,874,400 ·   236,852 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-2.lp.gz                 69,600 · acumulado   1,944,000 ·   225,202 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-1.lp.gz                 11,400 · acumulado   1,955,400 ·   224,852 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-1.lp.gz                 69,600 · acumulado   2,025,000 ·   226,041 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-2.lp.gz                 11,400 · acumulado   2,036,400 ·   226,488 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-2.lp.gz                 69,600 · acumulado   2,106,000 ·   231,388 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-1.lp.gz                 11,400 · acumulado   2,117,400 ·   226,121 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-1.lp.gz                 69,600 · acumulado   2,187,000 ·   227,680 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-2.lp.gz                 11,400 · acumulado   2,198,400 ·   228,498 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-2.lp.gz                 69,600 · acumulado   2,268,000 ·   233,652 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-1.lp.gz                 11,400 · acumulado   2,279,400 ·   234,359 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-1.lp.gz                 69,600 · acumulado   2,349,000 ·   225,943 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-2.lp.gz                 11,400 · acumulado   2,360,400 ·   225,421 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-2.lp.gz                 69,600 · acumulado   2,430,000 ·   228,151 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-1.lp.gz                 11,400 · acumulado   2,441,400 ·   228,632 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-1.lp.gz                 69,600 · acumulado   2,511,000 ·   232,583 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-2.lp.gz                 11,400 · acumulado   2,522,400 ·   233,189 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-2.lp.gz                 69,600 · acumulado   2,592,000 ·   226,942 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-3.lp.gz                 11,400 · acumulado   2,603,400 ·   227,310 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-3.lp.gz                 69,600 · acumulado   2,673,000 ·   231,334 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-4.lp.gz                 11,400 · acumulado   2,684,400 ·   231,977 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-4.lp.gz                 69,600 · acumulado   2,754,000 ·   236,417 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-3.lp.gz                 11,400 · acumulado   2,765,400 ·   224,649 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-3.lp.gz                 69,600 · acumulado   2,835,000 ·   227,929 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-4.lp.gz                 11,400 · acumulado   2,846,400 ·   228,494 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-4.lp.gz                 69,600 · acumulado   2,916,000 ·   232,464 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-3.lp.gz                 11,400 · acumulado   2,927,400 ·   232,905 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-3.lp.gz                 69,600 · acumulado   2,997,000 ·   219,715 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-4.lp.gz                 11,400 · acumulado   3,008,400 ·   219,910 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-4.lp.gz                 69,600 · acumulado   3,078,000 ·   222,663 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-3.lp.gz                 11,400 · acumulado   3,089,400 ·   222,992 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-3.lp.gz                 69,600 · acumulado   3,159,000 ·   226,161 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-4.lp.gz                 11,400 · acumulado   3,170,400 ·   226,601 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-4.lp.gz                 69,600 · acumulado   3,240,000 ·   223,041 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-3.lp.gz                 11,400 · acumulado   3,251,400 ·   223,395 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-3.lp.gz                 69,600 · acumulado   3,321,000 ·   224,850 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-4.lp.gz                 11,400 · acumulado   3,332,400 ·   224,554 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-4.lp.gz                 69,600 · acumulado   3,402,000 ·   227,628 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-3.lp.gz                 11,400 · acumulado   3,413,400 ·   221,586 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-3.lp.gz                 69,600 · acumulado   3,483,000 ·   221,495 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-4.lp.gz                 11,400 · acumulado   3,494,400 ·   221,811 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-4.lp.gz                 69,600 · acumulado   3,564,000 ·   224,653 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-3.lp.gz                 11,400 · acumulado   3,575,400 ·   225,049 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-3.lp.gz                 69,600 · acumulado   3,645,000 ·   218,546 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-4.lp.gz                 11,400 · acumulado   3,656,400 ·   218,567 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-4.lp.gz                 69,600 · acumulado   3,726,000 ·   220,967 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-3.lp.gz                 11,400 · acumulado   3,737,400 ·   221,328 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-3.lp.gz                 69,600 · acumulado   3,807,000 ·   223,868 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-4.lp.gz                 11,400 · acumulado   3,818,400 ·   224,036 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-4.lp.gz                 69,600 · acumulado   3,888,000 ·   222,447 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-3.lp.gz                 11,400 · acumulado   3,899,400 ·   222,769 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-3.lp.gz                 69,600 · acumulado   3,969,000 ·   225,212 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-4.lp.gz                 11,400 · acumulado   3,980,400 ·   225,640 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-4.lp.gz                 69,600 · acumulado   4,050,000 ·   228,385 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-3.lp.gz                 11,400 · acumulado   4,061,400 ·   218,323 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-3.lp.gz                 69,600 · acumulado   4,131,000 ·   220,253 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-4.lp.gz                 11,400 · acumulado   4,142,400 ·   220,484 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-4.lp.gz                 69,600 · acumulado   4,212,000 ·   222,810 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-3.lp.gz                 11,400 · acumulado   4,223,400 ·   223,193 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-3.lp.gz                 69,600 · acumulado   4,293,000 ·   216,172 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-4.lp.gz                 11,400 · acumulado   4,304,400 ·   216,360 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-4.lp.gz                 69,600 · acumulado   4,374,000 ·   218,233 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-3.lp.gz                 11,400 · acumulado   4,385,400 ·   218,434 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-3.lp.gz                 69,600 · acumulado   4,455,000 ·   220,497 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-4.lp.gz                 11,400 · acumulado   4,466,400 ·   220,800 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-4.lp.gz                 69,600 · acumulado   4,536,000 ·   211,026 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-3.lp.gz                 11,400 · acumulado   4,547,400 ·   211,101 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-3.lp.gz                 69,600 · acumulado   4,617,000 ·   213,444 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-4.lp.gz                 11,400 · acumulado   4,628,400 ·   213,759 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-4.lp.gz                 69,600 · acumulado   4,698,000 ·   216,109 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-3.lp.gz                 11,400 · acumulado   4,709,400 ·   211,054 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-3.lp.gz                 69,600 · acumulado   4,779,000 ·   211,272 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-4.lp.gz                 11,400 · acumulado   4,790,400 ·   211,578 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-4.lp.gz                 69,600 · acumulado   4,860,000 ·   213,040 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-3.lp.gz                 11,400 · acumulado   4,871,400 ·   213,117 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-3.lp.gz                 69,600 · acumulado   4,941,000 ·   211,044 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-4.lp.gz                 11,400 · acumulado   4,952,400 ·   210,621 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-4.lp.gz                 69,600 · acumulado   5,022,000 ·   211,862 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-3.lp.gz                 11,400 · acumulado   5,033,400 ·   211,877 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-3.lp.gz                 69,600 · acumulado   5,103,000 ·   212,164 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-4.lp.gz                 11,400 · acumulado   5,114,400 ·   212,116 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-4.lp.gz                 69,600 · acumulado   5,184,000 ·   211,202 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-5.lp.gz                 11,400 · acumulado   5,195,400 ·   211,339 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-5.lp.gz                 69,600 · acumulado   5,265,000 ·   213,252 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-A-6.lp.gz                 11,400 · acumulado   5,276,400 ·   213,550 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-A-6.lp.gz                 69,600 · acumulado   5,346,000 ·   214,837 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-5.lp.gz                 11,400 · acumulado   5,357,400 ·   211,740 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-5.lp.gz                 69,600 · acumulado   5,427,000 ·   210,637 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-E-6.lp.gz                 11,400 · acumulado   5,438,400 ·   210,815 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-E-6.lp.gz                 69,600 · acumulado   5,508,000 ·   211,434 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-5.lp.gz                 11,400 · acumulado   5,519,400 ·   210,509 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-5.lp.gz                 69,600 · acumulado   5,589,000 ·   207,641 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-I-6.lp.gz                 11,400 · acumulado   5,600,400 ·   207,592 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-I-6.lp.gz                 69,600 · acumulado   5,670,000 ·   208,352 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-5.lp.gz                 11,400 · acumulado   5,681,400 ·   208,619 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-5.lp.gz                 69,600 · acumulado   5,751,000 ·   210,193 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-M-6.lp.gz                 11,400 · acumulado   5,762,400 ·   210,306 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-M-6.lp.gz                 69,600 · acumulado   5,832,000 ·   204,836 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-5.lp.gz                 11,400 · acumulado   5,843,400 ·   204,915 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-5.lp.gz                 69,600 · acumulado   5,913,000 ·   206,124 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-B-6.lp.gz                 11,400 · acumulado   5,924,400 ·   206,386 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-B-6.lp.gz                 69,600 · acumulado   5,994,000 ·   208,002 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-5.lp.gz                 11,400 · acumulado   6,005,400 ·   203,605 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-5.lp.gz                 69,600 · acumulado   6,075,000 ·   204,471 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-F-6.lp.gz                 11,400 · acumulado   6,086,400 ·   204,682 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-F-6.lp.gz                 69,600 · acumulado   6,156,000 ·   206,379 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-5.lp.gz                 11,400 · acumulado   6,167,400 ·   206,645 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-5.lp.gz                 69,600 · acumulado   6,237,000 ·   205,187 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-J-6.lp.gz                 11,400 · acumulado   6,248,400 ·   205,308 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-J-6.lp.gz                 69,600 · acumulado   6,318,000 ·   206,836 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-5.lp.gz                 11,400 · acumulado   6,329,400 ·   207,056 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-5.lp.gz                 69,600 · acumulado   6,399,000 ·   208,747 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-N-6.lp.gz                 11,400 · acumulado   6,410,400 ·   208,985 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-N-6.lp.gz                 69,600 · acumulado   6,480,000 ·   205,457 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-5.lp.gz                 11,400 · acumulado   6,491,400 ·   205,607 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-5.lp.gz                 69,600 · acumulado   6,561,000 ·   206,697 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-C-6.lp.gz                 11,400 · acumulado   6,572,400 ·   206,556 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-C-6.lp.gz                 69,600 · acumulado   6,642,000 ·   206,858 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-5.lp.gz                 11,400 · acumulado   6,653,400 ·   203,678 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-5.lp.gz                 69,600 · acumulado   6,723,000 ·   203,693 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-G-6.lp.gz                 11,400 · acumulado   6,734,400 ·   203,665 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-G-6.lp.gz                 69,600 · acumulado   6,804,000 ·   203,606 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-5.lp.gz                 11,400 · acumulado   6,815,400 ·   203,626 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-5.lp.gz                 69,600 · acumulado   6,885,000 ·   204,684 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-K-6.lp.gz                 11,400 · acumulado   6,896,400 ·   204,827 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-K-6.lp.gz                 69,600 · acumulado   6,966,000 ·   205,387 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-5.lp.gz                 11,400 · acumulado   6,977,400 ·   200,235 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-5.lp.gz                 69,600 · acumulado   7,047,000 ·   200,882 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-O-6.lp.gz                 11,400 · acumulado   7,058,400 ·   200,546 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-O-6.lp.gz                 69,600 · acumulado   7,128,000 ·   200,842 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-5.lp.gz                 11,400 · acumulado   7,139,400 ·   200,647 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-5.lp.gz                 69,600 · acumulado   7,209,000 ·   195,021 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D-6.lp.gz                 11,400 · acumulado   7,220,400 ·   194,748 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D-6.lp.gz                 69,600 · acumulado   7,290,000 ·   195,385 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-5.lp.gz                 11,400 · acumulado   7,301,400 ·   195,300 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-5.lp.gz                 69,600 · acumulado   7,371,000 ·   196,070 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-H-6.lp.gz                 11,400 · acumulado   7,382,400 ·   196,131 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-H-6.lp.gz                 69,600 · acumulado   7,452,000 ·   189,196 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-5.lp.gz                 11,400 · acumulado   7,463,400 ·   188,903 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-5.lp.gz                 69,600 · acumulado   7,533,000 ·   189,723 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-L-6.lp.gz                 11,400 · acumulado   7,544,400 ·   189,559 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-L-6.lp.gz                 69,600 · acumulado   7,614,000 ·   190,360 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-5.lp.gz                 11,400 · acumulado   7,625,400 ·   186,863 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-5.lp.gz                 69,600 · acumulado   7,695,000 ·   187,428 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-P-6.lp.gz                 11,400 · acumulado   7,706,400 ·   187,383 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-P-6.lp.gz                 69,600 · acumulado   7,776,000 ·   188,054 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-01.lp.gz              11,400 · acumulado   7,787,400 ·   188,096 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-01.lp.gz              69,600 · acumulado   7,857,000 ·   189,085 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-02.lp.gz              11,400 · acumulado   7,868,400 ·   185,120 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-02.lp.gz              69,600 · acumulado   7,938,000 ·   185,867 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-03.lp.gz              11,400 · acumulado   7,949,400 ·   185,996 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-03.lp.gz              69,600 · acumulado   8,019,000 ·   187,151 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-04.lp.gz              11,400 · acumulado   8,030,400 ·   187,319 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-04.lp.gz              69,600 · acumulado   8,100,000 ·   186,098 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-05.lp.gz              11,400 · acumulado   8,111,400 ·   186,104 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-05.lp.gz              69,600 · acumulado   8,181,000 ·   186,669 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-06.lp.gz              11,400 · acumulado   8,192,400 ·   186,822 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-06.lp.gz              69,600 · acumulado   8,262,000 ·   187,768 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-07.lp.gz              11,400 · acumulado   8,273,400 ·   187,885 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-07.lp.gz              69,600 · acumulado   8,343,000 ·   186,887 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-08.lp.gz              11,400 · acumulado   8,354,400 ·   186,805 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-08.lp.gz              69,600 · acumulado   8,424,000 ·   187,662 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-09.lp.gz              11,400 · acumulado   8,435,400 ·   187,744 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-09.lp.gz              69,600 · acumulado   8,505,000 ·   188,549 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-10.lp.gz              11,400 · acumulado   8,516,400 ·   186,433 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-10.lp.gz              69,600 · acumulado   8,586,000 ·   186,694 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-11.lp.gz              11,400 · acumulado   8,597,400 ·   186,673 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-11.lp.gz              69,600 · acumulado   8,667,000 ·   187,437 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-12.lp.gz              11,400 · acumulado   8,678,400 ·   187,611 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-12.lp.gz              69,600 · acumulado   8,748,000 ·   188,520 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-13.lp.gz              11,400 · acumulado   8,759,400 ·   188,701 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-13.lp.gz              69,600 · acumulado   8,829,000 ·   189,684 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-14.lp.gz              11,400 · acumulado   8,840,400 ·   185,455 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-14.lp.gz              69,600 · acumulado   8,910,000 ·   186,076 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-15.lp.gz              11,400 · acumulado   8,921,400 ·   186,192 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-15.lp.gz              69,600 · acumulado   8,991,000 ·   186,648 puntos/s
+[20:32:13]   influxdb |   estadisticas_equipo    PAR-D16-16.lp.gz              11,400 · acumulado   9,002,400 ·   186,595 puntos/s
+[20:32:13]   influxdb |   audiencia_partido      PAR-D16-16.lp.gz              69,600 · acumulado   9,072,000 ·   187,287 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-09T1200.lp.gz         21,600 · acumulado   9,093,600 ·   187,616 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-10T0000.lp.gz         43,200 · acumulado   9,136,800 ·   188,285 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-11T0000.lp.gz         43,200 · acumulado   9,180,000 ·   188,760 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-12T0000.lp.gz         43,200 · acumulado   9,223,200 ·   189,050 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-13T0000.lp.gz         43,200 · acumulado   9,266,400 ·   189,628 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-14T0000.lp.gz         43,200 · acumulado   9,309,600 ·   187,745 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-15T0000.lp.gz         43,200 · acumulado   9,352,800 ·   188,160 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-16T0000.lp.gz         43,200 · acumulado   9,396,000 ·   188,679 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-17T0000.lp.gz         43,200 · acumulado   9,439,200 ·   189,176 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-18T0000.lp.gz         43,200 · acumulado   9,482,400 ·   189,629 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-19T0000.lp.gz         43,200 · acumulado   9,525,600 ·   189,530 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-20T0000.lp.gz         43,200 · acumulado   9,568,800 ·   190,050 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-21T0000.lp.gz         43,200 · acumulado   9,612,000 ·   190,501 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-22T0000.lp.gz         43,200 · acumulado   9,655,200 ·   191,064 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-23T0000.lp.gz         43,200 · acumulado   9,698,400 ·   191,660 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-24T0000.lp.gz         43,200 · acumulado   9,741,600 ·   192,277 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-25T0000.lp.gz         43,200 · acumulado   9,784,800 ·   192,905 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-26T0000.lp.gz         43,200 · acumulado   9,828,000 ·   193,565 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-27T0000.lp.gz         43,200 · acumulado   9,871,200 ·   192,114 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-28T0000.lp.gz         43,200 · acumulado   9,914,400 ·   192,251 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-29T0000.lp.gz         43,200 · acumulado   9,957,600 ·   192,852 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-06-30T0000.lp.gz         43,200 · acumulado  10,000,800 ·   193,471 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-07-01T0000.lp.gz         43,200 · acumulado  10,044,000 ·   194,082 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-07-02T0000.lp.gz         43,200 · acumulado  10,087,200 ·   194,607 puntos/s
+[20:32:13]   influxdb |   operacion_plataforma   2030-07-03T0000.lp.gz          7,200 · acumulado  10,094,400 ·   194,652 puntos/s
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | | Dato | Valor |
+[20:32:13]   influxdb | |---|---|
+[20:32:13]   influxdb | | Puntos esperados (manifiesto) | 10,094,400 |
+[20:32:13]   influxdb | | Puntos confirmados por el servidor | 10,094,400 |
+[20:32:13]   influxdb | | Lotes enviados / con reintento | 361 / 0 |
+[20:32:13]   influxdb | | Tamaño de lote / hilos / gzip | 50000 / 8 / False |
+[20:32:13]   influxdb | | Tiempo total | 53.38 s |
+[20:32:13]   influxdb | | **Tasa de carga** | **189,088.3 puntos/s** |
+[20:32:13]   influxdb | | Datos enviados | 1429.7 MB |
+[20:32:13]   influxdb | | Latencia por POST p50 / p95 / máx | 1.093 / 2.115 / 2.388 s |
+[20:32:13]   influxdb | | Error | ninguno |
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | Por tabla (puntos / segundos de lectura y envío):
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | - `estadisticas_equipo`: 1,276,800 puntos · 14.3 s
+[20:32:13]   influxdb | - `audiencia_partido`: 7,795,200 puntos · 34.1 s
+[20:32:13]   influxdb | - `operacion_plataforma`: 1,022,400 puntos · 3.4 s
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | La verificación de que lo cargado coincide con el manifiesto está en `validacion.py`.
+[20:32:13]   influxdb | 
+[20:32:13]   influxdb | Evidencia: /app/docs/evidencia/carga_completo_20261111-203211.md
+[20:32:13] influxdb  ✔ carga en 58.6 s · 10,094,400 puntos · 172,251.6 /s
+[20:32:13] influxdb  ▶ verificacion
+[20:32:13] validación · InfluxDB
+[20:32:15] influxdb  ✖ verificacion: HTTPError: HTTP Error 500: Internal Server Error
+[20:32:15] influxdb  ▶ apagado
+[20:32:18]   influxdb | 
+[20:32:18]   influxdb |  Container f30cm-influxdb  Stopping
+[20:32:18]   influxdb |  Container f30cm-influxdb  Stopped
+[20:32:18]   influxdb |  Container f30cm-influxdb  Removing
+[20:32:18]   influxdb |  Container f30cm-influxdb  Removed
+[20:32:18]   influxdb |  Network f30cm-influxdb-net  Removing
+[20:32:18]   influxdb |  Volume f30cm_influxdb_data  Removing
+[20:32:18]   influxdb |  Volume f30cm_influxdb_data  Removed
+[20:32:18]   influxdb |  Network f30cm-influxdb-net  Removed
+[20:32:19] influxdb  ✔ apagado en 4.2 s
+[20:32:21] == 3. Referencias cruzadas
+[20:32:21] == 4. Reporte: fixture2030-carga-masiva\evidencia\corridas\20261111-200356_paralelo/reporte.md
+[20:32:24] FIN · carga 1,655.2 s · total 1,661.0 s · bases con error: ninguna · chequeos fallidos: ninguno

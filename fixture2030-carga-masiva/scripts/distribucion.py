@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from comun import Cassandra, InfluxDB, MongoDB, Redis, cypher, dexec, influx_sql, log, mongo_json  # noqa: E402
+from comun import Cassandra, InfluxDB, MongoDB, Redis, cypher, dexec, influx_por_dia, log, mongo_json  # noqa: E402
 from validacion import leer_cassandra  # noqa: E402
 
 
@@ -142,11 +142,14 @@ def dist_influxdb() -> dict:
         "operacion_plataforma": "servicio",
     }
     res: dict = {"series_por_tabla": {}, "puntos_por_partido": {}}
+    # Todo por día (influx_por_dia): una serie es una combinación de tags; se juntan las de cada día
     for t, tags in series.items():
-        res["series_por_tabla"][t] = influx_sql(f"SELECT count(*) AS n FROM (SELECT DISTINCT {tags} FROM {t})")[0]["n"]
+        filas = influx_por_dia(f"SELECT DISTINCT {tags} FROM {t} WHERE {{filtro}}")
+        res["series_por_tabla"][t] = len({tuple(sorted(f.items())) for f in filas})
     for t in ("estadisticas_equipo", "audiencia_partido"):
-        filas = influx_sql(f"SELECT partido_id, count(*) AS n FROM {t} GROUP BY partido_id")
-        v = {f["partido_id"]: f["n"] for f in filas}
+        v: dict[str, int] = {}
+        for f in influx_por_dia(f"SELECT partido_id, count(*) AS n FROM {t} WHERE {{filtro}} GROUP BY partido_id"):
+            v[f["partido_id"]] = v.get(f["partido_id"], 0) + f["n"]
         res["puntos_por_partido"][t] = {**resumen_numeros(list(v.values())),
                                         "top": sorted(v.items(), key=lambda kv: -kv[1])[:3]}
     manifiesto = json.loads(InfluxDB().manifiesto().read_text(encoding="utf-8"))

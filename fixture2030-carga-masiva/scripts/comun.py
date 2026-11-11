@@ -26,6 +26,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -379,9 +380,38 @@ def influx_sql(sql: str, base: str = "fixture2030_vivo") -> list[dict]:
     req = urllib.request.Request(f"http://127.0.0.1:{INFLUX_PUERTO}/api/v3/query_sql", data=cuerpo, method="POST")
     req.add_header("Content-Type", "application/json")
     req.add_header("Authorization", f"Bearer {token}")
-    with urllib.request.urlopen(req, timeout=900) as r:
-        datos = r.read()
+    try:
+        with urllib.request.urlopen(req, timeout=900) as r:
+            datos = r.read()
+    except urllib.error.HTTPError as e:
+        raise ErrorPaso(f"InfluxDB HTTP {e.code} en «{sql[:80]}»: {e.read().decode('utf-8', 'replace')[:400]}") from None
     return json.loads(datos) if datos.strip() else []
+
+
+def dias_influx() -> list[tuple[str, str]]:
+    """Días UTC que cubren los datos del perfil completo (del día anterior al primer partido
+    hasta dos días después del último: la operación continua sigue 3 h después)."""
+    from datetime import timedelta
+    m = json.loads((InfluxDB().manifiesto()).read_text(encoding="utf-8"))
+    inicios = [datetime.fromisoformat(p["inicio"]) for p in m["partidos"]]
+    d = min(inicios).replace(hour=0, minute=0, second=0) - timedelta(days=1)
+    fin = max(inicios) + timedelta(days=2)
+    dias = []
+    while d < fin:
+        dias.append((d.strftime("%Y-%m-%dT%H:%M:%SZ"), (d + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")))
+        d += timedelta(days=1)
+    return dias
+
+
+def influx_por_dia(sql: str) -> list[dict]:
+    """Corre `sql` una vez por día (reemplaza {filtro} por el rango de tiempo) y junta las filas.
+    InfluxDB 3 CORE rechaza una consulta que toque más de 432 archivos Parquet ("Query would
+    scan N Parquet files, exceeding the file limit"); la carga completa deja ~1.000. Los archivos
+    están cortados por tiempo, así que acotar por día es la forma prevista de consultarlo."""
+    filas = []
+    for desde, hasta in dias_influx():
+        filas += influx_sql(sql.format(filtro=f"time >= '{desde}' AND time < '{hasta}'"))
+    return filas
 
 
 # ---------------------------------------------------------------------------

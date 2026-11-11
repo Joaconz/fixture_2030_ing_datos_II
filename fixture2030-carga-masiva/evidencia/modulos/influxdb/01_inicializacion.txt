@@ -1,4 +1,4 @@
-# Inicialización — 2026-11-11T19:43:36Z
+# Inicialización — 2026-11-11T20:33:33Z
 
 ## Versión observada de influxdb:3-core (RNF1)
 influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
@@ -7,7 +7,7 @@ Imagen: influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb
 ## Disponibilidad del servicio (RF1)
 OK
 NAME             IMAGE             COMMAND                  SERVICE    CREATED          STATUS                    PORTS
-f30cm-influxdb   influxdb:3-core   "/usr/bin/entrypoint…"   influxdb   25 seconds ago   Up 24 seconds (healthy)   127.0.0.1:18182->8181/tcp
+f30cm-influxdb   influxdb:3-core   "/usr/bin/entrypoint…"   influxdb   38 seconds ago   Up 37 seconds (healthy)   127.0.0.1:18182->8181/tcp
 
 ## Bases de datos y período de retención (RF10)
 +------------------------------+

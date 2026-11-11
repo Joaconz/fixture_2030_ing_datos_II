@@ -23,7 +23,7 @@ import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from comun import ESPERADO, InfluxDB, MongoDB, Redis, cassandra_py, cypher, dexec, influx_sql, log  # noqa: E402
+from comun import ESPERADO, InfluxDB, MongoDB, Redis, cassandra_py, cypher, dexec, influx_por_dia, log  # noqa: E402
 
 RELACIONES_ENUNCIADO = ["PARTICIPA", "ANOTA", "ASISTE", "RECIBE_TARJETA", "REEMPLAZA"]
 TABLAS_INFLUX = ["estadisticas_equipo", "audiencia_partido", "operacion_plataforma"]
@@ -135,10 +135,12 @@ def leer_redis() -> dict:
 
 def leer_influxdb() -> dict:
     manifiesto = json.loads(InfluxDB().manifiesto().read_text(encoding="utf-8"))
-    conteos = {t: influx_sql(f"SELECT count(*) AS n FROM {t}")[0]["n"] for t in TABLAS_INFLUX}
+    # Por día: InfluxDB 3 Core no deja consultar de una vez los ~1.000 Parquet de la carga
+    conteos = {t: sum(f.get("n") or 0 for f in influx_por_dia(f"SELECT count(*) AS n FROM {t} WHERE {{filtro}}"))
+               for t in TABLAS_INFLUX}
     ids = set()
     for t in ("estadisticas_equipo", "audiencia_partido"):
-        ids.update(f["partido_id"] for f in influx_sql(f"SELECT DISTINCT partido_id FROM {t}"))
+        ids.update(f["partido_id"] for f in influx_por_dia(f"SELECT DISTINCT partido_id FROM {t} WHERE {{filtro}}"))
     return {"puntos_por_tabla": conteos, "puntos": sum(conteos.values()),
             "manifiesto_por_tabla": manifiesto["puntos_por_tabla"], "manifiesto_total": manifiesto["puntos_totales"],
             "partido_ids": sorted(ids)}

@@ -1,0 +1,1234 @@
+{
+  "meta": {
+    "corrida": "20261111-200356_paralelo",
+    "fecha_inicio": "2026-11-11T20:04:04+00:00",
+    "commit": "67e7db3",
+    "comando": "python fixture2030-carga-masiva/scripts/orquestador.py --modo paralelo",
+    "modo": "paralelo",
+    "max_paralelo": null,
+    "bases": [
+      "mongodb",
+      "neo4j",
+      "cassandra",
+      "influxdb",
+      "redis"
+    ],
+    "vm": {
+      "cpus": 12,
+      "memoria_gib": 7.68
+    },
+    "memoria_inicial": {
+      "vm_mib": 7869,
+      "contenedores_ajenos_mib": 5220,
+      "contenedores_ajenos": 17,
+      "ram_libre_host_mib": 779,
+      "presupuesto_mib": 1881,
+      "margen_mib": 768
+    },
+    "parametros": {
+      "cassandra_concurrencia": 128,
+      "influx_hilos": 8,
+      "influx_lote": 50000
+    },
+    "orden": [
+      "mongodb",
+      "neo4j",
+      "cassandra",
+      "influxdb",
+      "redis"
+    ],
+    "inicio_carga": "2026-11-11T20:04:38+00:00",
+    "fin": "2026-11-11T20:32:19+00:00",
+    "vigia": null
+  },
+  "insumos_influxdb": {
+    "generados_en_esta_corrida": false,
+    "segundos": null
+  },
+  "admisiones": [
+    {
+      "base": "mongodb",
+      "t_s": 0.0,
+      "reservado_mib": 1152,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 825
+    },
+    {
+      "base": "redis",
+      "t_s": 0.0,
+      "reservado_mib": 1664,
+      "simultaneas": 2,
+      "ram_libre_host_mib": 825
+    },
+    {
+      "base": "neo4j",
+      "t_s": 110.2,
+      "reservado_mib": 2048,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 584
+    },
+    {
+      "base": "cassandra",
+      "t_s": 485.4,
+      "reservado_mib": 2816,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 871
+    },
+    {
+      "base": "influxdb",
+      "t_s": 1545.4,
+      "reservado_mib": 2560,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 969
+    }
+  ],
+  "bases": {
+    "mongodb": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 61.2,
+          "segundos": 61.2
+        },
+        "preparacion": {
+          "desde_s": 61.2,
+          "hasta_s": 82.3,
+          "segundos": 21.0
+        },
+        "carga": {
+          "desde_s": 82.3,
+          "hasta_s": 86.6,
+          "segundos": 4.3
+        },
+        "verificacion": {
+          "desde_s": 86.6,
+          "hasta_s": 92.6,
+          "segundos": 6.0
+        },
+        "apagado": {
+          "desde_s": 92.6,
+          "hasta_s": 110.2,
+          "segundos": 17.6
+        }
+      },
+      "estado": "ok",
+      "volumen": 1728,
+      "unidad": "documentos",
+      "detalle": "64 equipos + 1664 jugadores (load/seed.js, bulkWrite con upsert)",
+      "por_segundo": 403.8
+    },
+    "redis": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 20.0,
+          "segundos": 20.0
+        },
+        "preparacion": {
+          "desde_s": 20.0,
+          "hasta_s": 20.0,
+          "segundos": 0.0
+        },
+        "carga": {
+          "desde_s": 20.0,
+          "hasta_s": 47.4,
+          "segundos": 27.4
+        },
+        "verificacion": {
+          "desde_s": 47.4,
+          "hasta_s": 93.9,
+          "segundos": 46.5
+        },
+        "apagado": {
+          "desde_s": 93.9,
+          "hasta_s": 107.2,
+          "segundos": 13.3
+        }
+      },
+      "estado": "ok",
+      "volumen": 100000,
+      "unidad": "usuarios",
+      "comandos": 1100000,
+      "detalle": "carga_muestra.sh + carga_volumen.sh 100000: conteo usuarios=100000 sesiones=100000 perfiles=100000 (11 comandos por usuario, redis-cli --pipe)",
+      "por_segundo": 3653.8
+    },
+    "neo4j": {
+      "fases": {
+        "arranque": {
+          "desde_s": 110.2,
+          "hasta_s": 418.9,
+          "segundos": 308.7
+        },
+        "preparacion": {
+          "desde_s": 419.0,
+          "hasta_s": 435.8,
+          "segundos": 16.8
+        },
+        "carga": {
+          "desde_s": 435.8,
+          "hasta_s": 464.9,
+          "segundos": 29.2
+        },
+        "verificacion": {
+          "desde_s": 464.9,
+          "hasta_s": 468.6,
+          "segundos": 3.6
+        },
+        "apagado": {
+          "desde_s": 468.6,
+          "hasta_s": 485.4,
+          "segundos": 16.8
+        }
+      },
+      "estado": "ok",
+      "volumen": 13736,
+      "unidad": "nodos+relaciones",
+      "detalle": "3,089 nodos + 10,647 relaciones (queries/carga.cypher, MERGE)",
+      "por_segundo": 471.2
+    },
+    "cassandra": {
+      "fases": {
+        "arranque": {
+          "desde_s": 485.4,
+          "hasta_s": 638.9,
+          "segundos": 153.5
+        },
+        "preparacion": {
+          "desde_s": 638.9,
+          "hasta_s": 710.1,
+          "segundos": 71.2
+        },
+        "carga": {
+          "desde_s": 710.1,
+          "hasta_s": 1441.2,
+          "segundos": 731.1
+        },
+        "verificacion": {
+          "desde_s": 1441.2,
+          "hasta_s": 1519.8,
+          "segundos": 78.6
+        },
+        "apagado": {
+          "desde_s": 1519.8,
+          "hasta_s": 1545.4,
+          "segundos": 25.6
+        }
+      },
+      "estado": "ok",
+      "volumen": 1050000,
+      "unidad": "comentarios",
+      "escrituras": 2099790,
+      "errores": 210,
+      "tasa_propia": "3,061 escrituras/s (medida por carga_masiva.py)",
+      "parametros": {
+        "concurrencia": 128,
+        "lote": 10000,
+        "solo_principal": false,
+        "limite": null
+      },
+      "detalle": "1,050,000 comentarios = 2,099,790 filas en 2 tablas (scripts/carga_masiva.py, concurrencia 128)",
+      "por_segundo": 1436.2
+    },
+    "influxdb": {
+      "fases": {
+        "arranque": {
+          "desde_s": 1545.4,
+          "hasta_s": 1561.7,
+          "segundos": 16.2
+        },
+        "preparacion": {
+          "desde_s": 1561.7,
+          "hasta_s": 1596.6,
+          "segundos": 34.9
+        },
+        "carga": {
+          "desde_s": 1596.6,
+          "hasta_s": 1655.2,
+          "segundos": 58.6
+        },
+        "verificacion": {
+          "desde_s": 1655.2,
+          "hasta_s": 1656.8,
+          "segundos": 1.7
+        },
+        "apagado": {
+          "desde_s": 1656.8,
+          "hasta_s": 1661.0,
+          "segundos": 4.2
+        }
+      },
+      "estado": "ok",
+      "volumen": 10094400,
+      "unidad": "puntos",
+      "tasa_propia": "189,088.3 puntos/s (medida por carga_lotes.py)",
+      "detalle": "10,094,400 puntos en fixture2030_vivo (scripts/carga_lotes.py --perfil completo, lote 50000, hilos 8)",
+      "por_segundo": 172251.6,
+      "fallas": [
+        "verificacion: HTTPError: HTTP Error 500: Internal Server Error"
+      ]
+    }
+  },
+  "total": {
+    "reloj_hasta_ultima_carga_s": 1655.2,
+    "segundos_reloj_total": 1661.0,
+    "suma_segundos_carga": 850.6,
+    "suma_arranque_preparacion_carga_s": 1554.1,
+    "registros": 11259864,
+    "registros_por_segundo_reloj": 6802.7,
+    "termina_ultima": "influxdb",
+    "carga_mas_larga": [
+      "cassandra",
+      731.1
+    ]
+  },
+  "recursos": {
+    "muestras": 425,
+    "contenedores_prueba": {
+      "f30cm-cassandra": {
+        "muestras": 281,
+        "cpu_prom_pct": 135.7,
+        "cpu_max_pct": 905.7,
+        "mem_max_mib": 1830
+      },
+      "f30cm-cassandra-cargador": {
+        "muestras": 228,
+        "cpu_prom_pct": 85.8,
+        "cpu_max_pct": 120.1,
+        "mem_max_mib": 449
+      },
+      "f30cm-influxdb": {
+        "muestras": 34,
+        "cpu_prom_pct": 83.9,
+        "cpu_max_pct": 355.2,
+        "mem_max_mib": 1321
+      },
+      "f30cm-influxdb-cargador": {
+        "muestras": 17,
+        "cpu_prom_pct": 33.0,
+        "cpu_max_pct": 70.3,
+        "mem_max_mib": 117
+      },
+      "f30cm-mongodb": {
+        "muestras": 22,
+        "cpu_prom_pct": 59.1,
+        "cpu_max_pct": 212.0,
+        "mem_max_mib": 507
+      },
+      "f30cm-mongodb-cargador": {
+        "muestras": 11,
+        "cpu_prom_pct": 15.7,
+        "cpu_max_pct": 85.2,
+        "mem_max_mib": 52
+      },
+      "f30cm-neo4j": {
+        "muestras": 74,
+        "cpu_prom_pct": 125.3,
+        "cpu_max_pct": 487.2,
+        "mem_max_mib": 1691
+      },
+      "f30cm-redis": {
+        "muestras": 23,
+        "cpu_prom_pct": 50.7,
+        "cpu_max_pct": 180.6,
+        "mem_max_mib": 109
+      }
+    },
+    "pico_mem_prueba_mib": 2176,
+    "pico_cpu_prueba_pct": 996.5,
+    "pico_mem_total_vm_mib": 6379,
+    "mem_otros_contenedores_mib": 5986,
+    "otros_contenedores": 18,
+    "ram_libre_host_min_mib": 138
+  },
+  "validacion": {
+    "chequeos": [
+      {
+        "chequeo": "MongoDB · equipos",
+        "esperado": 64,
+        "obtenido": 64,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · jugadores",
+        "esperado": 1664,
+        "obtenido": 1664,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · dni duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · (equipo, dorsal) duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · jugadores sin equipo",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · partidos",
+        "esperado": 127,
+        "obtenido": 127,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventos",
+        "esperado": 1572,
+        "obtenido": 1572,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · partidoId duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventoId duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · equipoId / dni duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventos sin partido",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · relaciones del enunciado presentes",
+        "esperado": "las 5",
+        "obtenido": "las 5",
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentarios (comentarios_por_partido)",
+        "esperado": 1050000,
+        "obtenido": 1050000,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentarios (comentarios_por_usuario)",
+        "esperado": 1050000,
+        "obtenido": 1050000,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentario_id duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentarios en una sola de las dos vistas",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Redis · usuarios del volumen (índice de sesiones, TTL 12 h)",
+        "esperado": 100000,
+        "obtenido": 100000,
+        "ok": true
+      },
+      {
+        "chequeo": "Redis · usuarios con != 1 sesión (duplicados)",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cruce · partido_id de cassandra que no existen en Neo4j",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cruce · partido_id de redis que no existen en Neo4j",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cruce · equipos MongoDB sin equipoId igual en Neo4j (H1, se mide)",
+        "esperado": "medido",
+        "obtenido": 12,
+        "ok": "H1"
+      }
+    ],
+    "cruces": {
+      "partidos_cassandra": {
+        "partido_ids": 112,
+        "inexistentes_en_neo4j": [],
+        "partidos_de_neo4j_sin_datos_en_esta_base": 15
+      },
+      "partidos_redis": {
+        "partido_ids": 112,
+        "inexistentes_en_neo4j": [],
+        "partidos_de_neo4j_sin_datos_en_esta_base": 15
+      },
+      "equipos_mongodb_neo4j": {
+        "mongodb": 64,
+        "neo4j": 64,
+        "codigo_coincide": 52,
+        "solo_mongodb": [
+          "CHL Chile",
+          "CHN China",
+          "HAI Haití",
+          "IND India",
+          "NCL Nueva Caledonia",
+          "PNG Papúa Nueva Guinea",
+          "PRY Paraguay",
+          "SAU Arabia Saudita",
+          "SLV El Salvador",
+          "TRI Trinidad y Tobago",
+          "URY Uruguay",
+          "ZAF Sudáfrica"
+        ],
+        "solo_neo4j": [
+          "CHI Chile",
+          "COD RD Congo",
+          "GRE Grecia",
+          "KSA Arabia Saudita",
+          "MLI Malí",
+          "NOR Noruega",
+          "PAR Paraguay",
+          "ROU Rumania",
+          "RSA Sudáfrica",
+          "UAE Emiratos Árabes Unidos",
+          "URU Uruguay",
+          "WAL Gales"
+        ],
+        "mismo_nombre_distinto_codigo": [
+          {
+            "mongodb": "CHL",
+            "neo4j": "CHI",
+            "nombre": "Chile"
+          },
+          {
+            "mongodb": "PRY",
+            "neo4j": "PAR",
+            "nombre": "Paraguay"
+          },
+          {
+            "mongodb": "SAU",
+            "neo4j": "KSA",
+            "nombre": "Arabia Saudita"
+          },
+          {
+            "mongodb": "URY",
+            "neo4j": "URU",
+            "nombre": "Uruguay"
+          },
+          {
+            "mongodb": "ZAF",
+            "neo4j": "RSA",
+            "nombre": "Sudáfrica"
+          }
+        ],
+        "sin_par_por_nombre": {
+          "mongodb": [
+            "CHN China",
+            "HAI Haití",
+            "IND India",
+            "NCL Nueva Caledonia",
+            "PNG Papúa Nueva Guinea",
+            "SLV El Salvador",
+            "TRI Trinidad y Tobago"
+          ],
+          "neo4j": [
+            "COD RD Congo",
+            "GRE Grecia",
+            "MLI Malí",
+            "NOR Noruega",
+            "ROU Rumania",
+            "UAE Emiratos Árabes Unidos",
+            "WAL Gales"
+          ]
+        }
+      }
+    },
+    "resumen": {
+      "chequeos": 21,
+      "ok": 20,
+      "fallidos": [],
+      "informativos": [
+        "Cruce · equipos MongoDB sin equipoId igual en Neo4j (H1, se mide)"
+      ]
+    },
+    "bases": {
+      "mongodb": {
+        "equipos": 64,
+        "jugadores": 1664,
+        "dni_duplicados": 0,
+        "dorsal_duplicados": 0,
+        "huerfanos": 0
+      },
+      "redis": {
+        "usuarios_volumen": 100000,
+        "usuarios_con_sesiones_distinta_de_1": 0,
+        "sesiones_volumen": 100000,
+        "perfiles_volumen": 100000,
+        "dbsize": 304202,
+        "rankings_tendencia": [
+          "f30:rank:tendencia:2030062916"
+        ],
+        "partido_ids": [
+          "PAR-A-1",
+          "PAR-A-2",
+          "PAR-A-3",
+          "PAR-A-4",
+          "PAR-A-5",
+          "PAR-A-6",
+          "PAR-B-1",
+          "PAR-B-2",
+          "PAR-B-3",
+          "PAR-B-4",
+          "PAR-B-5",
+          "PAR-B-6",
+          "PAR-C-1",
+          "PAR-C-2",
+          "PAR-C-3",
+          "PAR-C-4",
+          "PAR-C-5",
+          "PAR-C-6",
+          "PAR-D-1",
+          "PAR-D-2",
+          "PAR-D-3",
+          "PAR-D-4",
+          "PAR-D-5",
+          "PAR-D-6",
+          "PAR-D16-01",
+          "PAR-D16-02",
+          "PAR-D16-03",
+          "PAR-D16-04",
+          "PAR-D16-05",
+          "PAR-D16-06",
+          "PAR-D16-07",
+          "PAR-D16-08",
+          "PAR-D16-09",
+          "PAR-D16-10",
+          "PAR-D16-11",
+          "PAR-D16-12",
+          "PAR-D16-13",
+          "PAR-D16-14",
+          "PAR-D16-15",
+          "PAR-D16-16",
+          "PAR-E-1",
+          "PAR-E-2",
+          "PAR-E-3",
+          "PAR-E-4",
+          "PAR-E-5",
+          "PAR-E-6",
+          "PAR-F-1",
+          "PAR-F-2",
+          "PAR-F-3",
+          "PAR-F-4",
+          "PAR-F-5",
+          "PAR-F-6",
+          "PAR-G-1",
+          "PAR-G-2",
+          "PAR-G-3",
+          "PAR-G-4",
+          "PAR-G-5",
+          "PAR-G-6",
+          "PAR-H-1",
+          "PAR-H-2",
+          "PAR-H-3",
+          "PAR-H-4",
+          "PAR-H-5",
+          "PAR-H-6",
+          "PAR-I-1",
+          "PAR-I-2",
+          "PAR-I-3",
+          "PAR-I-4",
+          "PAR-I-5",
+          "PAR-I-6",
+          "PAR-J-1",
+          "PAR-J-2",
+          "PAR-J-3",
+          "PAR-J-4",
+          "PAR-J-5",
+          "PAR-J-6",
+          "PAR-K-1",
+          "PAR-K-2",
+          "PAR-K-3",
+          "PAR-K-4",
+          "PAR-K-5",
+          "PAR-K-6",
+          "PAR-L-1",
+          "PAR-L-2",
+          "PAR-L-3",
+          "PAR-L-4",
+          "PAR-L-5",
+          "PAR-L-6",
+          "PAR-M-1",
+          "PAR-M-2",
+          "PAR-M-3",
+          "PAR-M-4",
+          "PAR-M-5",
+          "PAR-M-6",
+          "PAR-N-1",
+          "PAR-N-2",
+          "PAR-N-3",
+          "PAR-N-4",
+          "PAR-N-5",
+          "PAR-N-6",
+          "PAR-O-1",
+          "PAR-O-2",
+          "PAR-O-3",
+          "PAR-O-4",
+          "PAR-O-5",
+          "PAR-O-6",
+          "PAR-P-1",
+          "PAR-P-2",
+          "PAR-P-3",
+          "PAR-P-4",
+          "PAR-P-5",
+          "PAR-P-6"
+        ]
+      },
+      "neo4j": {
+        "equipos": 64,
+        "equipos_distintos": 64,
+        "eventos": 1572,
+        "eventos_distintos": 1572,
+        "eventos_sin_partido": 0,
+        "jugadores": 1282,
+        "jugadores_distintos": 1282,
+        "partidos": 127,
+        "partidos_distintos": 127,
+        "relaciones_enunciado": {
+          "PARTICIPA": 1248,
+          "ANOTA": 220,
+          "ASISTE": 220,
+          "RECIBE_TARJETA": 136,
+          "REEMPLAZA": 136
+        }
+      },
+      "cassandra": {
+        "comentarios_por_partido": {
+          "filas": 1050000,
+          "comentario_id_distintos": 1050000,
+          "particiones": 1725,
+          "filas_por_particion": {
+            "min": 49,
+            "p50": 258,
+            "p90": 1052,
+            "p99": 5883,
+            "max": 16161
+          }
+        },
+        "comentarios_por_usuario": {
+          "filas": 1050000,
+          "comentario_id_distintos": 1050000,
+          "particiones": 360052,
+          "filas_por_particion": {
+            "min": 1,
+            "p50": 2,
+            "p90": 6,
+            "p99": 11,
+            "max": 192
+          }
+        },
+        "solo_en_una_vista": 0,
+        "partidos_con_comentarios": 112,
+        "partidos_en_config": 112
+      },
+      "influxdb": null
+    }
+  },
+  "distribucion": {
+    "mongodb": {
+      "por_equipo": {
+        "_id": null,
+        "equipos": 64,
+        "min": 26,
+        "max": 26,
+        "prom": 26
+      },
+      "por_confederacion": [
+        {
+          "_id": "UEFA",
+          "jugadores": 520,
+          "equipos": 20
+        },
+        {
+          "_id": "AFC",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CONCACAF",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CAF",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CONMEBOL",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "OFC",
+          "jugadores": 104,
+          "equipos": 4
+        }
+      ],
+      "por_posicion": [
+        {
+          "_id": "Mediocampista",
+          "n": 437
+        },
+        {
+          "_id": "Delantero",
+          "n": 419
+        },
+        {
+          "_id": "Arquero",
+          "n": 418
+        },
+        {
+          "_id": "Defensor",
+          "n": 390
+        }
+      ],
+      "tamanos": [
+        {
+          "coleccion": "equipos",
+          "documentos": 64,
+          "bytes_datos": 14467,
+          "bytes_promedio_doc": 226,
+          "bytes_almacenados": 4096,
+          "indices": 2,
+          "bytes_indices": 8192
+        },
+        {
+          "coleccion": "jugadores",
+          "documentos": 1664,
+          "bytes_datos": 368241,
+          "bytes_promedio_doc": 221,
+          "bytes_almacenados": 4096,
+          "indices": 4,
+          "bytes_indices": 16384
+        }
+      ]
+    },
+    "redis": {
+      "por_tipo": {
+        "list": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "hash": {
+          "claves": 202144,
+          "bytes": 38684659
+        },
+        "stream": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "string": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "set": {
+          "claves": 102001,
+          "bytes": 8586705
+        },
+        "zset": {
+          "claves": 2,
+          "bytes": 1606
+        }
+      },
+      "por_prefijo": {
+        "f30:ses": 102136,
+        "f30:usr:…:sesiones": 102000,
+        "f30:cache:usuario:…:perfil": 100000,
+        "f30:voto": 2,
+        "f30:rank": 1
+      },
+      "info": {
+        "used_memory": "63927400",
+        "used_memory_human": "60.97M",
+        "used_memory_peak_human": "80.26M",
+        "used_memory_dataset": "39489816",
+        "maxmemory_human": "256.00M",
+        "maxmemory_policy": "volatile-lru",
+        "mem_fragmentation_ratio": "1.43",
+        "db0": "keys=304139,expires=304137,avg_ttl=14542891,subexpiry=0",
+        "expired_keys": "64",
+        "evicted_keys": "0"
+      },
+      "bytes_por_clave_muestra": {
+        "sesion (HASH)": 262,
+        "indice de sesiones (SET)": 84,
+        "perfil en cache (HASH)": 121
+      }
+    },
+    "neo4j": {
+      "nodos_por_etiqueta": [
+        {
+          "etiqueta": "Evento",
+          "n": 1572
+        },
+        {
+          "etiqueta": "Jugador",
+          "n": 1282
+        },
+        {
+          "etiqueta": "Partido",
+          "n": 127
+        },
+        {
+          "etiqueta": "Equipo",
+          "n": 64
+        },
+        {
+          "etiqueta": "Grupo",
+          "n": 16
+        },
+        {
+          "etiqueta": "Sede",
+          "n": 16
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "n": 12
+        }
+      ],
+      "relaciones_por_tipo": [
+        {
+          "tipo": "OCURRE_EN",
+          "n": 1572
+        },
+        {
+          "tipo": "ES_DE_TIPO",
+          "n": 1572
+        },
+        {
+          "tipo": "PROTAGONIZADO_POR",
+          "n": 1572
+        },
+        {
+          "tipo": "SIGUIENTE_EVENTO",
+          "n": 1446
+        },
+        {
+          "tipo": "JUEGA_EN",
+          "n": 1282
+        },
+        {
+          "tipo": "PARTICIPA",
+          "n": 1248
+        },
+        {
+          "tipo": "CAUSA_DE",
+          "n": 702
+        },
+        {
+          "tipo": "PARTICIPA_EN",
+          "n": 254
+        },
+        {
+          "tipo": "ANOTA",
+          "n": 220
+        },
+        {
+          "tipo": "ASISTE",
+          "n": 220
+        },
+        {
+          "tipo": "RECIBE_TARJETA",
+          "n": 136
+        },
+        {
+          "tipo": "REEMPLAZA",
+          "n": 136
+        },
+        {
+          "tipo": "SE_JUEGA_EN",
+          "n": 127
+        },
+        {
+          "tipo": "CORRESPONDE_A",
+          "n": 96
+        },
+        {
+          "tipo": "PERTENECE_A",
+          "n": 64
+        }
+      ],
+      "grados": [
+        {
+          "etiqueta": "Evento",
+          "min": 4,
+          "p50": 6,
+          "p99": 7,
+          "max": 7,
+          "prom": 5.7
+        },
+        {
+          "etiqueta": "Jugador",
+          "min": 1,
+          "p50": 1,
+          "p99": 21,
+          "max": 29,
+          "prom": 4.0
+        },
+        {
+          "etiqueta": "Partido",
+          "min": 3,
+          "p50": 30,
+          "p99": 37,
+          "max": 37,
+          "prom": 28.8
+        },
+        {
+          "etiqueta": "Equipo",
+          "min": 22,
+          "p50": 25,
+          "p99": 31,
+          "max": 31,
+          "prom": 25.0
+        },
+        {
+          "etiqueta": "Grupo",
+          "min": 10,
+          "p50": 10,
+          "p99": 10,
+          "max": 10,
+          "prom": 10.0
+        },
+        {
+          "etiqueta": "Sede",
+          "min": 7,
+          "p50": 7,
+          "p99": 11,
+          "max": 11,
+          "prom": 7.9
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "min": 0,
+          "p50": 126,
+          "p99": 294,
+          "max": 294,
+          "prom": 131.0
+        }
+      ],
+      "mas_conectados": [
+        {
+          "etiqueta": "TipoEvento",
+          "id": "PASE",
+          "grado": 294
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "GOL",
+          "grado": 220
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "ASISTENCIA",
+          "grado": 220
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "FALTA",
+          "grado": 136
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "SUSTITUCION",
+          "grado": 136
+        }
+      ],
+      "eventos_por_fase": [
+        {
+          "fase": "GRUPOS",
+          "partidos": 96,
+          "eventos": 1152
+        },
+        {
+          "fase": "DIECISEISAVOS",
+          "partidos": 16,
+          "eventos": 220
+        },
+        {
+          "fase": "OCTAVOS",
+          "partidos": 8,
+          "eventos": 116
+        },
+        {
+          "fase": "CUARTOS",
+          "partidos": 4,
+          "eventos": 52
+        },
+        {
+          "fase": "SEMIFINAL",
+          "partidos": 2,
+          "eventos": 32
+        },
+        {
+          "fase": "FINAL",
+          "partidos": 1,
+          "eventos": 0
+        }
+      ]
+    },
+    "cassandra": {
+      "tablestats": {
+        "comentarios_por_partido": {
+          "SSTable count": "2",
+          "Space used (live)": "74602621",
+          "Space used (total)": "74602621",
+          "Number of partitions (estimate)": "1725",
+          "Memtable data size": "0",
+          "Local write count": "1050000",
+          "Compacted partition minimum bytes": "5723",
+          "Compacted partition maximum bytes": "2346799",
+          "Compacted partition mean bytes": "84759"
+        },
+        "comentarios_por_usuario": {
+          "SSTable count": "2",
+          "Space used (live)": "62035083",
+          "Space used (total)": "62035083",
+          "Number of partitions (estimate)": "356876",
+          "Memtable data size": "0",
+          "Local write count": "1050000",
+          "Compacted partition minimum bytes": "104",
+          "Compacted partition maximum bytes": "20501",
+          "Compacted partition mean bytes": "362"
+        },
+        "config_particion_partido": {
+          "SSTable count": "1",
+          "Space used (live)": "9042",
+          "Space used (total)": "9042",
+          "Number of partitions (estimate)": "112",
+          "Memtable data size": "0",
+          "Local write count": "112",
+          "Compacted partition minimum bytes": "61",
+          "Compacted partition maximum bytes": "86",
+          "Compacted partition mean bytes": "73"
+        }
+      },
+      "tablehistograms": {
+        "comentarios_por_partido": "fixture2030_comentarios/comentarios_por_partido histograms\nPercentile      Read Latency     Write Latency          SSTables    Partition Size        Cell Count\n                    (micros)          (micros)                             (bytes)                  \n50%                     0.00             29.00              0.00             35425              2299\n75%                     0.00             50.00              0.00             88148              5722\n95%                     0.00           1109.00              0.00            315852             20501\n98%                     0.00           2299.00              0.00            454826             29521\n99%                     0.00           3311.00              0.00            785939             51012\nMin                     0.00              2.00              0.00              5723               373\nMax                     0.00         454826.00              0.00           2346799            152321",
+        "comentarios_por_usuario": "fixture2030_comentarios/comentarios_por_usuario histograms\nPercentile      Read Latency     Write Latency          SSTables    Partition Size        Cell Count\n                    (micros)          (micros)                             (bytes)                  \n50%                     0.00             10.00              0.00               258                12\n75%                     0.00             14.00              0.00               446                24\n95%                     0.00             29.00              0.00               770                42\n98%                     0.00             50.00              0.00              1109                60\n99%                     0.00             72.00              0.00              1331                72\nMin                     0.00              0.00              0.00               104                 6\nMax                     0.00          29521.00              0.00             20501              1331"
+      },
+      "filas_por_particion": {
+        "comentarios_por_partido": {
+          "min": 49,
+          "p50": 258,
+          "p90": 1052,
+          "p99": 5883,
+          "max": 16161
+        },
+        "particiones_comentarios_por_partido": 1725,
+        "comentarios_por_usuario": {
+          "min": 1,
+          "p50": 2,
+          "p90": 6,
+          "p99": 11,
+          "max": 192
+        },
+        "particiones_comentarios_por_usuario": 360052
+      },
+      "top_particiones": [
+        [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00",
+          0,
+          16161
+        ],
+        [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00",
+          1,
+          16160
+        ],
+        [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00",
+          2,
+          16160
+        ],
+        [
+          "PAR-D16-01",
+          "2030-06-29T17:30:00",
+          3,
+          16159
+        ],
+        [
+          "PAR-D16-01",
+          "2030-06-29T17:20:00",
+          2,
+          9993
+        ]
+      ],
+      "comentarios_por_partido": {
+        "n": 112,
+        "min": 4687,
+        "p50": 4688,
+        "p90": 20000,
+        "max": 300000,
+        "prom": 9375,
+        "max_sobre_prom": 32.0
+      },
+      "partidos_mas_comentados": [
+        [
+          "PAR-D16-01",
+          300000
+        ],
+        [
+          "PAR-D16-02",
+          20000
+        ],
+        [
+          "PAR-D16-03",
+          20000
+        ],
+        [
+          "PAR-D16-04",
+          20000
+        ],
+        [
+          "PAR-D16-05",
+          20000
+        ]
+      ],
+      "partidos_menos_comentados": [
+        [
+          "PAR-P-4",
+          4687
+        ],
+        [
+          "PAR-P-5",
+          4687
+        ],
+        [
+          "PAR-P-6",
+          4687
+        ]
+      ]
+    }
+  }
+}
