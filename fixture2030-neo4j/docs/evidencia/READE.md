@@ -41,3 +41,10 @@ Imagen asociada: 03_carga_idempotente.png
 
 
 Imagen asociada: 04_consultas_multisalto.jpg
+
+==================================================
+
+5. Cuadro completo de 127 partidos y relaciones del enunciado (11/11/2026)
+
+* Carga desde vacío dos veces (conteos idénticos), todas las consultas, CRUD, API del Hito 10 contra ese grafo y actualización sobre la carga anterior de 112 partidos.
+* Salida real, con fecha, commit y comandos: 127_partidos_relaciones_20261111.md
