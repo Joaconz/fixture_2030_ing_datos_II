@@ -19,7 +19,7 @@ Decisiones:
     el mismo con o sin `posicion` (con `posicion` es igualdad en las dos claves;
     sin ella, recorrido por el prefijo `equipoId`) y que el `explain()` de la
     evidencia sea reproducible. El orden por dorsal se resuelve en memoria sobre
-    a lo sumo 23 documentos del equipo (sort acotado por `limit`).
+    a lo sumo 26 documentos del equipo (sort acotado por `limit`).
 """
 from __future__ import annotations
 

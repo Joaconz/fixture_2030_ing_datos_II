@@ -6,8 +6,13 @@ demuestren el correcto funcionamiento del módulo documental.
 ## ¿Qué evidencia guardar?
 
 1. **Salida de `seed.js`**: Copiar la salida de consola del script de carga,
-   mostrando los conteos finales (64 equipos, ≥ 1000 jugadores, 0 huérfanos).
-   - Ejemplo: `evidencia/seed-output.png`
+   mostrando los conteos finales (64 equipos, 1.664 jugadores, 0 huérfanos).
+   - [`seed_dos_corridas_20261111.txt`](seed_dos_corridas_20261111.txt): dos
+     corridas sobre una base vacía, con 1.664 DNI distintos en cada una.
+   - [`queries_20261111.txt`](queries_20261111.txt): salida de `queries/queries.js`.
+   - [`pruebas_api_front_20261111.txt`](pruebas_api_front_20261111.txt): tests
+     de la API del Hito 10 y del front con el plantel de 26.
+   - `evidencia_carga_seed.png` es anterior (Hito 4, plantel aleatorio).
 
 2. **Resultados de `explain()` SIN índices**: Ejecutar el bloque A de
    `queries/queries.js` (descomentándolo) después de borrar los índices.

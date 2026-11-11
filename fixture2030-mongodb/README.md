@@ -82,9 +82,14 @@ npm run seed
 El script `seed.js`:
 
 - Genera **64 equipos** con selecciones nacionales reales (códigos FIFA).
-- Genera entre **15 y 26 jugadores** sintéticos por equipo (≥ 1000 en total).
-- Usa `bulkWrite` con `upsert: true` → **es idempotente**: ejecutarlo dos
-  veces no duplica datos ni genera inconsistencias.
+- Genera **26 jugadores** sintéticos por equipo, dorsales 1 a 26: **1.664 en
+  total**. La guía del TPO pide 1.500+ jugadores; 26 es la lista de
+  convocados por selección del Mundial 2026 (con los 23 de antes daba 1.472
+  y no llegaba).
+- El `dni` es determinístico (`30000000 + índiceDelEquipo*100 + dorsal`) y
+  Faker usa semilla fija → **es idempotente**: `bulkWrite` con `upsert: true`
+  sobre el mismo `dni`, así que ejecutarlo dos veces no duplica datos ni
+  genera inconsistencias.
 - Actualiza el campo `cantidadJugadores` de cada equipo.
 - Imprime un resumen final con la verificación de integridad.
 
@@ -97,20 +102,28 @@ El script `seed.js`:
   Equipos insertados: 64
 
 ── Cargando jugadores ──
-  Jugadores insertados: ~1300
-  Total de operaciones: ~1300
+  Jugadores insertados: 1664
+  Jugadores actualizados: 0
+  Total de operaciones: 1664
+
+── Actualizando cantidadJugadores por equipo ──
+  Equipos actualizados con conteo de jugadores: 64
 
 ══════════════════════════════════════════════
   VERIFICACIÓN FINAL
 ══════════════════════════════════════════════
   Cantidad de equipos:   64   (esperado: 64)
-  Cantidad de jugadores: 1300 (esperado: >= 1000)
-  Jugadores huérfanos:   0    (esperado: 0)
+  Cantidad de jugadores: 1664 (esperado: 1664)
+  Jugadores huérfanos:   0   (esperado: 0)
 ══════════════════════════════════════════════
 
 ✔ Carga completada exitosamente.
 ✔ Conexión cerrada.
 ```
+
+En la segunda corrida da `Jugadores insertados: 0` y los mismos conteos.
+Salida real de las dos corridas sobre una base vacía (11/11/2026):
+[`evidencia/seed_dos_corridas_20261111.txt`](evidencia/seed_dos_corridas_20261111.txt).
 
 ### 4. Ejecutar las consultas
 
@@ -189,8 +202,10 @@ Grupo_N2_Hito_4_MongoDB_Fixture2030/
 │                                # (colecciones, relaciones, índices)
 │
 └── evidencia/
-    ├── .gitkeep                 # Placeholder para Git
-    └── README.md                # Guía de qué evidencia guardar
+    ├── README.md                # Guía de qué evidencia guardar
+    ├── seed_dos_corridas_20261111.txt   # seed ×2: 64 / 1.664 / 1.664 DNI distintos
+    ├── queries_20261111.txt             # salida de queries/queries.js
+    └── pruebas_api_front_20261111.txt   # tests de la API y del front con 26 por equipo
 ```
 
 ---
@@ -219,8 +234,9 @@ Relación por **referencia**: `jugadores.equipoId` → `equipos._id`
 
 ## ⚠ Limitaciones conocidas
 
-- **Datos sintéticos**: Los nombres, apellidos y DNI de los jugadores son
-  generados con `@faker-js/faker` y no corresponden a jugadores reales.
+- **Datos sintéticos**: Los nombres, apellidos y fechas de nacimiento de los
+  jugadores salen de `@faker-js/faker` (semilla fija) y el DNI de una fórmula
+  fija; no corresponden a jugadores reales.
 - **Sin API REST**: Este módulo se limita a la capa de base de datos.
   No incluye servidor backend, endpoints REST ni interfaz gráfica.
 - **Sin autenticación**: MongoDB se levanta sin autenticación para simplificar

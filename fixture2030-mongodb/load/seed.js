@@ -90,10 +90,14 @@ const EQUIPOS_DATA = [
 // ── Grupos A-P (se asignan en orden: primeros 4 → A, siguientes 4 → B, …)
 const GRUPOS = "ABCDEFGHIJKLMNOP".split("");
 
-// ── Tamaño de plantel fijo (23, la convocatoria oficial de un Mundial).
-// Antes era al azar (15-26 por equipo), lo que además de no ser realista
-// hacía que ni la cantidad de jugadores fuera estable entre corridas.
-const TAMANO_PLANTEL = 23;
+// ── Tamaño de plantel fijo: 26, la lista de convocados por selección del
+// Mundial 2026 (Qatar 2022 ya permitió 26; antes eran 23). 64 × 26 = 1.664
+// jugadores, por encima de los 1.500+ que pide la guía del TPO (Hito 3);
+// con 23 daba 1.472 y no llegaba. Antes era al azar (15-26 por equipo), lo
+// que hacía que ni la cantidad de jugadores fuera estable entre corridas.
+// Los dorsales son 1..TAMANO_PLANTEL.
+const TAMANO_PLANTEL = 26;
+const JUGADORES_ESPERADOS = EQUIPOS_DATA.length * TAMANO_PLANTEL;  // 1.664
 
 // ── Entrenadores ficticios por equipo (para agregar color a los datos) ──
 const ENTRENADORES = [
@@ -297,7 +301,7 @@ async function main() {
     const cantJugadores = await colJugadores.countDocuments();
 
     console.log(`  Cantidad de equipos:   ${cantEquipos}   (esperado: 64)`);
-    console.log(`  Cantidad de jugadores: ${cantJugadores} (esperado: >= 1000)`);
+    console.log(`  Cantidad de jugadores: ${cantJugadores} (esperado: ${JUGADORES_ESPERADOS})`);
 
     // Verificar jugadores "huérfanos" (equipoId que no existe en equipos)
     // Usa $lookup + $match + $count
@@ -327,8 +331,8 @@ async function main() {
     if (cantEquipos !== 64) {
       console.warn("⚠ ADVERTENCIA: La cantidad de equipos no es 64.");
     }
-    if (cantJugadores < 1000) {
-      console.warn("⚠ ADVERTENCIA: La cantidad de jugadores es menor a 1000.");
+    if (cantJugadores !== JUGADORES_ESPERADOS) {
+      console.warn(`⚠ ADVERTENCIA: La cantidad de jugadores no es ${JUGADORES_ESPERADOS} (64 × ${TAMANO_PLANTEL}). ¿La base tenía datos de una versión anterior del seed?`);
     }
     if (cantHuerfanos > 0) {
       console.warn("⚠ ADVERTENCIA: Existen jugadores huérfanos sin equipo válido.");

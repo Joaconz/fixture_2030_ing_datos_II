@@ -10,6 +10,8 @@ node_modules/
 # Evidencia pesada (capturas grandes, exports)
 evidencia/*.txt
 evidencia/*.csv
+# …pero sí las salidas de consola fechadas que respaldan la documentación
+!evidencia/*_20[0-9][0-9][0-9][0-9][0-9][0-9].txt
 
 # Sistema operativo
 .DS_Store

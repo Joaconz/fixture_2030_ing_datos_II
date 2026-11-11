@@ -10,10 +10,10 @@ Resumen para la defensa de **por qué cada dato vive donde vive**, con enlaces a
 
 | | |
 |---|---|
-| Qué guarda | 64 equipos y 1.472 jugadores (23 por equipo), con datos anidados (plantel, ranking, grupo) |
+| Qué guarda | 64 equipos y 1.664 jugadores (26 por equipo), con datos anidados (plantel, ranking, grupo) |
 | Qué acceso lo motivó | Leer un equipo completo por su código, y sus jugadores, desde seis países (lectura intensiva, escritura rara) |
 | Estructura | Colecciones `equipos` y `jugadores` con validación de esquema (`init/01-validators.js`); `_id` = código FIFA |
-| Carga y recuperación | `load/seed.js` determinista (mismo resultado en cada corrida, verificado 15/10/2026); la API lee por `_id` (`GET /equipos/{codigo}`) |
+| Carga y recuperación | `load/seed.js` determinista (mismo resultado en cada corrida, verificado 15/10/2026 y, con 26 por equipo, 11/11/2026); la API lee por `_id` (`GET /equipos/{codigo}`) |
 | Distribución (diseño) | Sin partición (catálogo chico); 3 copias, réplica de lectura por región, escritura en el primario |
 | Consistencia | CP en escritura, AP en lectura (consistencia de sesión) |
 | Ante una falla | Rutas de equipos y jugadores → 503; el resto del Fixture sigue (MongoDB no está en el camino de comentarios, sesiones ni estadísticas) |
