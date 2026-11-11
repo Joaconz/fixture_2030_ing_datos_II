@@ -1,0 +1,60 @@
+# Fixture 2030 — Replicación y CAP · mongo_failover_kill
+# fecha:    2026-11-11 10:37:58 -0300 (2026-11-11T13:37:58Z)
+# comando:  bash scripts/mongo_failover.sh kill
+# commit:   dba8580
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== ANTES — primario: mongo3 · el escritor corre en fixture2030-rep-mongo1
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:48.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:48.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-11T13:37:48.000Z
+   escrituras confirmadas antes de la falla: 28
+
+==== FALLA — docker kill fixture2030-rep-mongo3
+   orden docker kill: 2026-11-11T13:38:14.050Z · el contenedor terminó: 2026-11-11T13:38:14.626Z (State.FinishedAt)
+   referencia de la falla para las mediciones: 2026-11-11T13:38:14.626Z
+   fixture2030-rep-mongo1 ve como primario a mongo2 a las 2026-11-11T13:38:24.723Z
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:38:14.000Z
+   mongo2:27017  PRIMARY     salud=1 optime=2026-11-11T13:38:14.000Z
+   mongo3:27017  (not reachable/healthy) salud=0 optime=1970-01-01T00:00:00.000Z · Error connecting to mongo3:27017 (172.28.0.3:27017) :: caused by :: onInvoke :: caused by :: Connection refused
+
+==== ELECCIÓN — métricas que registra el nuevo primario (mongo2)
+   motivo de la elección:            electionTimeout
+   término (term):                   2
+   electionTimeoutMillis:            10000
+   votos necesarios:                 2 de 3
+   elección ganada (lastElectionDate): 2026-11-11T13:38:24.612Z  -> 9.99 s desde la falla
+   newTermStartDate: 2026-11-11T13:38:26.168Z  -> 11.54 s
+   wMajorityWriteAvailabilityDate: 2026-11-11T13:38:26.231Z  -> 11.61 s
+   el sondeo de fixture2030-rep-mongo1 lo vio primario a: 10.10 s  (el sondeo arranca cuando docker kill devuelve el control)
+   voto de mongo1:27017: a favor del miembro 1 a las 2026-11-11T13:38:24.638Z (term 2)
+
+==== ESCRITURAS — qué vio el cliente (escritor continuo, w:majority)
+   intentos: 226 · confirmados (w:majority): 226 · con error: 0
+   última confirmada por el primario viejo (mongo3:27017): seq=32 fin=2026-11-11T13:38:14.550Z (-0.08 s respecto de la falla)
+   primera confirmada por el primario nuevo (mongo2:27017): seq=33 ini=2026-11-11T13:38:14.750Z fin=2026-11-11T13:38:26.234Z (11484 ms de latencia)
+   => hueco sin confirmaciones: 11.68 s · primera escritura en el primario nuevo a los 11.61 s de la falla (sin errores en el cliente: la operación esperó al nuevo primario y se reintentó)
+   después del cambio se confirmaron 194 escrituras en mongo2:27017
+   latencia de escritura: mediana 60 ms · máxima 11484 ms
+   registro del escritor alrededor de la falla:
+     {"seq": 31, "ini": "2026-11-11T13:38:14.155Z", "ok": true, "primario": "mongo3:27017", "fin": "2026-11-11T13:38:14.202Z", "ms": 47}
+     {"seq": 32, "ini": "2026-11-11T13:38:14.404Z", "ok": true, "primario": "mongo3:27017", "fin": "2026-11-11T13:38:14.550Z", "ms": 146}
+     {"seq": 33, "ini": "2026-11-11T13:38:14.750Z", "ok": true, "primario": "mongo2:27017", "fin": "2026-11-11T13:38:26.234Z", "ms": 11484}
+     {"seq": 34, "ini": "2026-11-11T13:38:26.435Z", "ok": true, "primario": "mongo2:27017", "fin": "2026-11-11T13:38:26.468Z", "ms": 33}
+     {"seq": 35, "ini": "2026-11-11T13:38:26.668Z", "ok": true, "primario": "mongo2:27017", "fin": "2026-11-11T13:38:26.727Z", "ms": 59}
+
+==== RECUPERACIÓN — docker start fixture2030-rep-mongo3
+   mongo3 vuelve como SECONDARY a las 2026-11-11T13:39:26.824Z (visto desde el primario mongo2)
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:39:21.000Z
+   mongo2:27017  PRIMARY     salud=1 optime=2026-11-11T13:39:21.000Z
+   mongo3:27017  SECONDARY   salud=1 optime=2026-11-11T13:39:21.000Z
+
+==== VERIFICACIÓN — el nodo que volvió tiene todo lo escrito mientras estaba caído
+   mongo2 (primario)   latidos=226
+   mongo3 (secundario) latidos=226 · equipos=64 · jugadores=1472  (igualó al primario 24 ms después de volver a SECONDARY)
+   (los latidos escritos durante la caída llegaron por replicación del oplog al reincorporarse)
+
+==== Limpieza de la base de prueba
+   {"ok":1,"dropped":"fixture2030_pruebas"}
+
+✔ Fin. Primario actual: mongo2. Evidencia: evidencia/mongo_failover_kill_20261111-103757.txt

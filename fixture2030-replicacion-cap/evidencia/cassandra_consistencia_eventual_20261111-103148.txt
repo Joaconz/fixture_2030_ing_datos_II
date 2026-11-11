@@ -1,0 +1,91 @@
+# Fixture 2030 — Replicación y CAP · cassandra_consistencia_eventual
+# fecha:    2026-11-11 10:31:48 -0300 (2026-11-11T13:31:48Z)
+# comando:  bash scripts/cassandra_consistencia_eventual.sh
+# commit:   dba8580
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== Anillo y nodos (cas3 = 172.28.0.4)
+   fixture2030-rep-cas1 = 172.28.0.2
+   fixture2030-rep-cas2 = 172.28.0.3
+   fixture2030-rep-cas3 = 172.28.0.4
+   UN  172.28.0.2  120.89 KiB  16      100.0%            10c48b1b-04e4-4f5b-ad2e-726e508159fc  rack1
+   UN  172.28.0.3  117.73 KiB  16      100.0%            bc5c8be0-dc83-4718-bb6f-bcbc0110f524  rack1
+   UN  172.28.0.4  117.72 KiB  16      100.0%            45ccccba-dd6f-4158-abfc-f7a506550c30  rack1
+
+==== A1. Pausa de la entrega de hints en cas1 y cas2 (pausehandoff) y docker stop fixture2030-rep-cas3
+   cas1 ve a cas3 (172.28.0.4) DN a los 2 s
+
+==== A2. Escritura con CONSISTENCY ONE (coordinador cas1) mientras cas3 está caído
+   escritura aceptada con ONE: PAR-A-1-REP-EVENTUAL-HINT-20261111103150
+   archivos en /var/lib/cassandra/hints de cas1:
+     374 bytes  13:32:13  45ccccba-dd6f-4158-abfc-f7a506550c30-1794403933296-2.hints
+
+==== A3. docker start fixture2030-rep-cas3 (la entrega de hints sigue pausada)
+   cas1 ve a cas3 (172.28.0.4) UN a los 2 s de que acepta CQL
+
+==== A4. Lectura en cas3 ANTES de la reparación
+   resultado: 0 filas
+   ¿la leyó solo cas3 (172.28.0.4)? sí · traza del intento 3:
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-5]
+     172.28.0.4  Read 0 live rows and 0 tombstone cells [ReadStage-5]
+   la misma fila leída solo en cas1 (recibió la escritura):
+     resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-HINT-20261111103150 | Golazo! (escrito con ONE, cas3 caido)
+     ¿la leyó solo cas1 (172.28.0.2)? sí · traza del intento 1:
+       172.28.0.2  Executing single-partition query on comentarios_por_partido [ReadStage-13]
+       172.28.0.2  Read 1 live rows and 0 tombstone cells [ReadStage-13]
+
+==== A5. Se reanuda la entrega de hints (resumehandoff)
+   entrega reanudada a las 2026-11-11T13:32:50Z (UTC)
+   cas3 tiene el comentario (lectura local) a los 14 s de reanudar
+   log de cas1: INFO  [HintsDispatcher:1] 2026-11-11T13:33:03,743 HintsDispatchExecutor.java:300 - Finished hinted handoff of file 45ccccba-dd6f-4158-abfc-f7a506550c30-1794403933296-2.hints to endpoint /172.28.0.4:7000: 45ccccba-dd6f-4158-abfc-f7a506550c30
+   archivos de hints que quedan en cas1:
+     (ninguno)
+
+==== A6. Lectura en cas3 DESPUÉS del hinted handoff
+   resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-HINT-20261111103150 | Golazo! (escrito con ONE, cas3 caido)
+   ¿la leyó solo cas3 (172.28.0.4)? sí · traza del intento 1:
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-1]
+     172.28.0.4  Read 1 live rows and 0 tombstone cells [ReadStage-1]
+
+==== B1. Hints DESACTIVADOS en cas1 y cas2 (disablehandoff) y docker stop fixture2030-rep-cas3
+   cas1: Hinted handoff is not running
+   cas1 ve a cas3 (172.28.0.4) DN a los 2 s
+
+==== B2. Escritura con CONSISTENCY ONE (coordinador cas1) mientras cas3 está caído
+   escritura aceptada con ONE: PAR-A-1-REP-EVENTUAL-REPAIR-20261111103150
+   archivos en /var/lib/cassandra/hints de cas1 (hints desactivados):
+     (ninguno)
+
+==== B3. docker start fixture2030-rep-cas3
+   cas1 ve a cas3 (172.28.0.4) UN a los 2 s de que acepta CQL
+   (hints reactivados para lo que venga; lo perdido mientras estaban desactivados no se recupera así)
+
+==== B4. Lectura en cas3 recién vuelto y 30 s después: no se repara sola
+   resultado: 0 filas
+   ¿la leyó solo cas3 (172.28.0.4)? sí · traza del intento 2:
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-8]
+     172.28.0.4  Read 0 live rows and 0 tombstone cells [ReadStage-8]
+   resultado: 0 filas
+   ¿la leyó solo cas3 (172.28.0.4)? sí · traza del intento 2:
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-2]
+     172.28.0.4  Read 0 live rows and 0 tombstone cells [ReadStage-2]
+
+==== B5. nodetool repair en cas3 (anti-entropía: compara árboles de Merkle con las otras réplicas)
+   [2026-11-11 13:34:47,287] Repair completed successfully
+   [2026-11-11 13:34:47,326] Repair command #1 finished in 3 seconds
+   [2026-11-11 13:34:47,334] condition satisfied queried for parent session status and discovered repair completed.
+   [2026-11-11 13:34:47,335] Repair completed successfully
+   repair terminado en 5 s
+
+==== B6. Lectura en cas3 DESPUÉS del repair
+   resultado: 1 fila ->  PAR-A-1-REP-EVENTUAL-REPAIR-20261111103150 | Que partido! (escrito con ONE, sin hints)
+   ¿la leyó solo cas3 (172.28.0.4)? sí · traza del intento 1:
+     172.28.0.4  Executing single-partition query on comentarios_por_partido [ReadStage-6]
+     172.28.0.4  Read 1 live rows and 0 tombstone cells [ReadStage-6]
+
+==== Limpieza de las filas de prueba (CONSISTENCY ALL)
+   PAR-A-1-REP-EVENTUAL-HINT-20261111103150: 0 filas
+   PAR-A-1-REP-EVENTUAL-REPAIR-20261111103150: 0 filas
+   cas1: Hinted handoff is running
+
+✔ Fin. Evidencia: evidencia/cassandra_consistencia_eventual_20261111-103148.txt

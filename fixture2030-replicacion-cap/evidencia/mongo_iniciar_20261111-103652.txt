@@ -1,0 +1,68 @@
+# Fixture 2030 — Replicación y CAP · mongo_iniciar
+# fecha:    2026-11-11 10:36:52 -0300 (2026-11-11T13:36:52Z)
+# comando:  bash scripts/mongo_iniciar.sh
+# commit:   dba8580
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== 1. Levantar los 3 nodos (perfil mongo)
+ Container fixture2030-rep-mongo2  Running
+ Container fixture2030-rep-mongo3  Running
+ Container fixture2030-rep-mongo1  Running
+   fixture2030-rep-mongo1 healthy
+   fixture2030-rep-mongo2 healthy
+   fixture2030-rep-mongo3 healthy
+
+==== 2. Replica set (idempotente)
+replica set ya iniciado: rs-fixture2030 (no se modifica)
+primario: mongo3:27017
+configuración vigente (rs.conf):
+   electionTimeoutMillis = 10000 · heartbeatIntervalMillis = 2000 · writeConcern por defecto = {"w":"majority","wtimeout":0}
+   mongo1:27017 priority=1 votes=1
+   mongo2:27017 priority=1 votes=1
+   mongo3:27017 priority=1 votes=1
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:36:54.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-11T13:36:54.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-11T13:36:54.000Z
+
+==== 3. Esquema del Hito 4 (validadores + índices) en el primario
+   las colecciones ya existen: no se reaplica (createCollection no es idempotente)
+
+==== 4. Carga de equipos y jugadores (fixture2030-mongodb/load/seed.js)
+
+added 13 packages in 1s
+✔ Conectado a MongoDB en mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs-fixture2030
+
+── Cargando equipos ──
+  Equipos insertados: 0
+  Equipos actualizados: 0
+
+── Cargando jugadores ──
+  Jugadores insertados: 0
+  Jugadores actualizados: 0
+  Total de operaciones: 1472
+
+── Actualizando cantidadJugadores por equipo ──
+  Equipos actualizados con conteo de jugadores: 64
+
+══════════════════════════════════════════════
+  VERIFICACIÓN FINAL
+══════════════════════════════════════════════
+  Cantidad de equipos:   64   (esperado: 64)
+  Cantidad de jugadores: 1472 (esperado: >= 1000)
+  Jugadores huérfanos:   0   (esperado: 0)
+══════════════════════════════════════════════
+
+✔ Carga completada exitosamente.
+✔ Conexión cerrada.
+
+==== 5. Mismos datos en los tres nodos (lectura directa a cada uno)
+   mongo1:27017 SECUNDARIO equipos=64 jugadores=1472 dni distintos=1472
+   mongo2:27017 SECUNDARIO equipos=64 jugadores=1472 dni distintos=1472
+   mongo3:27017 PRIMARIO   equipos=64 jugadores=1472 dni distintos=1472
+
+==== 6. RAM usada (docker stats)
+fixture2030-rep-mongo1	178.6MiB / 512MiB	34.89%
+fixture2030-rep-mongo2	157.3MiB / 512MiB	30.72%
+fixture2030-rep-mongo3	171.8MiB / 512MiB	33.56%
+
+✔ Replica set listo. Primario actual: mongo3. Evidencia: evidencia/mongo_iniciar_20261111-103652.txt
