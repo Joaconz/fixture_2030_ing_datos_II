@@ -405,9 +405,10 @@ def dias_influx() -> list[tuple[str, str]]:
 
 def influx_por_dia(sql: str) -> list[dict]:
     """Corre `sql` una vez por día (reemplaza {filtro} por el rango de tiempo) y junta las filas.
-    InfluxDB 3 CORE rechaza una consulta que toque más de 432 archivos Parquet ("Query would
-    scan N Parquet files, exceeding the file limit"); la carga completa deja ~1.000. Los archivos
-    están cortados por tiempo, así que acotar por día es la forma prevista de consultarlo."""
+    InfluxDB 3 CORE tiene un tope de archivos Parquet por consulta y no compacta: el count(*) de
+    audiencia_partido sobre todo el torneo falló con "Query would scan 432 Parquet files, exceeding
+    the file limit" (la carga completa deja ~1.000). Los archivos están cortados por tiempo, así
+    que acotar por día es la forma prevista de consultarlo."""
     filas = []
     for desde, hasta in dias_influx():
         filas += influx_sql(sql.format(filtro=f"time >= '{desde}' AND time < '{hasta}'"))

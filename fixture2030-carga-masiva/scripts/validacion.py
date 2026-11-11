@@ -135,7 +135,7 @@ def leer_redis() -> dict:
 
 def leer_influxdb() -> dict:
     manifiesto = json.loads(InfluxDB().manifiesto().read_text(encoding="utf-8"))
-    # Por día: InfluxDB 3 Core no deja consultar de una vez los ~1.000 Parquet de la carga
+    # Por día: InfluxDB 3 Core tiene un tope de Parquet por consulta y la carga deja ~1.000 (comun.influx_por_dia)
     conteos = {t: sum(f.get("n") or 0 for f in influx_por_dia(f"SELECT count(*) AS n FROM {t} WHERE {{filtro}}"))
                for t in TABLAS_INFLUX}
     ids = set()
