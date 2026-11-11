@@ -8,17 +8,19 @@ Capa de observabilidad del Fixture 2030: **Prometheus** recolecta métricas (mod
 | Configuración de Prometheus, consultas PromQL, UP/DOWN | [`docs/metricas_y_consultas.md`](docs/metricas_y_consultas.md) |
 | Alertas y por qué cada umbral | [`docs/alertas_y_umbral.md`](docs/alertas_y_umbral.md) |
 | Evidencia, qué se midió y qué no | [`docs/limitaciones_y_evidencia.md`](docs/limitaciones_y_evidencia.md) |
+| Métricas internas de Neo4j (exporter propio) e InfluxDB (token) | [`docs/metricas_neo4j_e_influxdb.md`](docs/metricas_neo4j_e_influxdb.md) |
 | Qué significa cada panel | [`grafana/README.md`](grafana/README.md) |
 | Decisiones de arquitectura y defensa | [`docs/decisiones_de_arquitectura.md`](docs/decisiones_de_arquitectura.md), [`docs/defensa_final.md`](docs/defensa_final.md), [`defensa/`](defensa/) |
 
 ```
 fixture2030-hito-13-monitoreo/
-├── docker-compose.yml          prometheus, grafana, node-exporter, exporters de MongoDB y Redis, blackbox
+├── docker-compose.yml          prometheus, grafana, node-exporter, exporters de MongoDB, Redis y Neo4j, blackbox
+├── neo4j-exporter/             exporter propio de Neo4j (Python, solo biblioteca estándar)
 ├── prometheus.yml              jobs y targets (scrape cada 15 s)
 ├── blackbox.yml                sondas TCP / HTTP de disponibilidad
 ├── prometheus/reglas-o-alertas.yml
 ├── grafana/{provisioning,dashboards,README.md}
-├── scripts/                    iniciar_monitoreo · verificar_targets · ejecutar_prueba_controlada · limpiar_entorno
+├── scripts/                    iniciar_monitoreo · preparar_token_influxdb · verificar_targets · ejecutar_prueba_controlada · limpiar_entorno
 ├── docs/                       inventario, métricas, alertas, limitaciones, decisiones, defensa
 ├── evidencia/                  targets, prueba de falla, capturas de los dashboards
 └── defensa/                    guion de 20 minutos, demo, presentación
@@ -30,7 +32,7 @@ Fuera de esta carpeta, el hito también cambió:
 
 ## 1. Requisitos
 
-Docker Desktop (probado en macOS, Apple Silicon), `curl`, `python3` y `bash`. Para la API: Python 3.12 (`uv` o `venv`, lo resuelve `iniciar_api.sh`). Puertos libres: 3000, 9090, 9100, 9115, 9121, 9216, 7070 y 8000.
+Docker Desktop (probado en macOS, Apple Silicon), `curl`, `python3` y `bash`. Para la API: Python 3.12 (`uv` o `venv`, lo resuelve `iniciar_api.sh`). Puertos libres: 3000, 9090, 9100, 9115, 9121, 9216, 9474, 7070 y 8000.
 
 ## 2. Preparar la demo (una sola vez por notebook)
 
@@ -42,6 +44,16 @@ sh fixture2030-influxdb/scripts/inicializacion.sh                # crea el token
 ```
 
 (Desde la raíz del repositorio.) Si InfluxDB ya tenía un token que se perdió, ver [`../fixture2030-influxdb/secrets/README.md`](../fixture2030-influxdb/secrets/README.md).
+
+### Token de InfluxDB para Prometheus
+
+El `/metrics` de InfluxDB exige ese mismo token de administración. Prometheus lo lee de `fixture2030-influxdb/secrets/prometheus-token` (ignorado por git, como `admin-token.json`): **no hay secretos en el repo**. Lo genera, a partir de `admin-token.json`, este script, que `iniciar_monitoreo.sh` ya llama en cada arranque:
+
+```bash
+bash fixture2030-hito-13-monitoreo/scripts/preparar_token_influxdb.sh
+```
+
+Si `admin-token.json` no existe, el script avisa y el target `influxdb` queda DOWN hasta crearlo (`inicializacion.sh`) y volver a correrlo; no hace falta reiniciar Prometheus, que relee el archivo en cada scrape. Detalle en [`docs/metricas_neo4j_e_influxdb.md`](docs/metricas_neo4j_e_influxdb.md).
 
 ## 3. Levantar la plataforma
 
@@ -71,10 +83,11 @@ bash fixture2030-hito-13-monitoreo/scripts/iniciar_monitoreo.sh
 
 | Servicio | URL |
 |---|---|
-| Grafana | http://localhost:3000 — `admin` / `fixture2030` (desarrollo) — abre en el dashboard *Fixture 2030 — 1. Resumen y SLAs* |
+| Grafana | http://localhost:3000 — `admin` / `fixture2030` (desarrollo) — abre en el dashboard *Fixture 2030 — Monitoreo*; Neo4j e InfluxDB por dentro en *Fixture 2030 — Neo4j e InfluxDB* |
 | Prometheus | http://localhost:9090 — *Status → Targets* y *Alerts* |
 | Métricas de la API | http://localhost:8000/metrics |
 | Métricas de Cassandra | http://localhost:7070/metrics |
+| Métricas de Neo4j (exporter propio) | http://localhost:9474/metrics |
 
 Los cinco dashboards están en la carpeta *Fixture 2030* de Grafana; cada uno tiene arriba los links a los demás (conservan el rango de tiempo):
 
@@ -83,7 +96,7 @@ Los cinco dashboards están en la carpeta *Fixture 2030* de Grafana; cada uno ti
 | 1. Resumen y SLAs | `/d/fixture2030-monitoreo` | ¿Está todo arriba? ¿Hay alertas? ¿Se cumplen latencia < 100 ms y disponibilidad 99,99 %? |
 | 2. API integrada | `/d/fixture2030-api` | Tráfico, latencia por ruta y errores de la API del Hito 10 |
 | 3. Comparación entre bases | `/d/fixture2030-comparacion-bases` | Cuánto tarda y cómo termina cada llamada de la API a cada base |
-| 4. Bases por dentro | `/d/fixture2030-bases` | Métricas internas de MongoDB, Redis y Cassandra |
+| 4. Bases por dentro | `/d/fixture2030-bases` | Métricas internas de las cinco bases: MongoDB, Redis, Cassandra, Neo4j e InfluxDB |
 | 5. Infraestructura | `/d/fixture2030-infraestructura` | Recursos del host y salud del propio Prometheus |
 
 ## 4. Verificar
@@ -93,7 +106,7 @@ bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh            # tab
 bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh --guardar  # además la guarda en evidencia/
 ```
 
-Esperado con todo arriba: 11 targets UP y las 5 bases con `probe_success = 1`.
+Esperado con todo arriba: 13 targets UP (los 11 anteriores más `neo4j` e `influxdb`) y las 5 bases con `probe_success = 1`.
 
 ## 5. Repetir la demostración
 

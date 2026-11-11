@@ -59,8 +59,10 @@ Los SLAs salen del enunciado (latencia por debajo de 100 ms, Hito 2) y de la mé
 | **MongoDB** · operaciones por tipo, conexiones | Actividad del catálogo de equipos | Conexiones que crecen sin bajar → fuga de conexiones en un cliente |
 | **Redis** · comandos/s, hit ratio, memoria y clientes | Uso de sesiones y caché | Hit ratio bajo con tráfico → la caché no sirve (TTL corto o claves que no se reutilizan) |
 | **Cassandra** · latencia p50/p99 (línea 100 ms), peticiones/s, errores, disco por tabla, tareas pendientes | Comportamiento del módulo de comentarios | Tareas pendientes que crecen → saturación; timeouts → réplicas que no responden |
+| **Neo4j** · estado, latencia de la consulta de referencia, nodos y relaciones, transacciones abiertas, heap | Calendario, eventos y tipos de evento, vistos por el exporter propio | La consulta de referencia supera los 100 ms o el heap sube sin bajar → revisar índices de `estructura.cypher` |
+| **InfluxDB** · líneas escritas y rechazadas, p95 de `write_lp` y `query_sql`, memoria | Ingesta de estadísticas en vivo | Líneas rechazadas > 0 → el productor manda puntos con formato o tipos inválidos |
 
-La fila de Cassandra necesita el agente JMX ([`../../fixture2030-cassandra/docker-compose.monitoreo.yml`](../../fixture2030-cassandra/docker-compose.monitoreo.yml)); sin él queda vacía y el target `cassandra` aparece CAÍDO en el *1*.
+La fila de Cassandra necesita el agente JMX ([`../../fixture2030-cassandra/docker-compose.monitoreo.yml`](../../fixture2030-cassandra/docker-compose.monitoreo.yml)); sin él queda vacía y el target `cassandra` aparece CAÍDO en el *1*. La fila de InfluxDB necesita el token de `scripts/preparar_token_influxdb.sh`; sin él queda vacía y el target `influxdb` aparece CAÍDO. Detalle de Neo4j e InfluxDB: [`../docs/metricas_neo4j_e_influxdb.md`](../docs/metricas_neo4j_e_influxdb.md).
 
 ## 5. Infraestructura
 

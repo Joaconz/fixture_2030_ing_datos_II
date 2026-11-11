@@ -8,7 +8,7 @@
 | Intervalo de evaluación de reglas | 15 s (`evaluation_interval`) | idem |
 | Retención | 15 días (`--storage.tsdb.retention.time=15d`, explícita) | [`docker-compose.yml`](../docker-compose.yml) |
 | Persistencia | volumen nombrado `fixture2030_prometheus_data` → `~/docker/data/prometheus` | idem |
-| Reglas | [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) (5 alertas) | idem |
+| Reglas | [`prometheus/reglas-o-alertas.yml`](../prometheus/reglas-o-alertas.yml) (8 alertas) | idem |
 | Recarga sin reiniciar | `curl -X POST http://localhost:9090/-/reload` (`--web.enable-lifecycle`) | idem |
 
 Targets, exporters y etiquetas: ver la tabla "Relación job → componente" en [`inventario_de_componentes.md`](inventario_de_componentes.md).

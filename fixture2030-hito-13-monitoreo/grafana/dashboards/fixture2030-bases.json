@@ -1,7 +1,7 @@
 {
   "uid": "fixture2030-bases",
   "title": "Fixture 2030 — 4. Bases por dentro",
-  "description": "Métricas internas de MongoDB y Redis (exporters) y de Cassandra (agente JMX).",
+  "description": "Métricas internas de las cinco bases: MongoDB y Redis (exporters), Cassandra (agente JMX), Neo4j (exporter propio) e InfluxDB (/metrics con token).",
   "tags": [
     "fixture2030",
     "hito13"
@@ -617,6 +617,1128 @@
         }
       },
       "description": "Cola de trabajo del nodo. Si crece y no baja, Cassandra está saturada: la latencia sube después."
+    },
+    {
+      "id": 101,
+      "type": "row",
+      "title": "Neo4j (Hito 5) — exporter propio (neo4j-exporter)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 102,
+      "title": "Neo4j: estado",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "max(neo4j_up)",
+          "legendFormat": "consulta de referencia"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "max(neo4j_base_online{db=\"neo4j\"})",
+          "legendFormat": "base neo4j online"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "CAÍDO",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "OK",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "neo4j_up = 1 si el exporter se autenticó y ejecutó la consulta de referencia (alerta Neo4jNoResponde). 'base neo4j online' sale de SHOW DATABASES. Sin datos = el exporter no responde (alerta TargetSinScrape)."
+    },
+    {
+      "id": 103,
+      "title": "Tamaño del grafo",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 5,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum(neo4j_nodos)",
+          "legendFormat": "nodos"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "sum(neo4j_relaciones)",
+          "legendFormat": "relaciones"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Suma de neo4j_nodos (por etiqueta) y neo4j_relaciones (por tipo). Con la carga del Hito 5: 2654 nodos y 6802 relaciones."
+    },
+    {
+      "id": 104,
+      "title": "Versión",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 13,
+        "y": 36,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_info",
+          "legendFormat": "{{version}} {{edicion}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Versión y edición que reporta dbms.components()."
+    },
+    {
+      "id": 105,
+      "title": "Alertas de Neo4j e InfluxDB",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 17,
+        "y": 36,
+        "w": 7,
+        "h": 5
+      },
+      "description": "Alertas en pending o firing que tocan a estas dos bases: las propias (Neo4j*, InfluxDB*) y las generales con base o job neo4j / influxdb. Vacío = sin alertas.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "format": "table",
+          "instant": true,
+          "expr": "ALERTS{alertname=~\"Neo4j.*|InfluxDB.*\"} or ALERTS{base=~\"neo4j|influxdb\"} or ALERTS{job=~\"neo4j|influxdb\"}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "alertname": true,
+              "alertstate": true,
+              "severidad": true,
+              "base": true
+            },
+            "renameByName": {
+              "alertname": "alerta",
+              "alertstate": "estado"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "estado"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "firing": {
+                        "color": "red",
+                        "text": "FIRING"
+                      },
+                      "pending": {
+                        "color": "orange",
+                        "text": "pending"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 106,
+      "title": "Latencia de la consulta de referencia",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_consulta_referencia_segundos",
+          "legendFormat": "{{medida}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Eventos de un partido (la lectura principal de la API). servidor = tiempo del motor que informa la Query API; ida_y_vuelta = medido por el exporter (incluye HTTP). La línea roja punteada es el umbral de Neo4jConsultaLenta (100 ms en el motor, sostenido 5 min)."
+    },
+    {
+      "id": 107,
+      "title": "Transacciones abiertas",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_transacciones_abiertas",
+          "legendFormat": "abiertas"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "SHOW TRANSACTIONS en cada scrape (15 s), sin contar la del exporter. Es una foto: una transacción más corta que 15 s puede no verse."
+    },
+    {
+      "id": 108,
+      "title": "Heap de la JVM",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_heap_bytes",
+          "legendFormat": "{{tipo}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Heap usado y máximo (dbms.queryJmx, java.lang:type=Memory). El máximo es el de fixture2030-neo4j/docker-compose.yml (1 GB)."
+    },
+    {
+      "id": 109,
+      "title": "Nodos por etiqueta",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_nodos",
+          "legendFormat": "{{etiqueta}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Conteo por etiqueta (count store, no recorre el grafo). Sube con los eventos que registra la API durante un partido."
+    },
+    {
+      "id": 110,
+      "title": "Relaciones por tipo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_relaciones",
+          "legendFormat": "{{tipo}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Conteo por tipo de relación (count store)."
+    },
+    {
+      "id": 111,
+      "title": "Duración de la recolección del exporter",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "neo4j_exporter_duracion_segundos",
+          "legendFormat": "recolección completa"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "scrape_duration_seconds{job=\"neo4j\"}",
+          "legendFormat": "scrape de Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Cuánto tarda el exporter en hacer todas sus consultas. Si se acerca a 10 s (timeout del scrape) el target cae."
+    },
+    {
+      "id": 112,
+      "type": "row",
+      "title": "InfluxDB 3 Core (Hito 8) — /metrics de InfluxDB (con token)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 113,
+      "title": "InfluxDB: métricas internas",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 58,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "up{job=\"influxdb\"}",
+          "legendFormat": "/metrics"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "CAÍDO",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "OK",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "1 = Prometheus leyó /metrics con el token. CAÍDO con la base arriba = falta o es inválido fixture2030-influxdb/secrets/prometheus-token (ver docs/metricas_neo4j_e_influxdb.md)."
+    },
+    {
+      "id": 114,
+      "title": "Tiempo encendido",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 58,
+        "w": 5,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "time() - process_start_time_seconds{job=\"influxdb\"}",
+          "legendFormat": "uptime"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Desde el último arranque del proceso influxdb3. Si vuelve a cero, el contenedor se reinició."
+    },
+    {
+      "id": 115,
+      "title": "Líneas escritas (total)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 11,
+        "y": 58,
+        "w": 7,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "influxdb3_write_lines_total{job=\"influxdb\"}",
+          "legendFormat": "aceptadas"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "influxdb3_write_lines_rejected_total{job=\"influxdb\"}",
+          "legendFormat": "rechazadas"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Contadores desde el arranque. Aparecen después de la primera escritura."
+    },
+    {
+      "id": 116,
+      "title": "Memoria del proceso",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 58,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "jemalloc_memstats_bytes{job=\"influxdb\",stat=\"resident\"}",
+          "legendFormat": "residente"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Memoria residente según jemalloc (el asignador de InfluxDB)."
+    },
+    {
+      "id": 117,
+      "title": "Líneas por segundo (escritura)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "rate(influxdb3_write_lines_total{job=\"influxdb\"}[1m])",
+          "legendFormat": "aceptadas"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "B",
+          "expr": "rate(influxdb3_write_lines_rejected_total{job=\"influxdb\"}[1m])",
+          "legendFormat": "rechazadas"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Ventana de 1 minuto. Rechazadas > 0 dispara InfluxDBEscriturasRechazadas (ventana de 5 min, sostenido 1 min)."
+    },
+    {
+      "id": 118,
+      "title": "Requests HTTP por segundo, por endpoint y resultado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 63,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "sum by (method_path, status) (rate(http_requests_total{job=\"influxdb\", method_path!=\"GET /metrics\"}[1m])) > 0",
+          "legendFormat": "{{method_path}} {{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Lo que recibe la API HTTP de InfluxDB (sin contar el scrape de Prometheus). status: ok, client_error, server_error, aborted."
+    },
+    {
+      "id": 119,
+      "title": "Latencia p95 de escritura y consulta",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 63,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, method_path) (rate(http_request_duration_seconds_bucket{job=\"influxdb\", method_path=~\".*(write|query).*\"}[5m])))",
+          "legendFormat": "{{method_path}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "p95 (ventana de 5 min) de cada request HTTP de escritura (write_lp) y de consulta (query_sql, la que usa la API). Es la latencia del motor sin la red de la API. write_lp ronda 1 s a propósito: InfluxDB confirma la escritura después del flush del WAL (--wal-flush-interval, 1 s por defecto)."
+    },
+    {
+      "id": 120,
+      "title": "Consultas: p95 de punta a punta en el motor",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(influxdb_iox_query_log_end2end_duration_seconds_bucket{job=\"influxdb\"}[5m])))",
+          "legendFormat": "p95 end2end"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "influxdb_iox_query_log_end2end_duration_seconds: desde que la consulta entra hasta que termina (planificación + ejecución)."
+    },
+    {
+      "id": 121,
+      "title": "Bytes escritos por segundo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 71,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "rate(influxdb3_write_bytes_total{job=\"influxdb\"}[1m])",
+          "legendFormat": "line protocol"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Volumen de line protocol recibido (ventana de 1 minuto)."
+    },
+    {
+      "id": 122,
+      "title": "Memoria (jemalloc)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-fixture2030"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 71,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-fixture2030"
+          },
+          "refId": "A",
+          "expr": "jemalloc_memstats_bytes{job=\"influxdb\", stat=~\"alloc|active|resident\"}",
+          "legendFormat": "{{stat}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "alloc = memoria en uso por InfluxDB; active = páginas activas del asignador; resident = lo que ocupa el proceso en RAM."
     }
   ]
 }

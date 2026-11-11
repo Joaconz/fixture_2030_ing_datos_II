@@ -10,10 +10,13 @@
 echo "== 1. Carpetas de datos (volúmenes nombrados respaldados por ~/docker/data)"
 mkdir -p "${PROMETHEUS_DATA_DIR:-$HOME/docker/data/prometheus}" "${GRAFANA_DATA_DIR:-$HOME/docker/data/grafana}"
 
-echo "== 2. docker compose up -d"
+echo "== 2. Token de InfluxDB para Prometheus (job influxdb)"
+bash "$H13_DIR/scripts/preparar_token_influxdb.sh"
+
+echo "== 3. docker compose up -d"
 ( cd "$H13_DIR" && docker compose up -d )
 
-echo "== 3. Esperando a Prometheus y Grafana"
+echo "== 4. Esperando a Prometheus y Grafana"
 esperar_url "$PROM_URL/-/ready" 60 || falla "Prometheus no respondió en 60 s (docker logs fixture2030-prometheus)"
 esperar_url "$GRAFANA_URL/api/health" 90 || falla "Grafana no respondió en 90 s (docker logs fixture2030-grafana)"
 

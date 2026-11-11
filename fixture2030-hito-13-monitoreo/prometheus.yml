@@ -35,6 +35,28 @@ scrape_configs:
         labels:
           base: cassandra
 
+  # Neo4j (Hito 5): Community no trae endpoint de Prometheus. Exporter propio
+  # (neo4j-exporter/) que consulta la base por la Query API en cada scrape.
+  - job_name: neo4j
+    static_configs:
+      - targets: ['neo4j-exporter:9474']
+        labels:
+          base: neo4j
+
+  # InfluxDB 3 Core (Hito 8): su propio /metrics, que exige el token de
+  # administración. Prometheus lo lee de un archivo que NO está en el repo:
+  # fixture2030-influxdb/secrets/prometheus-token (lo genera
+  # scripts/preparar_token_influxdb.sh a partir de admin-token.json).
+  # Sin ese archivo el target queda DOWN con el error del archivo faltante.
+  - job_name: influxdb
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/influxdb-secrets/prometheus-token
+    static_configs:
+      - targets: ['host.docker.internal:8181']
+        labels:
+          base: influxdb
+
   # Disponibilidad de las cinco bases vía blackbox-exporter.
   # Cada target es "<módulo>|<dirección>"; el relabel lo separa en
   # el parámetro module, el parámetro target y la etiqueta "base".
