@@ -20,7 +20,7 @@ El `_id` es el **código FIFA de 3 letras** (clave natural, no ObjectId).
   },
   "entrenador":         "Lionel Scaloni",
   "sede":               "Madrid",
-  "cantidadJugadores":  23
+  "cantidadJugadores":  26
 }
 ```
 
@@ -124,3 +124,23 @@ Ambas colecciones usan `$jsonSchema` con `validationLevel: "strict"` y
 
 Los índices se crean automáticamente al inicializar el contenedor, mediante el
 script montado en `/docker-entrypoint-initdb.d/`.
+
+---
+
+## 5. Volumen de datos
+
+| Colección   | Documentos | Cómo se llega                                   |
+|-------------|-----------:|-------------------------------------------------|
+| `equipos`   | 64         | Lista fija de selecciones en `load/seed.js`     |
+| `jugadores` | 1.664      | 64 equipos × 26 jugadores (dorsales 1 a 26)     |
+
+La guía del TPO (Hito 3) pide un dataset de 64 equipos y **1.500+ jugadores**.
+El plantel es fijo para que la carga sea reproducible (corrección del Hito 4) y
+se eligió **26** porque es la lista de convocados por selección del Mundial 2026;
+con los 23 que usaba antes el seed el total era 1.472 y no alcanzaba.
+
+El `dni` de cada jugador es `30000000 + índiceDelEquipo*100 + dorsal`: cada
+equipo tiene su bloque de 100 números, así que con 26 dorsales no hay
+colisiones (van de `30000001` a `30006326`). Verificado con dos corridas del
+seed sobre una base vacía: 64 equipos, 1.664 jugadores y 1.664 DNI distintos en
+las dos ([`../evidencia/seed_dos_corridas_20261111.txt`](../evidencia/seed_dos_corridas_20261111.txt)).

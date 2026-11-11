@@ -13,7 +13,8 @@
 #     cada uno) y registra la RAM usada.
 #
 #  IDEMPOTENTE: reejecutarlo no reconfigura el replica set, no recrea las
-#  colecciones y el seed hace upsert (64 equipos / 1472 jugadores siempre).
+#  colecciones y el seed hace upsert (64 equipos / 1664 jugadores siempre;
+#  la evidencia del 11/11/2026 10:35 es anterior al plantel de 26: 1472).
 # ============================================================================
 . "$(dirname "$0")/_comun.sh"
 evidencia mongo_iniciar "bash scripts/mongo_iniciar.sh"

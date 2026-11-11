@@ -1,0 +1,424 @@
+# MongoDB · queries/queries.js sobre la carga de 64 equipos / 1.664 jugadores (después de las dos corridas del seed)
+# fecha: 2026-11-11T17:48:20Z · commit: 1cfc2f2 · rama: claude/mongo-1500-jugadores-db2fca
+# comando: docker cp queries/queries.js mongo1664-mongodb-1:/tmp/queries.js && docker exec mongo1664-mongodb-1 mongosh --quiet fixture2030 --file /tmp/queries.js
+# (la primera corrida, con el commit 579fb58, cortó en la consulta 4 por el bug de proyección que corrige este commit)
+══════════════════════════════════════════════════════════════════
+  CONSULTAS — Fixture Mundial 2030 (Módulo Documental)
+══════════════════════════════════════════════════════════════════
+
+── 1. Inserción de un equipo nuevo y un jugador nuevo ──
+  ✔ Equipo 'TST' y jugador 'González, Carlos' insertados.
+
+── 2. Recuperación por identificador ──
+  Equipo con _id = 'ARG':
+{
+  _id: 'ARG',
+  colores: {
+    principal: 'Blanco',
+    alternativo: 'Negro'
+  },
+  confederacion: 'CONMEBOL',
+  entrenador: 'Marcelo Gallardo',
+  grupo: 'A',
+  nombre: 'Argentina',
+  rankingFifa: 1,
+  sede: 'Madrid',
+  cantidadJugadores: 26
+}
+
+  Jugador con dni = '99999999':
+{
+  _id: ObjectId('6af4aa65aaefbca111ce5f47'),
+  dni: '99999999',
+  nombre: 'Carlos',
+  apellido: 'González',
+  fechaNacimiento: ISODate('1998-03-15T00:00:00.000Z'),
+  posicion: 'Delantero',
+  dorsal: 9,
+  equipoId: 'TST',
+  estadisticas: {
+    partidos: 10,
+    goles: 7,
+    asistencias: 3
+  }
+}
+
+── 3. Recuperación filtrada: delanteros de ARG con >= 5 goles ──
+  (Sin resultados — los datos sintéticos tienen estadísticas en 0)
+  Mostrando en su lugar delanteros de ARG (sin filtro de goles):
+[
+  {
+    _id: ObjectId('6af4aa3074febc4eaf3c4dae'),
+    dni: '30000010',
+    apellido: 'Klocko',
+    dorsal: 10,
+    equipoId: 'ARG',
+    estadisticas: {
+      partidos: 0,
+      goles: 0,
+      asistencias: 0
+    },
+    fechaNacimiento: ISODate('1993-10-22T20:31:29.434Z'),
+    nombre: 'Jarvis',
+    posicion: 'Delantero'
+  },
+  {
+    _id: ObjectId('6af4aa3074febc4eaf3c4db0'),
+    dni: '30000012',
+    apellido: 'Macejkovic',
+    dorsal: 12,
+    equipoId: 'ARG',
+    estadisticas: {
+      partidos: 0,
+      goles: 0,
+      asistencias: 0
+    },
+    fechaNacimiento: ISODate('1989-02-07T07:33:22.327Z'),
+    nombre: 'Adeline',
+    posicion: 'Delantero'
+  },
+  {
+    _id: ObjectId('6af4aa3074febc4eaf3c4db3'),
+    dni: '30000015',
+    apellido: 'McCullough',
+    dorsal: 15,
+    equipoId: 'ARG',
+    estadisticas: {
+      partidos: 0,
+      goles: 0,
+      asistencias: 0
+    },
+    fechaNacimiento: ISODate('2008-05-01T14:09:52.206Z'),
+    nombre: 'Edgardo',
+    posicion: 'Delantero'
+  }
+]
+
+── 4. Proyección: nombre, apellido, dorsal, posicion de jugadores de BRA ──
+[
+  {
+    apellido: 'Heller',
+    dorsal: 1,
+    nombre: 'Romaine',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Sawayn-Jenkins',
+    dorsal: 3,
+    nombre: 'Javon',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Cronin',
+    dorsal: 5,
+    nombre: 'Yoshiko',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Haag',
+    dorsal: 12,
+    nombre: 'Iliana',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Gislason',
+    dorsal: 13,
+    nombre: 'Baby',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Cummerata',
+    dorsal: 14,
+    nombre: 'Kathryne',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Kling',
+    dorsal: 22,
+    nombre: 'Junior',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Lemke',
+    dorsal: 25,
+    nombre: 'Ethyl',
+    posicion: 'Arquero'
+  },
+  {
+    apellido: 'Sawayn',
+    dorsal: 2,
+    nombre: 'Gerry',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Pfannerstill',
+    dorsal: 7,
+    nombre: 'Eryn',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: "O'Hara",
+    dorsal: 8,
+    nombre: 'Barbara',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Wyman',
+    dorsal: 9,
+    nombre: 'Pascale',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Cremin',
+    dorsal: 10,
+    nombre: 'Ronaldo',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Larson',
+    dorsal: 16,
+    nombre: 'Alaina',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Jenkins',
+    dorsal: 17,
+    nombre: 'Elmo',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Nitzsche',
+    dorsal: 20,
+    nombre: 'Kayleigh',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Stanton',
+    dorsal: 21,
+    nombre: 'Violette',
+    posicion: 'Defensor'
+  },
+  {
+    apellido: 'Pfeffer-Schroeder',
+    dorsal: 4,
+    nombre: 'Rey',
+    posicion: 'Delantero'
+  },
+  {
+    apellido: 'Bernier',
+    dorsal: 19,
+    nombre: 'Nora',
+    posicion: 'Delantero'
+  },
+  {
+    apellido: "O'Keefe",
+    dorsal: 24,
+    nombre: 'Savanna',
+    posicion: 'Delantero'
+  },
+  {
+    apellido: 'Monahan',
+    dorsal: 6,
+    nombre: 'Tyrel',
+    posicion: 'Mediocampista'
+  },
+  {
+    apellido: 'Pollich',
+    dorsal: 11,
+    nombre: 'Cindy',
+    posicion: 'Mediocampista'
+  },
+  {
+    apellido: 'Wolf',
+    dorsal: 15,
+    nombre: 'Lottie',
+    posicion: 'Mediocampista'
+  },
+  {
+    apellido: 'Renner',
+    dorsal: 18,
+    nombre: 'Luna',
+    posicion: 'Mediocampista'
+  },
+  {
+    apellido: 'Sawayn',
+    dorsal: 23,
+    nombre: 'Linda',
+    posicion: 'Mediocampista'
+  },
+  {
+    apellido: 'Reilly',
+    dorsal: 26,
+    nombre: 'Kailey',
+    posicion: 'Mediocampista'
+  }
+]
+
+── 5. Orden y paginación: jugadores ordenados por apellido/nombre (pág 2) ──
+  Página 2 (registros 11 a 20):
+[
+  {
+    apellido: 'Abshire',
+    dorsal: 17,
+    equipoId: 'PRY',
+    nombre: 'Baylee'
+  },
+  {
+    apellido: 'Abshire',
+    dorsal: 12,
+    equipoId: 'CHN',
+    nombre: 'Ladarius'
+  },
+  {
+    apellido: 'Abshire',
+    dorsal: 13,
+    equipoId: 'CZE',
+    nombre: 'Micah'
+  },
+  {
+    apellido: 'Adams',
+    dorsal: 19,
+    equipoId: 'TRI',
+    nombre: 'Ansley'
+  },
+  {
+    apellido: 'Adams',
+    dorsal: 23,
+    equipoId: 'ZAF',
+    nombre: 'Austin'
+  },
+  {
+    apellido: 'Adams',
+    dorsal: 12,
+    equipoId: 'FRA',
+    nombre: 'Daisha'
+  },
+  {
+    apellido: 'Adams',
+    dorsal: 1,
+    equipoId: 'CZE',
+    nombre: 'Javonte'
+  },
+  {
+    apellido: 'Adams-Gislason',
+    dorsal: 13,
+    equipoId: 'ZAF',
+    nombre: 'Lorenza'
+  },
+  {
+    apellido: 'Altenwerth',
+    dorsal: 12,
+    equipoId: 'BOL',
+    nombre: 'Antoinette'
+  },
+  {
+    apellido: 'Altenwerth',
+    dorsal: 13,
+    equipoId: 'IRQ',
+    nombre: 'Bart'
+  }
+]
+
+── 6. Actualización de equipo y jugador ──
+  Entrenador de ARG actualizado: matchedCount=1, modifiedCount=0
+  Estadísticas de González actualizadas: matchedCount=1, modifiedCount=1
+  Estado actual del jugador:
+{
+  nombre: 'Carlos',
+  apellido: 'González',
+  estadisticas: {
+    partidos: 11,
+    goles: 9,
+    asistencias: 3
+  }
+}
+
+── 7. Pipeline de agregación: estadísticas por equipo ──
+[
+  {
+    cantidadJugadores: 1,
+    golesTotales: 9,
+    codigoFifa: 'TST',
+    nombreEquipo: 'Equipo de Prueba',
+    edadPromedio: 28.7
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'GER',
+    nombreEquipo: 'Alemania',
+    edadPromedio: 27.4
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'SAU',
+    nombreEquipo: 'Arabia Saudita',
+    edadPromedio: 30.7
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'ALG',
+    nombreEquipo: 'Argelia',
+    edadPromedio: 30.5
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'ARG',
+    nombreEquipo: 'Argentina',
+    edadPromedio: 27.1
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'AUS',
+    nombreEquipo: 'Australia',
+    edadPromedio: 25.7
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'AUT',
+    nombreEquipo: 'Austria',
+    edadPromedio: 29.9
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'BOL',
+    nombreEquipo: 'Bolivia',
+    edadPromedio: 28.7
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'BRA',
+    nombreEquipo: 'Brasil',
+    edadPromedio: 27.4
+  },
+  {
+    cantidadJugadores: 26,
+    golesTotales: 0,
+    codigoFifa: 'BEL',
+    nombreEquipo: 'Bélgica',
+    edadPromedio: 28.4
+  }
+]
+  ... (mostrando top 10 de 65 equipos)
+
+── 8. EXPLAIN (bloques comentados — descomentar para ejecutar) ──
+
+  ℹ Los bloques de explain() están comentados.
+  Descomentá el bloque A o B según corresponda y ejecutá manualmente.
+
+── Limpieza: eliminando datos de prueba (TST) ──
+  ✔ Datos de prueba eliminados.
+
+══════════════════════════════════════════════════════════════════
+  Todas las consultas ejecutadas exitosamente.
+══════════════════════════════════════════════════════════════════
+# exit=0
+## conteo después de las consultas
+conteo equipos=64 jugadores=1664

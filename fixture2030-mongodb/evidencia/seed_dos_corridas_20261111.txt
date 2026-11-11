@@ -1,0 +1,64 @@
+# MongoDB · load/seed.js corrido dos veces seguidas sobre una base vacía
+# fecha: 2026-11-11T17:47:25Z · commit: 579fb58 · rama: claude/mongo-1500-jugadores-db2fca
+# mongo: db version v7.0.25 en contenedor descartable mongo1664-mongodb-1 (tmpfs, 127.0.0.1:27064, init/01-validators.js montado)
+# node v24.14.1 · comando: MONGO_URI=mongodb://127.0.0.1:27064 node load/seed.js (×2)
+## antes de la corrida 1 (base recién creada por init/)
+conteo equipos=0 jugadores=0
+## corrida 1
+✔ Conectado a MongoDB en mongodb://127.0.0.1:27064
+
+── Cargando equipos ──
+  Equipos insertados: 64
+  Equipos actualizados: 0
+
+── Cargando jugadores ──
+  Jugadores insertados: 1664
+  Jugadores actualizados: 0
+  Total de operaciones: 1664
+
+── Actualizando cantidadJugadores por equipo ──
+  Equipos actualizados con conteo de jugadores: 64
+
+══════════════════════════════════════════════
+  VERIFICACIÓN FINAL
+══════════════════════════════════════════════
+  Cantidad de equipos:   64   (esperado: 64)
+  Cantidad de jugadores: 1664 (esperado: 1664)
+  Jugadores huérfanos:   0   (esperado: 0)
+══════════════════════════════════════════════
+
+✔ Carga completada exitosamente.
+✔ Conexión cerrada.
+conteo equipos=64 jugadores=1664 dni_distintos=1664 dni_min=30000001 dni_max=30006326
+por equipo (jugadores, dorsal min-max → equipos): 26 (1-26) → 64
+equipos.cantidadJugadores → equipos: 26 → 64
+huella_contenido_jugadores (sha256 sin _id, ordenado por dni)=d6418a8cd4ba7bed
+## corrida 2
+✔ Conectado a MongoDB en mongodb://127.0.0.1:27064
+
+── Cargando equipos ──
+  Equipos insertados: 0
+  Equipos actualizados: 0
+
+── Cargando jugadores ──
+  Jugadores insertados: 0
+  Jugadores actualizados: 0
+  Total de operaciones: 1664
+
+── Actualizando cantidadJugadores por equipo ──
+  Equipos actualizados con conteo de jugadores: 64
+
+══════════════════════════════════════════════
+  VERIFICACIÓN FINAL
+══════════════════════════════════════════════
+  Cantidad de equipos:   64   (esperado: 64)
+  Cantidad de jugadores: 1664 (esperado: 1664)
+  Jugadores huérfanos:   0   (esperado: 0)
+══════════════════════════════════════════════
+
+✔ Carga completada exitosamente.
+✔ Conexión cerrada.
+conteo equipos=64 jugadores=1664 dni_distintos=1664 dni_min=30000001 dni_max=30006326
+por equipo (jugadores, dorsal min-max → equipos): 26 (1-26) → 64
+equipos.cantidadJugadores → equipos: 26 → 64
+huella_contenido_jugadores (sha256 sin _id, ordenado por dni)=d6418a8cd4ba7bed
