@@ -1,0 +1,7 @@
+# Los scripts se montan y ejecutan dentro de contenedores Linux: siempre LF,
+# aunque el repo se clone en Windows con core.autocrlf=true.
+*.sh  text eol=lf
+*.js  text eol=lf
+*.cql text eol=lf
+*.py  text eol=lf
+*.yml text eol=lf

@@ -1,0 +1,53 @@
+# Fixture 2030 — Replicación y CAP · cassandra_failover
+# fecha:    2026-11-11 10:44:19 -0300 (2026-11-11T13:44:19Z)
+# comando:  bash scripts/cassandra_failover.sh
+# commit:   5ea29de
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== Anillo antes de la prueba
+   UN  172.28.0.2  220.58 KiB  16      100.0%            10c48b1b-04e4-4f5b-ad2e-726e508159fc  rack1
+   UN  172.28.0.3  216.47 KiB  16      100.0%            bc5c8be0-dc83-4718-bb6f-bcbc0110f524  rack1
+   UN  172.28.0.4  352.93 KiB  16      100.0%            45ccccba-dd6f-4158-abfc-f7a506550c30  rack1
+
+==== 1. Los 3 nodos arriba (coordinador cas1)
+   nivel    escritura    lectura de esa fila
+   ONE      OK           OK (1 fila)
+   QUORUM   OK           OK (1 fila)
+   ALL      OK           OK (1 fila)
+
+==== 2. docker stop fixture2030-rep-cas3
+   cas1 ve a cas3 (172.28.0.4) DN (caído) a los 2 s de que terminó docker stop
+   UN  172.28.0.2  220.58 KiB  16      100.0%            10c48b1b-04e4-4f5b-ad2e-726e508159fc  rack1
+   UN  172.28.0.3  216.47 KiB  16      100.0%            bc5c8be0-dc83-4718-bb6f-bcbc0110f524  rack1
+   DN  172.28.0.4  352.93 KiB  16      100.0%            45ccccba-dd6f-4158-abfc-f7a506550c30  rack1
+
+   nivel    escritura    lectura de esa fila
+   ONE      OK           OK (1 fila)
+   QUORUM   OK           OK (1 fila)
+   ALL      FALLA        FALLA
+   errores que devolvió Cassandra:
+     escritura ALL: NoHostAvailable · Unavailable exception · Cannot achieve consistency level ALL · required_replicas: 3 · alive_replicas: 2
+     lectura   ALL: NoHostAvailable · Unavailable exception · Cannot achieve consistency level ALL · required_replicas: 3 · alive_replicas: 2
+
+==== 3. Hints guardados en el coordinador (cas1) para la réplica caída
+   archivos en /var/lib/cassandra/hints de cas1:
+     638 bytes  13:44:47  45ccccba-dd6f-4158-abfc-f7a506550c30-1794404687670-2.hints
+
+==== 4. docker start fixture2030-rep-cas3 — vuelta y hinted handoff
+   cas3 acepta CQL a los 11 s del docker start
+   cas1 lo ve UN 2 s después
+   entrega del hint (log de cas1), contado desde que cas3 está UN:
+     13 s · INFO  [HintsDispatcher:1] 2026-11-11T13:45:29,140 HintsDispatchExecutor.java:300 - Finished hinted handoff of file 45ccccba-dd6f-4158-abfc-f7a506550c30-1794404687670-2.hints to endpoint /172.28.0.4:7000: 45ccccba-dd6f-4158-abfc-f7a506550c30
+   archivos de hints que quedan en cas1:
+     (ninguno)
+
+==== 5. Los 3 nodos arriba otra vez (coordinador cas1)
+   nivel    escritura    lectura de esa fila
+   ONE      OK           OK (1 fila)
+   QUORUM   OK           OK (1 fila)
+   ALL      OK           OK (1 fila)
+
+==== Limpieza de las filas de prueba (CONSISTENCY ALL)
+   filas de prueba restantes: 0
+
+✔ Fin. Evidencia: evidencia/cassandra_failover_20261111-104419.txt

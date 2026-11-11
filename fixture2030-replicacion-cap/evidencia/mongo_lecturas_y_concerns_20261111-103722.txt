@@ -1,0 +1,53 @@
+# Fixture 2030 — Replicación y CAP · mongo_lecturas_y_concerns
+# fecha:    2026-11-11 10:37:22 -0300 (2026-11-11T13:37:22Z)
+# comando:  bash scripts/mongo_lecturas_y_concerns.sh
+# commit:   dba8580
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== Estado del replica set (primario: mongo3)
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:24.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:24.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-11T13:37:24.000Z
+
+==== 1. Lecturas: qué nodo atiende cada readPreference (5 lecturas de equipos.ARG c/u)
+   primary            -> mongo3, mongo3, mongo3, mongo3, mongo3
+   primaryPreferred   -> mongo3, mongo3, mongo3, mongo3, mongo3
+   secondary          -> mongo2, mongo1, mongo2, mongo2, mongo1
+   secondaryPreferred -> mongo2, mongo1, mongo1, mongo2, mongo2
+   nearest            -> mongo2, mongo1, mongo2, mongo3, mongo2
+
+==== 2. writeConcern: latencia de 20 escrituras (updateOne de equipos.ARG) con cada nivel
+   {"w":1}           mediana 2.0 ms · máx 3.5 ms   (confirma: solo el primario)
+   {"w":"majority"}  mediana 12.0 ms · máx 19.0 ms   (confirma: 2 de 3 nodos)
+   {"w":3}           mediana 3.0 ms · máx 3.5 ms   (confirma: los 3 nodos)
+
+==== 3. Replicación congelada: db.fsyncLock() en los secundarios ( fixture2030-rep-mongo1 fixture2030-rep-mongo2 )
+   mongo1:27017 -> now locked against writes, use db.fsyncUnlock() to unlock
+   mongo2:27017 -> now locked against writes, use db.fsyncUnlock() to unlock
+   valor original de equipos.ARG.entrenador: "Lionel Scaloni"
+
+==== 3a. Escritura con w:1 (la confirma solo el primario)
+   {"acknowledged":true,"modifiedCount":1}
+
+==== 3b. Qué devuelve cada lectura con la replicación congelada
+   primario  readConcern local        -> "DT nuevo (w:1)"
+   primario  readConcern majority     -> "Lionel Scaloni"
+   primario  readConcern linearizable -> MaxTimeMSExpired (no responde en 3 s: prefiere no contestar a contestar algo viejo)
+   mongo1:27017 (secundario, readPreference secondary) -> "Lionel Scaloni"   <- lectura vieja
+
+==== 3c. Escritura con w:"majority" (wtimeout 3 s) sin mayoría disponible
+   -> WriteConcernFailed: waiting for replication timed out
+   el primario la aplicó igual (readConcern local): "DT nuevo (w:majority)"
+   el cliente NO recibió confirmación: no puede asumir que sobrevive a una caída del primario
+
+==== 3d. Se libera la replicación (db.fsyncUnlock) y se mide la convergencia de fixture2030-rep-mongo1
+   mongo1:27017 ve "DT nuevo (w:majority)" a los 7 ms del desbloqueo
+   primario readConcern majority -> "DT nuevo (w:majority)"
+
+==== Restauración del dato original (w:majority)
+   equipos.ARG.entrenador = "Lionel Scaloni"
+   mongo1:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:39.000Z
+   mongo2:27017  SECONDARY   salud=1 optime=2026-11-11T13:37:39.000Z
+   mongo3:27017  PRIMARY     salud=1 optime=2026-11-11T13:37:48.000Z
+
+✔ Fin. Evidencia: evidencia/mongo_lecturas_y_concerns_20261111-103722.txt

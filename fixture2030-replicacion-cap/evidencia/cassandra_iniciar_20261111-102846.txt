@@ -1,0 +1,111 @@
+# Fixture 2030 — Replicación y CAP · cassandra_iniciar
+# fecha:    2026-11-11 10:28:46 -0300 (2026-11-11T13:28:46Z)
+# comando:  bash scripts/cassandra_iniciar.sh
+# commit:   dba8580
+# docker:   28.3.3 · Docker Desktop, 12 CPU, 8251424768 B RAM
+
+==== 1. Levantar los 3 nodos (perfil cassandra, uno por vez)
+ Volume "fixture2030_rep_cas1"  Creating
+ Volume "fixture2030_rep_cas1"  Created
+ Volume "fixture2030_rep_cas2"  Creating
+ Volume "fixture2030_rep_cas2"  Created
+ Volume "fixture2030_rep_cas3"  Creating
+ Volume "fixture2030_rep_cas3"  Created
+ Container fixture2030-rep-cas1  Creating
+ Container fixture2030-rep-cas1  Created
+ Container fixture2030-rep-cas2  Creating
+ Container fixture2030-rep-cas2  Created
+ Container fixture2030-rep-cas3  Creating
+ Container fixture2030-rep-cas3  Created
+ Container fixture2030-rep-cas1  Starting
+ Container fixture2030-rep-cas1  Started
+ Container fixture2030-rep-cas1  Waiting
+ Container fixture2030-rep-cas1  Healthy
+ Container fixture2030-rep-cas2  Starting
+ Container fixture2030-rep-cas2  Started
+ Container fixture2030-rep-cas2  Waiting
+ Container fixture2030-rep-cas2  Healthy
+ Container fixture2030-rep-cas3  Starting
+ Container fixture2030-rep-cas3  Started
+   fixture2030-rep-cas1 acepta CQL
+   fixture2030-rep-cas2 acepta CQL
+   fixture2030-rep-cas3 acepta CQL
+   anillo listo en 113 s
+   Datacenter: datacenter1
+   =======================
+   Status=Up/Down
+   |/ State=Normal/Leaving/Joining/Moving
+   --  Address     Load        Tokens  Owns (effective)  Host ID                               Rack 
+   UN  172.28.0.2  119.86 KiB  16      64.7%             10c48b1b-04e4-4f5b-ad2e-726e508159fc  rack1
+   UN  172.28.0.3  25.96 KiB   16      59.3%             bc5c8be0-dc83-4718-bb6f-bcbc0110f524  rack1
+   UN  172.28.0.4  30.91 KiB   16      76.0%             45ccccba-dd6f-4158-abfc-f7a506550c30  rack1
+
+==== 2. Keyspace con RF=3 (antes del esquema del Hito 6)
+   
+    keyspace_name           | replication
+   -------------------------+---------------------------------------------------------------------------------------
+    fixture2030_comentarios | {'class': 'org.apache.cassandra.locator.NetworkTopologyStrategy', 'datacenter1': '3'}
+   
+   (1 rows)
+
+==== 3a. Esquema del Hito 6 (fixture2030-cassandra/scripts/esquema.cql)
+   CREATE KEYSPACE fixture2030_comentarios WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': '3'}  AND durable_writes = true;
+   CREATE TABLE fixture2030_comentarios.comentarios_por_partido
+   CREATE CUSTOM INDEX idx_comentarios_estado ON fixture2030_comentarios.comentarios_por_partido
+   CREATE TABLE fixture2030_comentarios.comentarios_por_usuario
+   CREATE TABLE fixture2030_comentarios.config_particion_partido
+   CREATE TABLE fixture2030_comentarios.interacciones_por_comentario
+
+==== 3b. Carga de muestra del Hito 6 (carga_muestra.cql) con CONSISTENCY ALL
+   
+    config_partidos
+   -----------------
+                112
+   
+   (1 rows)
+   
+   Warnings :
+   Aggregation query used without partition key
+   
+   
+    comentarios_par_a_1
+   ---------------------
+                     24
+   
+   (1 rows)
+   
+   Warnings :
+   Aggregation query used on multiple partition keys (IN restriction)
+   
+   
+    historial_demo
+   ----------------
+                20
+   
+   (1 rows)
+   carga terminada en 3 s
+
+==== 4. Verificación
+-- propiedad efectiva del keyspace (con RF=3 y 3 nodos, cada nodo guarda el 100 %):
+   --  Address     Load        Tokens  Owns (effective)  Host ID                               Rack 
+   UN  172.28.0.2  120.89 KiB  16      100.0%            10c48b1b-04e4-4f5b-ad2e-726e508159fc  rack1
+   UN  172.28.0.3  85.38 KiB   16      100.0%            bc5c8be0-dc83-4718-bb6f-bcbc0110f524  rack1
+   UN  172.28.0.4  117.72 KiB  16      100.0%            45ccccba-dd6f-4158-abfc-f7a506550c30  rack1
+-- réplicas de la partición 'PAR-A-1' de config_particion_partido (nodetool getendpoints):
+   172.28.0.3 -> fixture2030-rep-cas2
+   172.28.0.4 -> fixture2030-rep-cas3
+   172.28.0.2 -> fixture2030-rep-cas1
+-- conteos leídos con CONSISTENCY ALL (responden las tres réplicas):
+   config_particion_partido   112
+   comentarios_por_partido    80
+   comentarios_por_usuario    80
+
+==== 5. RAM usada (docker stats) — heap de cada nodo: MAX_HEAP_SIZE=256M
+fixture2030-rep-cas1	845.1MiB / 1.074GiB	76.83%
+fixture2030-rep-cas2	815.7MiB / 1.074GiB	74.16%
+fixture2030-rep-cas3	808.9MiB / 1.074GiB	73.54%
+   fixture2030-rep-cas1: Heap Memory (MB) : 102.80 / 256.00
+   fixture2030-rep-cas2: Heap Memory (MB) : 150.50 / 256.00
+   fixture2030-rep-cas3: Heap Memory (MB) : 151.92 / 256.00
+
+✔ Anillo de 3 nodos listo. Evidencia: evidencia/cassandra_iniciar_20261111-102846.txt
