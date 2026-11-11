@@ -1,0 +1,457 @@
+[20:36:44] # Ejecutado: 2026-11-11T20:36:43+00:00 | commit: fc08ebb | comando: python fixture2030-carga-masiva/scripts/orquestador.py --modo paralelo
+[20:36:44] # VM de Docker: 12 CPUs, 7869 MiB · contenedores ajenos: 17 (3966 MiB) · RAM libre del host: 1383 MiB · presupuesto: 3135 MiB
+[20:36:44] == 0. Limpieza: proyectos f30cm-* abajo, volúmenes y carpetas de datos borrados
+[20:36:48] == 1. Insumos de InfluxDB (data/lp/completo, deterministas)
+[20:36:48]    ya existían: se reutilizan (no cuentan como carga)
+[20:36:48] == 2. Carga en modo paralelo · orden mongodb → neo4j → cassandra → influxdb → redis
+[20:36:48] mongodb   admitida · reservado 1152/3135 MiB · 1 en curso
+[20:36:48] mongodb   ▶ arranque
+[20:36:48] redis     admitida · reservado 1664/3135 MiB · 2 en curso
+[20:36:48] redis     ▶ arranque
+[20:36:57]   redis | 
+[20:36:57]   redis |  Network f30cm-redis_default  Creating
+[20:36:57]   redis |  Network f30cm-redis_default  Created
+[20:36:57]   redis |  Volume "f30cm_redis_data"  Creating
+[20:36:57]   redis |  Volume "f30cm_redis_data"  Created
+[20:36:57]   redis |  Container f30cm-redis  Creating
+[20:36:57]   redis |  Container f30cm-redis  Created
+[20:36:57]   redis |  Container f30cm-redis  Starting
+[20:36:57]   redis |  Container f30cm-redis  Started
+[20:36:57]   redis |  Container f30cm-redis  Waiting
+[20:36:57]   redis |  Container f30cm-redis  Healthy
+[20:36:57] redis     ✔ arranque en 8.9 s
+[20:36:57] redis     ▶ preparacion
+[20:36:57] redis     ✔ preparacion en 0.0 s
+[20:36:57] redis     ▶ carga
+[20:37:01]   mongodb | 
+[20:37:01]   mongodb |  Network f30cm-mongodb_default  Creating
+[20:37:01]   mongodb |  Network f30cm-mongodb_default  Created
+[20:37:01]   mongodb |  Volume "f30cm_mongo_data"  Creating
+[20:37:01]   mongodb |  Volume "f30cm_mongo_data"  Created
+[20:37:01]   mongodb |  Container f30cm-mongodb  Creating
+[20:37:01]   mongodb |  Container f30cm-mongodb  Created
+[20:37:01]   mongodb |  Container f30cm-mongodb  Starting
+[20:37:01]   mongodb |  Container f30cm-mongodb  Started
+[20:37:01]   mongodb |  Container f30cm-mongodb  Waiting
+[20:37:01]   mongodb |  Container f30cm-mongodb  Healthy
+[20:37:01] mongodb   ✔ arranque en 12.8 s
+[20:37:01] mongodb   ▶ preparacion
+[20:37:02]   mongodb | 
+[20:37:02]   mongodb |  Container f30cm-mongodb-cargador  Creating
+[20:37:02]   mongodb |  Container f30cm-mongodb-cargador  Created
+[20:37:02]   mongodb |  Container f30cm-mongodb-cargador  Starting
+[20:37:02]   mongodb |  Container f30cm-mongodb-cargador  Started
+[20:37:03]   redis | == 2.1 Estado previo (DBSIZE es O(1), no recorre claves) ==
+[20:37:03]   redis | 0
+[20:37:03]   redis | == 2.2 Generación determinista: 2000 usuarios, tendencia de 112 partidos, 500 votos MVP ==
+[20:37:03]   redis | == 2.3 Verificación de lo cargado ==
+[20:37:03]   redis | 4203
+[20:37:03]   redis | 2
+[20:37:03]   redis | 112
+[20:37:03]   redis | 500
+[20:37:03]   redis | ARG-10
+[20:37:03]   redis | 99
+[20:37:03]   redis | FRA-7
+[20:37:03]   redis | 99
+[20:37:03]   redis | ARG-9
+[20:37:03]   redis | 100
+[20:37:03]   redis | BRA-11
+[20:37:03]   redis | 101
+[20:37:03]   redis | FRA-10
+[20:37:03]   redis | 101
+[20:37:03]   redis | == 2.4 Una sesión cargada: atributos y TTL restante ==
+[20:37:03]   redis | session_id
+[20:37:03]   redis | demo-ses-0000001-1
+[20:37:03]   redis | usuario_id
+[20:37:03]   redis | USR-0000001
+[20:37:03]   redis | rol
+[20:37:03]   redis | HINCHA
+[20:37:03]   redis | region
+[20:37:03]   redis | EU
+[20:37:03]   redis | dispositivo
+[20:37:03]   redis | ios
+[20:37:03]   redis | estado
+[20:37:03]   redis | ACTIVA
+[20:37:03]   redis | creada_en
+[20:37:03]   redis | 1908979133
+[20:37:03]   redis | ultima_actividad
+[20:37:03]   redis | 1908979193
+[20:37:03]   redis | expira_absoluta
+[20:37:03]   redis | 1909022333
+[20:37:03]   redis | solicitudes
+[20:37:03]   redis | 13
+[20:37:03]   redis | 1788
+[20:37:03]   redis | == 2.5 Sesión bloqueada de muestra (usuario 33) ==
+[20:37:03]   redis | BLOQUEADA
+[20:37:03]   redis | == 2.6 Caché fría a propósito: no existe copia de ningún partido todavía ==
+[20:37:03]   redis | 0
+[20:37:07]   mongodb | 
+[20:37:07]   mongodb | added 13 packages in 4s
+[20:37:07]   mongodb | 
+[20:37:07]   mongodb | npm notice
+[20:37:07]   mongodb | npm notice New major version of npm available! 10.8.2 -> 12.2.2
+[20:37:07]   mongodb | npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+[20:37:07]   mongodb | npm notice To update run: npm install -g npm@12.2.2
+[20:37:07]   mongodb | npm notice
+[20:37:07] mongodb   ✔ preparacion en 6.5 s
+[20:37:07] mongodb   ▶ carga
+[20:37:09]   mongodb | ✔ Conectado a MongoDB en mongodb://mongodb:27017
+[20:37:09]   mongodb | 
+[20:37:09]   mongodb | ── Cargando equipos ──
+[20:37:09]   mongodb |   Equipos insertados: 64
+[20:37:09]   mongodb |   Equipos actualizados: 0
+[20:37:09]   mongodb | 
+[20:37:09]   mongodb | ── Cargando jugadores ──
+[20:37:09]   mongodb |   Jugadores insertados: 1664
+[20:37:09]   mongodb |   Jugadores actualizados: 0
+[20:37:09]   mongodb |   Total de operaciones: 1664
+[20:37:09]   mongodb | 
+[20:37:09]   mongodb | ── Actualizando cantidadJugadores por equipo ──
+[20:37:09]   mongodb |   Equipos actualizados con conteo de jugadores: 64
+[20:37:09]   mongodb | 
+[20:37:09]   mongodb | ══════════════════════════════════════════════
+[20:37:09]   mongodb |   VERIFICACIÓN FINAL
+[20:37:09]   mongodb | ══════════════════════════════════════════════
+[20:37:09]   mongodb |   Cantidad de equipos:   64   (esperado: 64)
+[20:37:09]   mongodb |   Cantidad de jugadores: 1664 (esperado: 1664)
+[20:37:09]   mongodb |   Jugadores huérfanos:   0   (esperado: 0)
+[20:37:09]   mongodb | ══════════════════════════════════════════════
+[20:37:09]   mongodb | 
+[20:37:09]   mongodb | ✔ Carga completada exitosamente.
+[20:37:09]   mongodb | ✔ Conexión cerrada.
+[20:37:10] mongodb   ✔ carga en 3.2 s · 1,728 documentos · 542.6 /s
+[20:37:10] mongodb   ▶ verificacion
+[20:37:10] validación · MongoDB
+[20:37:12] distribución · mongodb
+[20:37:13]   redis | == V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+[20:37:13]   redis | DBSIZE: 4203 | used_memory: 2790616 bytes
+[20:37:13]   redis | == V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+[20:37:13]   redis | errors: 0, replies: 1000000
+[20:37:13]   redis | tiempo de carga: 7543 ms | 13257 usuarios/s, 145831 comandos/s (11 por usuario)
+[20:37:13]   redis | == V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+[20:37:13]   redis | conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+[20:37:13]   redis | INFO keyspace (expires = claves con TTL): db0:keys=304203,expires=304201,avg_ttl=16142579,subexpiry=0
+[20:37:13]   redis | huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+[20:37:13]   redis | -- primer usuario --
+[20:37:13]   redis | session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+[20:37:13]   redis | nombre Usuario 1000000 idioma es region AM
+[20:37:13]   redis | TTL sesión: 1791 | TTL índice: 43191 | TTL perfil: 891
+[20:37:13]   redis | -- último usuario (USR-1099999) --
+[20:37:13]   redis | sesiones: vol-ses-000000099999 | TTL sesión: 1405
+[20:37:13]   redis | == V.4 Memoria ==
+[20:37:13]   redis | used_memory antes: 2790616 | después: 61301744 (58.46M) | maxmemory: 268435456
+[20:37:13]   redis | por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): 585 bytes
+[20:37:13]   redis | evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+[20:37:13] redis     ✔ carga en 15.9 s · 100,000 usuarios · 6,270.5 /s
+[20:37:13] redis     ▶ verificacion
+[20:37:13] validación · Redis
+[20:37:13] mongodb   ✔ verificacion en 2.8 s
+[20:37:13] mongodb   ▶ apagado
+[20:37:26]   mongodb | 
+[20:37:26]   mongodb |  Container f30cm-mongodb-cargador  Stopping
+[20:37:26]   mongodb |  Container f30cm-mongodb  Stopping
+[20:37:26]   mongodb |  Container f30cm-mongodb  Stopped
+[20:37:26]   mongodb |  Container f30cm-mongodb  Removing
+[20:37:26]   mongodb |  Container f30cm-mongodb  Removed
+[20:37:26]   mongodb |  Container f30cm-mongodb-cargador  Stopped
+[20:37:26]   mongodb |  Container f30cm-mongodb-cargador  Removing
+[20:37:26]   mongodb |  Container f30cm-mongodb-cargador  Removed
+[20:37:26]   mongodb |  Network f30cm-mongodb_default  Removing
+[20:37:26]   mongodb |  Volume f30cm_mongo_data  Removing
+[20:37:26]   mongodb |  Volume f30cm_mongo_data  Removed
+[20:37:26]   mongodb |  Network f30cm-mongodb_default  Removed
+[20:37:26] mongodb   ✔ apagado en 12.8 s
+[20:37:26] neo4j     admitida · reservado 2560/3135 MiB · 2 en curso
+[20:37:26] neo4j     ▶ arranque
+[20:37:52] distribución · redis
+[20:38:18] redis     ✔ verificacion en 65.3 s
+[20:38:18] redis     ▶ apagado
+[20:38:34]   redis | 
+[20:38:34]   redis |  Container f30cm-redis  Stopping
+[20:38:34]   redis |  Container f30cm-redis  Stopped
+[20:38:34]   redis |  Container f30cm-redis  Removing
+[20:38:34]   redis |  Container f30cm-redis  Removed
+[20:38:34]   redis |  Network f30cm-redis_default  Removing
+[20:38:34]   redis |  Volume f30cm_redis_data  Removing
+[20:38:34]   redis |  Volume f30cm_redis_data  Removed
+[20:38:34]   redis |  Network f30cm-redis_default  Removed
+[20:38:34] redis     ✔ apagado en 16.3 s
+[20:38:49]   neo4j | 
+[20:38:49]   neo4j |  Network f30cm-neo4j-net  Creating
+[20:38:49]   neo4j |  Network f30cm-neo4j-net  Created
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_logs"  Creating
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_logs"  Created
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_plugins"  Creating
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_plugins"  Created
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_data"  Creating
+[20:38:49]   neo4j |  Volume "f30cm_neo4j_data"  Created
+[20:38:49]   neo4j |  Container f30cm-neo4j  Creating
+[20:38:49]   neo4j |  Container f30cm-neo4j  Created
+[20:38:49]   neo4j |  Container f30cm-neo4j  Starting
+[20:38:49]   neo4j |  Container f30cm-neo4j  Started
+[20:38:49]   neo4j |  Container f30cm-neo4j  Waiting
+[20:38:49]   neo4j |  Container f30cm-neo4j  Healthy
+[20:38:49] neo4j     ✔ arranque en 83.2 s
+[20:38:49] neo4j     ▶ preparacion
+[20:38:58]   neo4j | name, type, labelsOrTypes, properties
+[20:38:58]   neo4j | "equipo_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Equipo"], ["equipoId"]
+[20:38:58]   neo4j | "evento_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Evento"], ["eventoId"]
+[20:38:58]   neo4j | "grupo_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Grupo"], ["grupoId"]
+[20:38:58]   neo4j | "jugador_dni_unico", "NODE_PROPERTY_UNIQUENESS", ["Jugador"], ["dni"]
+[20:38:58]   neo4j | "partido_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Partido"], ["partidoId"]
+[20:38:58]   neo4j | "sede_id_unico", "NODE_PROPERTY_UNIQUENESS", ["Sede"], ["sedeId"]
+[20:38:58]   neo4j | "tipoevento_id_unico", "NODE_PROPERTY_UNIQUENESS", ["TipoEvento"], ["tipoEventoId"]
+[20:38:58]   neo4j | name, type, entityType, labelsOrTypes, properties
+[20:38:58]   neo4j | "equipo_confederacion", "RANGE", "NODE", ["Equipo"], ["confederacion"]
+[20:38:58]   neo4j | "equipo_id_unico", "RANGE", "NODE", ["Equipo"], ["equipoId"]
+[20:38:58]   neo4j | "evento_id_unico", "RANGE", "NODE", ["Evento"], ["eventoId"]
+[20:38:58]   neo4j | "evento_particion_partido", "RANGE", "NODE", ["Evento"], ["partidoId", "secuencia"]
+[20:38:58]   neo4j | "evento_tipo", "RANGE", "NODE", ["Evento"], ["tipo"]
+[20:38:58]   neo4j | "grupo_id_unico", "RANGE", "NODE", ["Grupo"], ["grupoId"]
+[20:38:58]   neo4j | "index_1b9dcc97", "LOOKUP", "RELATIONSHIP", NULL, NULL
+[20:38:58]   neo4j | "index_460996c0", "LOOKUP", "NODE", NULL, NULL
+[20:38:58]   neo4j | "jugador_apellido_nombre", "RANGE", "NODE", ["Jugador"], ["apellido", "nombre"]
+[20:38:58]   neo4j | "jugador_dni_unico", "RANGE", "NODE", ["Jugador"], ["dni"]
+[20:38:58]   neo4j | "jugador_posicion", "RANGE", "NODE", ["Jugador"], ["posicion"]
+[20:38:58]   neo4j | "participa_condicion", "RANGE", "RELATIONSHIP", ["PARTICIPA_EN"], ["condicion"]
+[20:38:58]   neo4j | "partido_fase_estado", "RANGE", "NODE", ["Partido"], ["fase", "estado"]
+[20:38:58]   neo4j | "partido_fecha", "RANGE", "NODE", ["Partido"], ["fechaHora"]
+[20:38:58]   neo4j | "partido_id_unico", "RANGE", "NODE", ["Partido"], ["partidoId"]
+[20:38:58]   neo4j | "sede_id_unico", "RANGE", "NODE", ["Sede"], ["sedeId"]
+[20:38:58]   neo4j | "sede_region", "RANGE", "NODE", ["Sede"], ["region"]
+[20:38:58]   neo4j | "tipoevento_id_unico", "RANGE", "NODE", ["TipoEvento"], ["tipoEventoId"]
+[20:38:58] neo4j     ✔ preparacion en 8.5 s
+[20:38:58] neo4j     ▶ carga
+[20:39:22]   neo4j | etiqueta, cantidad
+[20:39:22]   neo4j | "Equipo", 64
+[20:39:22]   neo4j | "Evento", 1572
+[20:39:22]   neo4j | "Grupo", 16
+[20:39:22]   neo4j | "Jugador", 1282
+[20:39:22]   neo4j | "Partido", 127
+[20:39:22]   neo4j | "Sede", 16
+[20:39:22]   neo4j | "TipoEvento", 12
+[20:39:22]   neo4j | relacion, cantidad
+[20:39:22]   neo4j | "ANOTA", 220
+[20:39:22]   neo4j | "ASISTE", 220
+[20:39:22]   neo4j | "CAUSA_DE", 702
+[20:39:22]   neo4j | "CORRESPONDE_A", 96
+[20:39:22]   neo4j | "ES_DE_TIPO", 1572
+[20:39:22]   neo4j | "JUEGA_EN", 1282
+[20:39:22]   neo4j | "OCURRE_EN", 1572
+[20:39:22]   neo4j | "PARTICIPA", 1248
+[20:39:22]   neo4j | "PARTICIPA_EN", 254
+[20:39:22]   neo4j | "PERTENECE_A", 64
+[20:39:22]   neo4j | "PROTAGONIZADO_POR", 1572
+[20:39:22]   neo4j | "RECIBE_TARJETA", 136
+[20:39:22]   neo4j | "REEMPLAZA", 136
+[20:39:22]   neo4j | "SE_JUEGA_EN", 127
+[20:39:22]   neo4j | "SIGUIENTE_EVENTO", 1446
+[20:39:22]   neo4j | fase, estado, partidos, eventos
+[20:39:22]   neo4j | "GRUPOS", "FINALIZADO", 96, 1152
+[20:39:22]   neo4j | "DIECISEISAVOS", "FINALIZADO", 16, 220
+[20:39:22]   neo4j | "OCTAVOS", "FINALIZADO", 8, 116
+[20:39:22]   neo4j | "CUARTOS", "FINALIZADO", 4, 52
+[20:39:22]   neo4j | "SEMIFINAL", "FINALIZADO", 2, 32
+[20:39:22]   neo4j | "FINAL", "PROGRAMADO", 1, 0
+[20:39:23] neo4j     ✔ carga en 25.4 s · 13,736 nodos+relaciones · 540.1 /s
+[20:39:23] neo4j     ▶ verificacion
+[20:39:23] validación · Neo4j
+[20:39:24] distribución · neo4j
+[20:39:26] neo4j     ✔ verificacion en 2.6 s
+[20:39:26] neo4j     ▶ apagado
+[20:39:39]   neo4j | 
+[20:39:39]   neo4j |  Container f30cm-neo4j  Stopping
+[20:39:39]   neo4j |  Container f30cm-neo4j  Stopped
+[20:39:39]   neo4j |  Container f30cm-neo4j  Removing
+[20:39:39]   neo4j |  Container f30cm-neo4j  Removed
+[20:39:39]   neo4j |  Volume f30cm_neo4j_plugins  Removing
+[20:39:39]   neo4j |  Network f30cm-neo4j-net  Removing
+[20:39:39]   neo4j |  Volume f30cm_neo4j_data  Removing
+[20:39:39]   neo4j |  Volume f30cm_neo4j_plugins  Removed
+[20:39:39]   neo4j |  Volume f30cm_neo4j_logs  Removing
+[20:39:39]   neo4j |  Volume f30cm_neo4j_data  Removed
+[20:39:39]   neo4j |  Volume f30cm_neo4j_logs  Removed
+[20:39:39]   neo4j |  Network f30cm-neo4j-net  Removed
+[20:39:39] neo4j     ✔ apagado en 13.3 s
+[20:39:39] cassandra admitida · reservado 2816/3135 MiB · 1 en curso
+[20:39:39] cassandra ▶ arranque
+[20:41:13]   cassandra | 
+[20:41:13]   cassandra |  Network f30cm-cassandra-net  Creating
+[20:41:13]   cassandra |  Network f30cm-cassandra-net  Created
+[20:41:13]   cassandra |  Volume "f30cm_cassandra_data"  Creating
+[20:41:13]   cassandra |  Volume "f30cm_cassandra_data"  Created
+[20:41:13]   cassandra |  Container f30cm-cassandra  Creating
+[20:41:13]   cassandra |  Container f30cm-cassandra  Created
+[20:41:13]   cassandra |  Container f30cm-cassandra  Starting
+[20:41:13]   cassandra |  Container f30cm-cassandra  Started
+[20:41:13]   cassandra |  Container f30cm-cassandra  Waiting
+[20:41:13]   cassandra |  Container f30cm-cassandra  Healthy
+[20:41:13] cassandra ✔ arranque en 94.5 s
+[20:41:13] cassandra ▶ preparacion
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE KEYSPACE fixture2030_comentarios WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': '1'}  AND durable_writes = true;
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_partido (
+[20:41:23]   cassandra |     partido_id text,
+[20:41:23]   cassandra |     ventana timestamp,
+[20:41:23]   cassandra |     bucket int,
+[20:41:23]   cassandra |     creado_en timestamp,
+[20:41:23]   cassandra |     comentario_id text,
+[20:41:23]   cassandra |     alias_usuario text,
+[20:41:23]   cassandra |     contenido text,
+[20:41:23]   cassandra |     editado boolean,
+[20:41:23]   cassandra |     estado_moderacion text,
+[20:41:23]   cassandra |     hinchada text,
+[20:41:23]   cassandra |     idioma text,
+[20:41:23]   cassandra |     minuto_partido int,
+[20:41:23]   cassandra |     moderado_en timestamp,
+[20:41:23]   cassandra |     moderado_por text,
+[20:41:23]   cassandra |     motivo_moderacion text,
+[20:41:23]   cassandra |     responde_a text,
+[20:41:23]   cassandra |     usuario_id text,
+[20:41:23]   cassandra |     PRIMARY KEY ((partido_id, ventana, bucket), creado_en, comentario_id)
+[20:41:23]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:41:23]   cassandra |     AND additional_write_policy = '99p'
+[20:41:23]   cassandra |     AND allow_auto_snapshot = true
+[20:41:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:41:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:41:23]   cassandra |     AND cdc = false
+[20:41:23]   cassandra |     AND comment = 'Q1 Q2 Q3 Q4 - comentarios de un partido por ventana de 10 min y bucket, del mas reciente al mas antiguo'
+[20:41:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:41:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:41:23]   cassandra |     AND memtable = 'default'
+[20:41:23]   cassandra |     AND crc_check_chance = 1.0
+[20:41:23]   cassandra |     AND default_time_to_live = 0
+[20:41:23]   cassandra |     AND extensions = {}
+[20:41:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:41:23]   cassandra |     AND incremental_backups = true
+[20:41:23]   cassandra |     AND max_index_interval = 2048
+[20:41:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:41:23]   cassandra |     AND min_index_interval = 128
+[20:41:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:41:23]   cassandra |     AND speculative_retry = '99p';
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE CUSTOM INDEX idx_comentarios_estado ON fixture2030_comentarios.comentarios_por_partido (estado_moderacion) USING 'sai';
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_usuario (
+[20:41:23]   cassandra |     usuario_id text,
+[20:41:23]   cassandra |     mes text,
+[20:41:23]   cassandra |     creado_en timestamp,
+[20:41:23]   cassandra |     comentario_id text,
+[20:41:23]   cassandra |     bucket int,
+[20:41:23]   cassandra |     contenido text,
+[20:41:23]   cassandra |     estado_moderacion text,
+[20:41:23]   cassandra |     minuto_partido int,
+[20:41:23]   cassandra |     partido_id text,
+[20:41:23]   cassandra |     ventana timestamp,
+[20:41:23]   cassandra |     PRIMARY KEY ((usuario_id, mes), creado_en, comentario_id)
+[20:41:23]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:41:23]   cassandra |     AND additional_write_policy = '99p'
+[20:41:23]   cassandra |     AND allow_auto_snapshot = true
+[20:41:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:41:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:41:23]   cassandra |     AND cdc = false
+[20:41:23]   cassandra |     AND comment = 'Q5 - historial de comentarios de un usuario por mes (vista duplicada)'
+[20:41:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:41:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:41:23]   cassandra |     AND memtable = 'default'
+[20:41:23]   cassandra |     AND crc_check_chance = 1.0
+[20:41:23]   cassandra |     AND default_time_to_live = 0
+[20:41:23]   cassandra |     AND extensions = {}
+[20:41:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:41:23]   cassandra |     AND incremental_backups = true
+[20:41:23]   cassandra |     AND max_index_interval = 2048
+[20:41:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:41:23]   cassandra |     AND min_index_interval = 128
+[20:41:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:41:23]   cassandra |     AND speculative_retry = '99p';
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE TABLE fixture2030_comentarios.config_particion_partido (
+[20:41:23]   cassandra |     partido_id text PRIMARY KEY,
+[20:41:23]   cassandra |     audiencia text,
+[20:41:23]   cassandra |     buckets int,
+[20:41:23]   cassandra |     fase text,
+[20:41:23]   cassandra |     inicio timestamp,
+[20:41:23]   cassandra |     ventana_minutos int
+[20:41:23]   cassandra | ) WITH additional_write_policy = '99p'
+[20:41:23]   cassandra |     AND allow_auto_snapshot = true
+[20:41:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:41:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:41:23]   cassandra |     AND cdc = false
+[20:41:23]   cassandra |     AND comment = 'Q0 - parametros de particion de cada partido (fijados antes del partido)'
+[20:41:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:41:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:41:23]   cassandra |     AND memtable = 'default'
+[20:41:23]   cassandra |     AND crc_check_chance = 1.0
+[20:41:23]   cassandra |     AND default_time_to_live = 0
+[20:41:23]   cassandra |     AND extensions = {}
+[20:41:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:41:23]   cassandra |     AND incremental_backups = true
+[20:41:23]   cassandra |     AND max_index_interval = 2048
+[20:41:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:41:23]   cassandra |     AND min_index_interval = 128
+[20:41:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:41:23]   cassandra |     AND speculative_retry = '99p';
+[20:41:23]   cassandra | 
+[20:41:23]   cassandra | CREATE TABLE fixture2030_comentarios.interacciones_por_comentario (
+[20:41:23]   cassandra |     comentario_id text PRIMARY KEY,
+[20:41:23]   cassandra |     me_gusta counter,
+[20:41:23]   cassandra |     reportes counter,
+[20:41:23]   cassandra |     respuestas counter
+[20:41:23]   cassandra | ) WITH additional_write_policy = '99p'
+[20:41:23]   cassandra |     AND allow_auto_snapshot = true
+[20:41:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:41:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:41:23]   cassandra |     AND cdc = false
+[20:41:23]   cassandra |     AND comment = 'Q6 - contadores de interaccion por comentario'
+[20:41:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:41:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:41:23]   cassandra |     AND memtable = 'default'
+[20:41:23]   cassandra |     AND crc_check_chance = 1.0
+[20:41:23]   cassandra |     AND default_time_to_live = 0
+[20:41:23]   cassandra |     AND extensions = {}
+[20:41:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:41:23]   cassandra |     AND incremental_backups = true
+[20:41:23]   cassandra |     AND max_index_interval = 2048
+[20:41:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:41:23]   cassandra |     AND min_index_interval = 128
+[20:41:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:41:23]   cassandra |     AND speculative_retry = '99p';
+[20:41:26]   cassandra | 
+[20:41:26]   cassandra |  Container f30cm-cassandra  Running
+[20:41:26]   cassandra |  Container f30cm-cassandra-cargador  Creating
+[20:41:26]   cassandra |  Container f30cm-cassandra-cargador  Created
+[20:41:26]   cassandra |  Container f30cm-cassandra  Waiting
+[20:41:26]   cassandra |  Container f30cm-cassandra  Healthy
+[20:41:26]   cassandra |  Container f30cm-cassandra-cargador  Starting
+[20:41:26]   cassandra |  Container f30cm-cassandra-cargador  Started
+[20:41:34]   cassandra | 
+[20:41:34]   cassandra | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[20:41:34] cassandra ✔ preparacion en 20.6 s
+[20:41:34] cassandra ▶ carga
+[20:46:51] ⚠ vigía: RAM disponible del host 130 MiB (< 250) (1/3)
+[20:47:32] ⚠ vigía: RAM disponible del host 199 MiB (< 250) (1/3)
+[20:49:37] ⚠ vigía: RAM disponible del host 196 MiB (< 250) (1/3)
+[20:49:40] ⚠ vigía: RAM disponible del host 229 MiB (< 250) (2/3)
+[20:49:44] ⚠ vigía: RAM disponible del host 45 MiB (< 250) (3/3)
+[20:49:44] ✖ VIGÍA: corto la corrida — RAM disponible del host 45 MiB (< 250). Mato los contenedores f30cm-*.
+[20:49:45] ✖ no se admiten más bases: influxdb
+[20:49:46] cassandra ✖ carga: ErrorPaso: docker exec f30cm-cassandra-cargador python scripts/carga_masiva.py --salida /app/evidencia/20261111-203638_paralelo… salió con 137 (491.7 s):
+
+[20:49:50]   cassandra | 
+[20:49:50]   cassandra |  Container f30cm-cassandra-cargador  Stopping
+[20:49:50]   cassandra |  Container f30cm-cassandra-cargador  Stopped
+[20:49:50]   cassandra |  Container f30cm-cassandra-cargador  Removing
+[20:49:50]   cassandra |  Container f30cm-cassandra-cargador  Removed
+[20:49:50]   cassandra |  Container f30cm-cassandra  Stopping
+[20:49:50]   cassandra |  Container f30cm-cassandra  Stopped
+[20:49:50]   cassandra |  Container f30cm-cassandra  Removing
+[20:49:50]   cassandra |  Container f30cm-cassandra  Removed
+[20:49:50]   cassandra |  Volume f30cm_cassandra_data  Removing
+[20:49:50]   cassandra |  Network f30cm-cassandra-net  Removing
+[20:49:50]   cassandra |  Volume f30cm_cassandra_data  Removed
+[20:49:50]   cassandra |  Network f30cm-cassandra-net  Removed
+[20:49:50] == 3. Referencias cruzadas
+[20:49:50] == 4. Reporte: fixture2030-carga-masiva\evidencia\corridas\20261111-203638_paralelo/reporte.md
+[20:50:05] FIN · carga 778.0 s · total 782.0 s · bases con error: ['cassandra', 'influxdb'] · chequeos fallidos: ninguno
+[20:50:05] ✖ CORRIDA CORTADA POR EL VIGÍA: RAM disponible del host 45 MiB (< 250)
