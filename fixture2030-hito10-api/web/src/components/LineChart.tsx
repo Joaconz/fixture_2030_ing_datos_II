@@ -24,6 +24,8 @@ interface LineChartProps {
   /** Contadores: marcas del eje Y sólo en enteros. */
   integer?: boolean
   height?: number
+  /** Etiqueta del eje X y del tooltip (por defecto, la hora UTC). */
+  formatX?: (t: number) => string
 }
 
 const M = { top: 26, right: 18, bottom: 30, left: 44 }
@@ -37,7 +39,19 @@ function nice(max: number): number {
 }
 
 /** Gráfico de líneas SVG propio (sin librería): series distinguibles por color, trazo y marcador. */
-export function LineChart({ series, title, yLabel, yMin = 0, yMax, formatY = String, integer = false, height = 240 }: LineChartProps) {
+const horaUtc = (t: number) => formatHoraUtc(new Date(t).toISOString())
+
+export function LineChart({
+  series,
+  title,
+  yLabel,
+  yMin = 0,
+  yMax,
+  formatY = String,
+  integer = false,
+  height = 240,
+  formatX = horaUtc,
+}: LineChartProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(640)
   const [hover, setHover] = useState<number | null>(null)
@@ -158,7 +172,7 @@ export function LineChart({ series, title, yLabel, yMin = 0, yMax, formatY = Str
               y={height - 8}
               textAnchor={i === 0 ? 'start' : i === ticksX.length - 1 ? 'end' : 'middle'}
             >
-              {formatHoraUtc(new Date(t).toISOString())}
+              {formatX(t)}
             </text>
           ))}
           <text className="axis axis-label" x={8} y={14}>
@@ -201,7 +215,7 @@ export function LineChart({ series, title, yLabel, yMin = 0, yMax, formatY = Str
             style={{ left: Math.min(Math.max(x(hover) + 10, 0), width - 170) }}
             aria-hidden="true"
           >
-            <strong>{formatHoraUtc(new Date(hover).toISOString())} UTC</strong>
+            <strong>{formatX(hover)}</strong>
             {valoresHover.map(({ s, p }) => (
               <span key={s.id} className={`serie-${s.variant}`}>
                 <i className="tt-swatch" /> {s.label}: {p ? formatY(p.v) : '—'}

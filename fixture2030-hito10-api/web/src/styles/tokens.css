@@ -1,70 +1,85 @@
 /*
- * Tokens de diseño — "centro de datos del torneo".
- * Paleta de la recomendación ui-ux-pro-max para dashboards de datos en tiempo
- * real (azul de datos + acento naranja), ajustada para WCAG AA en ambos temas:
- * todos los pares texto/fondo ≥ 4.5:1; trazos de datos y bordes de controles ≥ 3:1.
+ * Tokens de diseño — "Fixture 2030 · Estadio de día" (proyecto de Stitch
+ * 8584982924763569966, stitch/DESIGN.md). Institucional y luminoso: superficies
+ * blancas sobre blanco roto, texto azul noche y un único acento cobalto.
+ * Sin modo oscuro (DESIGN.md §6). Contrastes: texto ≥ 4.5:1 sobre su fondo;
+ * bordes de controles y trazos de datos ≥ 3:1.
  */
 :root {
   color-scheme: light;
 
+  /* Paleta de DESIGN.md §2 */
+  --blanco-roto: #f7f8fa;
+  --blanco: #ffffff;
+  --azul-noche: #14213d;
+  --cobalto: #1d3fbf;
+  --gris-azulado: #c5c5d6;
+  --gris-azulado-medio: #64748b;
+  --rojo-error: #ba1a1a;
+
   /* Superficies */
-  --bg: #f3f5f9;
-  --surface: #ffffff;
-  --surface-2: #eef2f7;
-  --surface-3: #e2e8f0;
-  --border: #d3dae5;
-  --border-strong: #8492a6;
+  --bg: var(--blanco-roto);
+  --surface: var(--blanco);
+  --surface-2: #f1f3f7;
+  --surface-3: #e7eaf1;
+  --border: #e1e3ec;
+  --border-strong: var(--gris-azulado);
+  /* Bordes de controles interactivos (≥ 3:1 contra el blanco) */
+  --border-control: #8a8da6;
 
   /* Texto */
-  --text: #0f172a;
-  --text-2: #334155;
-  --muted: #4f5d73;
+  --text: var(--azul-noche);
+  --text-2: #33405c;
+  --muted: var(--gris-azulado-medio);
 
-  /* Marca y acciones */
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
-  --primary-soft: #dbe7ff;
+  /* Acento único */
+  --primary: var(--cobalto);
+  --primary-hover: #1a39ac; /* cobalto oscurecido 10 % */
+  --primary-soft: #e6ebfb;
   --on-primary: #ffffff;
-  --accent: #c2410c;
-  --accent-soft: #ffedd5;
-  --focus: #1d4ed8;
+  --accent: var(--gris-azulado-medio);
+  --accent-soft: var(--surface-2);
+  --focus: var(--cobalto);
 
-  /* Semánticos (texto sobre su fondo *-soft ≥ 4.5:1) */
-  --ok: #15803d;
-  --ok-soft: #dcfce7;
-  --warn: #92400e;
-  --warn-soft: #fef3c7;
-  --danger: #b91c1c;
-  --danger-soft: #fee2e2;
-  --info: #075985;
-  --info-soft: #e0f2fe;
-  --conflict: #9a3412;
-  --conflict-soft: #ffedd5;
+  /* Semánticos (las vistas de operación los usan; el hincha sólo ve el error) */
+  --ok: #166534;
+  --ok-soft: #e3f4e8;
+  --warn: #8a4b08;
+  --warn-soft: #fbf0dc;
+  --danger: var(--rojo-error);
+  --danger-soft: #ffdad6;
+  --info: var(--cobalto);
+  --info-soft: var(--primary-soft);
+  --conflict: #8a4b08;
+  --conflict-soft: #fbf0dc;
 
-  /* Series de gráficos: local / visitante (≥ 3:1 contra la superficie) */
-  --serie-0: #1d4ed8;
-  --serie-1: #c2410c;
-  --grid: #e2e8f0;
+  /* Series de gráficos: una línea fina por equipo (cobalto y gris azulado) */
+  --serie-0: var(--cobalto);
+  --serie-1: var(--gris-azulado-medio);
+  --grid: #e7e9f0;
 
-  /* Fuentes de datos (puntos decorativos: el nombre siempre va en texto) */
-  --src-mongo: #16a34a;
+  /* Puntos de las vistas de operación (no aparecen en la UX del hincha) */
+  --src-mongo: #166534;
   --src-neo4j: #0e7490;
   --src-cassandra: #4f46e5;
-  --src-redis: #dc2626;
+  --src-redis: var(--rojo-error);
   --src-influx: #a21caf;
 
-  /* Tipografía */
-  --font-sans: 'Fira Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  --fs-xs: 0.75rem;
-  --fs-sm: 0.875rem;
-  --fs-md: 1rem;
+  /* Tipografía: Plus Jakarta Sans en toda la interfaz; cifras tabulares */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-sans);
+  --fs-label-sm: 0.6875rem; /* 11 */
+  --fs-xs: 0.75rem; /* 12 */
+  --fs-sm: 0.875rem; /* 14 */
+  --fs-md: 1rem; /* 16 */
   --fs-lg: 1.125rem;
-  --fs-xl: 1.375rem;
-  --fs-2xl: 1.75rem;
-  --fs-3xl: 2.25rem;
+  --fs-xl: 1.25rem; /* 20 */
+  --fs-2xl: 1.5rem; /* 24 */
+  --fs-3xl: 2rem; /* 32 */
+  --fs-4xl: 2.5rem; /* 40 */
+  --fs-score: clamp(2.75rem, 2rem + 3vw, 3.75rem);
 
-  /* Espaciado (escala de 4 px) */
+  /* Espaciado (base 8 px, con medios pasos de 4) */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -73,98 +88,24 @@
   --s-6: 24px;
   --s-8: 32px;
   --s-10: 40px;
+  --gutter: 24px;
 
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow-1: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.04);
-  --shadow-2: 0 10px 30px rgb(15 23 42 / 0.18);
+  /* Esquinas: 10 px en todo; la píldora sólo para estados y chips */
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Sombras teñidas hacia el azul noche */
+  --shadow-1: 0 1px 2px rgb(20 33 61 / 0.04), 0 4px 14px rgb(20 33 61 / 0.05);
+  --shadow-2: 0 12px 32px rgb(20 33 61 / 0.16);
 
   --dur: 180ms;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   --z-sticky: 20;
   --z-dialog: 100;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: #0a101d;
-    --surface: #111a2b;
-    --surface-2: #162238;
-    --surface-3: #1e2c47;
-    --border: #26344f;
-    --border-strong: #64748b;
-    --text: #e7ecf4;
-    --text-2: #c5cedb;
-    --muted: #9aa8bc;
-    --primary: #6aa8ff;
-    --primary-hover: #93c0ff;
-    --primary-soft: #16294a;
-    --on-primary: #08101f;
-    --accent: #fb923c;
-    --accent-soft: #3a2212;
-    --focus: #93c0ff;
-    --ok: #4ade80;
-    --ok-soft: #10301f;
-    --warn: #facc15;
-    --warn-soft: #33290a;
-    --danger: #f87171;
-    --danger-soft: #3a1518;
-    --info: #38bdf8;
-    --info-soft: #0c2a3d;
-    --conflict: #fdba74;
-    --conflict-soft: #3a2212;
-    --serie-0: #6aa8ff;
-    --serie-1: #fb923c;
-    --grid: #22304a;
-    --src-mongo: #4ade80;
-    --src-neo4j: #22d3ee;
-    --src-cassandra: #a5b4fc;
-    --src-redis: #f87171;
-    --src-influx: #e879f9;
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-2: 0 16px 40px rgb(0 0 0 / 0.55);
-  }
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: #0a101d;
-  --surface: #111a2b;
-  --surface-2: #162238;
-  --surface-3: #1e2c47;
-  --border: #26344f;
-  --border-strong: #64748b;
-  --text: #e7ecf4;
-  --text-2: #c5cedb;
-  --muted: #9aa8bc;
-  --primary: #6aa8ff;
-  --primary-hover: #93c0ff;
-  --primary-soft: #16294a;
-  --on-primary: #08101f;
-  --accent: #fb923c;
-  --accent-soft: #3a2212;
-  --focus: #93c0ff;
-  --ok: #4ade80;
-  --ok-soft: #10301f;
-  --warn: #facc15;
-  --warn-soft: #33290a;
-  --danger: #f87171;
-  --danger-soft: #3a1518;
-  --info: #38bdf8;
-  --info-soft: #0c2a3d;
-  --conflict: #fdba74;
-  --conflict-soft: #3a2212;
-  --serie-0: #6aa8ff;
-  --serie-1: #fb923c;
-  --grid: #22304a;
-  --src-mongo: #4ade80;
-  --src-neo4j: #22d3ee;
-  --src-cassandra: #a5b4fc;
-  --src-redis: #f87171;
-  --src-influx: #e879f9;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-2: 0 16px 40px rgb(0 0 0 / 0.55);
+  --topbar-h: 64px;
+  --content-max: 1280px;
 }

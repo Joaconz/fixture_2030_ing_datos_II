@@ -8,7 +8,7 @@ import createClient from 'openapi-fetch'
 import { API_URL } from '../config'
 import type { paths } from './schema'
 import type { CacheStatus } from './types'
-import { networkFailure, parseApiError, parseRetryAfter, type ApiFailure } from './errors'
+import { clientTimeoutFailure, networkFailure, parseApiError, parseRetryAfter, type ApiFailure } from './errors'
 
 export const api = createClient<paths>({ baseUrl: API_URL })
 
@@ -55,13 +55,30 @@ export interface RunOptions<T> {
    * Si esta función devuelve algo distinto de null, se trata como dato.
    */
   acceptError?: (status: number, body: unknown) => T | null
+  /** Tope de espera de la respuesta (ms). La API corta sus dependencias a los 2 s; esto cubre una API colgada. */
+  timeoutMs?: number
+}
+
+/** Si la API no contesta en este tiempo, la pantalla deja de cargar y ofrece reintentar. */
+export const CLIENT_TIMEOUT_MS = 15_000
+
+const VENCIDO = Symbol('vencido')
+
+function conTope<T>(promesa: Promise<T>, ms: number): Promise<T | typeof VENCIDO> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const tope = new Promise<typeof VENCIDO>((resolve) => {
+    timer = setTimeout(() => resolve(VENCIDO), ms)
+  })
+  return Promise.race([promesa, tope]).finally(() => clearTimeout(timer))
 }
 
 export async function run<T>(exec: () => Promise<FetchLike<T>>, options: RunOptions<T> = {}): Promise<ApiResult<T>> {
   const t0 = performance.now()
   let res: FetchLike<T>
   try {
-    res = await exec()
+    const r = await conTope(exec(), options.timeoutMs ?? CLIENT_TIMEOUT_MS)
+    if (r === VENCIDO) return { ok: false, error: clientTimeoutFailure(), meta: null }
+    res = r
   } catch (causa) {
     return { ok: false, error: networkFailure(causa), meta: null }
   }

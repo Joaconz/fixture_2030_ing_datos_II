@@ -1,15 +1,27 @@
 import { Link } from 'react-router'
-import { EmptyState } from '../components/States'
+import { EstadoVacio } from '../components/Estados'
+import { Icon } from '../components/Icon'
 
 export function NotFoundPage() {
   return (
     <div className="page">
-      <h1>Página no encontrada</h1>
-      <EmptyState title="Esta ruta no existe en el front" icon="searchX">
-        <p>
-          Volvé al <Link to="/">inicio</Link> para buscar un equipo, un partido o una sesión.
-        </p>
-      </EmptyState>
+      <section className="card card-pad" aria-labelledby="nf-titulo">
+        <h1 id="nf-titulo" className="titulo-seccion">
+          Página no encontrada
+        </h1>
+        <EstadoVacio
+          titulo="Esta dirección no existe"
+          icono="searchX"
+          accion={
+            <Link to="/" className="btn btn-secondary btn-sm">
+              <Icon name="arrowLeft" size={16} />
+              Volver al inicio
+            </Link>
+          }
+        >
+          Desde el inicio podés buscar un equipo por su código FIFA o entrar a un partido destacado.
+        </EstadoVacio>
+      </section>
     </div>
   )
 }

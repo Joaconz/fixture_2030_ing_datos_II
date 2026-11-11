@@ -125,6 +125,20 @@ export function networkFailure(causa: unknown): ApiFailure {
   }
 }
 
+/** La API no respondió dentro del tope del cliente (por ejemplo, el proceso colgado): se trata como sin conexión. */
+export function clientTimeoutFailure(): ApiFailure {
+  return {
+    kind: 'network',
+    status: null,
+    code: 'CLIENT_TIMEOUT',
+    message: 'La API no respondió a tiempo.',
+    requestId: null,
+    details: [],
+    dependency: null,
+    retryAfter: null,
+  }
+}
+
 const NOMBRE_FUENTE: Record<string, string> = {
   mongodb: 'MongoDB',
   mongo: 'MongoDB',
@@ -138,4 +152,23 @@ const NOMBRE_FUENTE: Record<string, string> = {
 /** "mongodb" → "MongoDB"; un nombre desconocido se devuelve tal cual. */
 export function nombreFuente(dep: string): string {
   return NOMBRE_FUENTE[dep.trim().toLowerCase()] ?? dep
+}
+
+const AREA_FUENTE: Record<string, string> = {
+  mongodb: 'equipos y planteles',
+  mongo: 'equipos y planteles',
+  neo4j: 'partidos y eventos',
+  cassandra: 'comentarios',
+  redis: 'sesiones',
+  influxdb: 'estadísticas',
+  influx: 'estadísticas',
+}
+
+/**
+ * Lo que el hincha deja de ver cuando cae una fuente ("comentarios"), sin el
+ * nombre de la base (PRODUCT.md, principio 1). null si la fuente es desconocida.
+ */
+export function areaDeFuente(dep: string | null): string | null {
+  if (dep === null) return null
+  return AREA_FUENTE[dep.trim().toLowerCase()] ?? null
 }
