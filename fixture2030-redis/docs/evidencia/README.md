@@ -18,6 +18,10 @@ sh scripts/correr_todo.sh        # regenera 01_ … 09_ (tarda ~2 min)
 | 7 | `07_memoria.txt` | Evicción vs TTL (`evicted_keys` vs `expired_keys`), votación intacta, OOM | RF10 |
 | 8 | `08_metricas.txt` | INFO memory/stats/keyspace/commandstats, TTL, encoding, MEMORY USAGE, SLOWLOG | RF13 |
 | 9 | `09_persistencia.txt` | Volumen nombrado `fixture2030_redis_data` respaldado por `~/docker/data/redis`; tras `restart` y tras `down` + `up` siguen una clave con TTL y la votación | RNF2 |
+| 10 | `10_carga_volumen.txt` | 100.000 usuarios simultáneos: tres cargas (dos desde vacío, una encima) con los mismos conteos y la misma huella; tiempo de carga; la muestra intacta | RF11 |
+| 11 | `11_rendimiento_volumen.txt` | Con los 100.000: memoria total y por usuario, latencia en reposo y bajo carga, `redis-benchmark` con 200 clientes, transacciones de sesión con 50 clientes, expiración activa, limpieza | RF12, RNF10 |
+
+`10_` y `11_` los genera [`scripts/correr_volumen.sh`](../../scripts/correr_volumen.sh) (no `correr_todo.sh`). Su primera línea dice fecha, commit de los scripts y comando.
 
 ## Registro del ambiente (RNF10)
 
@@ -25,6 +29,7 @@ sh scripts/correr_todo.sh        # regenera 01_ … 09_ (tarda ~2 min)
 |---|---|---|---|
 | 2026-09-25 | **8.10.2** (`redis:latest`, Linux aarch64 en Docker Desktop) | Apple M4 · 10 CPUs · 24 GB RAM; Docker con 10 CPUs y ~7,75 GB | Primera versión (con Redis Functions); evidencia reemplazada, queda en el historial de git |
 | 2026-10-10 | **8.10.2** (`redis:latest`, Linux x86_64 en Docker Desktop WSL2) | Notebook Windows 11 · 12 CPUs; Docker con 12 CPUs y ~7,7 GB | **Archivos actuales**: versión corregida (comandos nativos y `MULTI/EXEC`) |
+| 2026-11-11 | **8.10.2** (`redis:latest`, Linux x86_64 en Docker Desktop WSL2) | La misma notebook Windows 11 · 12 CPUs | `10_` y `11_` (volumen de 100.000 usuarios), desde un volumen de Docker vacío, commit `1464124`. `correr_todo.sh` se volvió a correr ese día sin errores; `01_`–`09_` no se reemplazaron |
 
 `latest` cambia con el tiempo: al repetir la prueba, agregar una fila con la versión que reporte `INFO server`.
 

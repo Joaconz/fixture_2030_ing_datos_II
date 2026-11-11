@@ -1,0 +1,83 @@
+# Ejecutado: 2026-11-11T17:59:50Z | commit: 1464124 | comando: sh scripts/correr_volumen.sh 100000
+== C.0 Muestra del hito (carga_muestra.sh) cargada antes del volumen ==
+DBSIZE con la muestra: 4203
+votantes=500 candidatos=5 partidos_en_tendencia=112 md5(sesión demo-ses-0000001-1 + índice USR-0000010 + votación)=98cdfc0a6a0b82658b41c5631033867e
+
+== C.1 Corrida 1 DESDE VACÍO: limpieza_volumen.sh + carga_volumen.sh 100000 ==
+borradas 0 claves con patrón 'f30:ses:vol-ses-*'
+borradas 0 claves con patrón 'f30:usr:USR-1??????:sesiones'
+borradas 0 claves con patrón 'f30:cache:usuario:USR-1??????:perfil'
+DBSIZE restante: 4202
+== V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+DBSIZE: 4202 | used_memory: 2839088 bytes
+== V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+errors: 0, replies: 1000000
+tiempo de carga: 2767 ms | 36140 usuarios/s, 397542 comandos/s (11 por usuario)
+== V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+INFO keyspace (expires = claves con TTL): db0:keys=304202,expires=304200,avg_ttl=19188760,subexpiry=0
+huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+-- primer usuario --
+session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+nombre Usuario 1000000 idioma es region AM
+TTL sesión: 1797 | TTL índice: 43197 | TTL perfil: 897
+-- último usuario (USR-1099999) --
+sesiones: vol-ses-000000099999 | TTL sesión: 1406
+== V.4 Memoria ==
+used_memory antes: 2839088 | después: 61287232 (58.45M) | maxmemory: 268435456
+por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): 584 bytes
+evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+
+== C.2 Corrida 2 DESDE VACÍO: limpieza_volumen.sh + carga_volumen.sh 100000 ==
+borradas 100000 claves con patrón 'f30:ses:vol-ses-*'
+borradas 100000 claves con patrón 'f30:usr:USR-1??????:sesiones'
+borradas 100000 claves con patrón 'f30:cache:usuario:USR-1??????:perfil'
+DBSIZE restante: 4202
+== V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+DBSIZE: 4200 | used_memory: 2913816 bytes
+== V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+errors: 0, replies: 1000000
+tiempo de carga: 2537 ms | 39417 usuarios/s, 433583 comandos/s (11 por usuario)
+== V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+INFO keyspace (expires = claves con TTL): db0:keys=304200,expires=304198,avg_ttl=16961614,subexpiry=0
+huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+-- primer usuario --
+session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+nombre Usuario 1000000 idioma es region AM
+TTL sesión: 1797 | TTL índice: 43197 | TTL perfil: 897
+-- último usuario (USR-1099999) --
+sesiones: vol-ses-000000099999 | TTL sesión: 1406
+== V.4 Memoria ==
+used_memory antes: 2913816 | después: 66130232 (63.07M) | maxmemory: 268435456
+por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): 632 bytes
+evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+
+== C.3 Corrida 3 ENCIMA de la anterior, sin limpiar (idempotencia sobre datos existentes) ==
+== V.1 Estado previo (DBSIZE e INFO son O(1), no recorren claves) ==
+DBSIZE: 304200 | used_memory: 66031976 bytes
+== V.2 Carga de 100000 usuarios por pipeline (awk -> RESP -> redis-cli --pipe) ==
+errors: 0, replies: 1000000
+tiempo de carga: 2180 ms | 45872 usuarios/s, 504587 comandos/s (11 por usuario)
+== V.3 Verificación (conteos con SCAN por prefijo: cursor, no bloquea; nunca KEYS) ==
+conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+INFO keyspace (expires = claves con TTL): db0:keys=304200,expires=304198,avg_ttl=16081933,subexpiry=0
+huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+-- primer usuario --
+session_id vol-ses-000000000000 usuario_id USR-1000000 rol MODERADOR region AM dispositivo web estado ACTIVA creada_en 1908979140 ultima_actividad 1908979200 expira_absoluta 1909022340 solicitudes 0
+nombre Usuario 1000000 idioma es region AM
+TTL sesión: 1797 | TTL índice: 43197 | TTL perfil: 897
+-- último usuario (USR-1099999) --
+sesiones: vol-ses-000000099999 | TTL sesión: 1406
+== V.4 Memoria ==
+used_memory antes: 66031976 | después: 63551560 (60.61M) | maxmemory: 268435456
+por usuario (diferencia / 100000; vale sólo si el volumen no estaba cargado antes): -24 bytes
+evicted_keys: 0   <- 0: la carga entró sin desalojar nada
+
+== C.4 Comparación de las tres corridas ==
+corrida 1: conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000 | huella 171a025c16270184f03431bef1a5b8c9
+corrida 2: conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000 | huella 171a025c16270184f03431bef1a5b8c9
+corrida 3: conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000 | huella 171a025c16270184f03431bef1a5b8c9
+las 3 corridas dieron los mismos conteos y la misma huella: SÍ
+muestra después: votantes=500 candidatos=5 partidos_en_tendencia=112 md5(sesión demo-ses-0000001-1 + índice USR-0000010 + votación)=98cdfc0a6a0b82658b41c5631033867e
+la muestra quedó igual: SÍ

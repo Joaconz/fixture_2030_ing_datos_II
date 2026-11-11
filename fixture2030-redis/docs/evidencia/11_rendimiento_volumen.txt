@@ -1,0 +1,87 @@
+# Ejecutado: 2026-11-11T18:00:19Z | commit: 1464124 | comando: sh scripts/correr_volumen.sh 100000
+== R.0 Entorno (RNF10) ==
+fecha (UTC)  : 2026-11-11T18:00:20Z
+redis        : 8.10.2 | Linux 5.15.167.4-microsoft-standard-WSL2 x86_64 | CPUs visibles: 12
+memoria      : maxmemory 268435456 | policy volatile-lru | appendonly yes (everysec)
+keyspace     : db0:keys=304200,expires=304198,avg_ttl=15027453,subexpiry=0
+parámetros   : 100000 usuarios | redis-benchmark con 200 clientes (--threads 4) | 50 clientes con transacciones
+conteo previo: sesiones=100000 (esperado 100000)
+
+== R.1 Memoria con 100000 usuarios cargados ==
+used_memory: 66023040
+used_memory_human: 62.99M
+used_memory_dataset: 39510128
+used_memory_rss_human: 85.62M
+mem_fragmentation_ratio: 1.35
+maxmemory_human: 256.00M
+-- MEMORY USAGE de 1 de cada 100 usuarios (1000 usuarios x 3 claves); bytes promedio por clave --
+sesión (HASH 10 campos): 262 | índice (SET): 84 | perfil (HASH 3 campos): 121 | total por usuario: 467 bytes
+codificación: sesión listpack | índice listpack | perfil listpack
+proyección lineal a 256 MB (maxmemory): ~406269 usuarios (incluye el piso de Redis; sin contar fragmentación)
+
+== R.2 Latencia en reposo: un cliente, 5 s (redis-cli --latency) ==
+min max avg muestras p50 p99 p99.9 (ms)
+0.103 1.339 0.209 486 0.192 0.888 1.339
+
+== R.3 redis-benchmark: 200 clientes, sesiones al azar entre las 100000 (-r 100000) ==
+formato CSV: test,rps,avg,min,p50,p95,p99,max (ms)
+-- VALIDAR (P2): HMGET usuario_id estado expira_absoluta. Mientras corre, un cliente extra mide latencia 3 s --
+"HMGET f30:ses:vol-ses-__rand_int__ usuario_id estado expira_absoluta","114233.50","1.688","0.128","1.495","2.983","3.815","13.559"
+latencia del cliente extra bajo carga (min max avg muestras p50 p99 p99.9): 0.496 4.618 1.598 258 1.444 3.715 4.619
+-- RENOVAR (P2), sus tres comandos de a uno (redis-benchmark no encola transacciones; la transacción completa está en R.4) --
+"HSET f30:ses:vol-ses-__rand_int__ ultima_actividad 1908979260","92194.23","2.089","0.664","1.823","3.743","4.527","10.975"
+"HINCRBY f30:ses:vol-ses-__rand_int__ solicitudes 1","79893.48","2.399","0.528","2.007","4.175","6.935","57.375"
+"EXPIRE f30:ses:vol-ses-__rand_int__ 1800","99800.40","1.920","0.632","1.743","3.071","4.743","20.879"
+evicted_keys: 0 | sesiones: 100000
+
+== R.4 Operaciones completas de sesión (MULTI/EXEC), 50 clientes simultáneos, 100000 usuarios distintos ==
+Cada cliente es un redis-cli --pipe con su parte de los usuarios (k mod 50): todos a la vez, cada uno encadena sus transacciones.
+fase      tiempo  | operaciones (1 por usuario)  | comandos enviados
+validar     138 ms |  724638 operaciones/s |   724638 comandos/s | respuestas 100000 | errores 0
+renovar     731 ms |  136799 operaciones/s |   683995 comandos/s | respuestas 500000 | errores 0
+   verificación renovar (las 100000 sesiones, HMGET de a una): ultima_actividad renovada en 100000 de 100000
+   (solicitudes suma +1 por la transacción; R.3 ya había sumado incrementos al azar, por eso no se compara su valor exacto)
+cerrar      490 ms |  204082 operaciones/s |   816327 comandos/s | respuestas 400000 | errores 0
+   verificación cerrar: sesiones=0 índices=0 (esperado 0 y 0: el SET vacío desaparece solo)
+crear      1364 ms |   73314 operaciones/s |   439883 comandos/s | respuestas 600000 | errores 0
+   verificación crear : sesiones=100000 índices=100000 perfiles=100000 (esperado 100000)
+   huella de contenido tras crear: 171a025c16270184f03431bef1a5b8c9   <- igual a la de carga_volumen.sh: crear dejó los mismos valores
+evicted_keys: 0
+
+== R.5 Expiración activa: las 100000 sesiones pasan a TTL 5 s y NADIE las lee ==
+errors: 0, replies: 100000
+seg  DBSIZE  vencidas_por_TTL(expired_keys)   <- DBSIZE e INFO no tocan claves: el borrado lo hace el ciclo activo de Redis
+  0  304200       0
+  2  304200       0
+  4  304200       0
+  6  297928    5822
+  8  283070   20630
+ 10  272386   30955
+ 12  260359   43474
+ 14  246317   57461
+ 16  235730   68431
+ 18  222730   81340
+ 20  207012   96799
+ 21  204115  100085
+expired_keys subió 100085 (las 100000 del volumen más las sesiones de la muestra que vencieron solas en esos segundos)
+DBSIZE final 204115 = antes menos las vencidas: el ciclo activo las borró sin que nadie las leyera
+sesiones del volumen que quedan (SCAN, que además borraría las vencidas que encuentre): 0
+índices y perfiles siguen (TTL 12 h y 900 s): índices=100000 perfiles=100000
+
+== R.6 Resumen del servidor durante las pruebas ==
+evicted_keys: 0   <- 0: nada se desalojó por memoria
+-- LATENCY LATEST (eventos sobre latency-monitor-threshold = 50 ms; vacío = ninguno) --
+ningún evento
+-- SLOWLOG (comandos > 10 ms): 0 registrados; los 3 más recientes --
+
+
+== R.7 Restauración (carga_volumen.sh es idempotente) y limpieza por prefijo ==
+errors: 0, replies: 1000000
+conteo usuarios=100000 sesiones=100000 perfiles=100000 esperado=100000
+huella de contenido (md5 de HGETALL/SMEMBERS de 1 de cada 100 usuarios, sin TTL): 171a025c16270184f03431bef1a5b8c9
+borradas 100000 claves con patrón 'f30:ses:vol-ses-*'
+borradas 100000 claves con patrón 'f30:usr:USR-1??????:sesiones'
+borradas 100000 claves con patrón 'f30:cache:usuario:USR-1??????:perfil'
+DBSIZE restante: 4115
+muestra: votantes=500 candidatos=5 partidos_en_tendencia=112 md5(sesión demo-ses-0000001-1 + índice USR-0000010 + votación)=98cdfc0a6a0b82658b41c5631033867e
+la muestra quedó igual que antes del volumen: SÍ
