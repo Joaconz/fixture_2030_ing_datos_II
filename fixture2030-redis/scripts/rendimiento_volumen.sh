@@ -148,14 +148,16 @@ for s in $(seq 0 40); do
   [ "$V" -ge "$N" ] && break
   sleep 1
 done
-echo "vencidas sin ser leídas: $(( $(info stats expired_keys) - E0 )) de $N | sesiones que quedan (SCAN, que además borra las vencidas que encuentra): $(cuenta 'f30:ses:vol-ses-*')"
+echo "expired_keys subió $(( $(info stats expired_keys) - E0 )) (las $N del volumen más las sesiones de la muestra que vencieron solas en esos segundos)"
+echo "DBSIZE final $($R DBSIZE) = antes menos las vencidas: el ciclo activo las borró sin que nadie las leyera"
+echo "sesiones del volumen que quedan (SCAN, que además borraría las vencidas que encuentre): $(cuenta 'f30:ses:vol-ses-*')"
 echo "índices y perfiles siguen (TTL 12 h y 900 s): índices=$(cuenta 'f30:usr:USR-1??????:sesiones') perfiles=$(cuenta 'f30:cache:usuario:USR-1??????:perfil')"
 
 echo
 echo "== R.6 Resumen del servidor durante las pruebas =="
 echo "evicted_keys: $(info stats evicted_keys)   <- 0: nada se desalojó por memoria"
 echo "-- LATENCY LATEST (eventos sobre latency-monitor-threshold = 50 ms; vacío = ninguno) --"
-$R LATENCY LATEST | paste - - - - | awk '{ printf "evento %s | último %s ms | máximo %s ms\n", $1, $3, $4 }'
+$R LATENCY LATEST | paste - - - - | awk 'NF { printf "evento %s | último %s ms | máximo %s ms\n", $1, $3, $4; e++ } END { if (!e) print "ningún evento" }'
 echo "-- SLOWLOG (comandos > 10 ms): $($R SLOWLOG LEN) registrados; los 3 más recientes --"
 $R SLOWLOG GET 3 | paste -sd' ' | cut -c1-600
 rm -rf $D

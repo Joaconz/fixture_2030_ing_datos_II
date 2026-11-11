@@ -94,5 +94,5 @@ echo "sesiones: $($R SMEMBERS "$(printf 'f30:usr:USR-%07d:sesiones' $((1000000 +
 echo "== V.4 Memoria =="
 DESPUES=$(mem used_memory)
 echo "used_memory antes: $ANTES | después: $DESPUES ($(mem used_memory_human)) | maxmemory: $($R CONFIG GET maxmemory | tail -1)"
-echo "por usuario (diferencia / $N): $(( (DESPUES - ANTES) / N )) bytes"
+echo "por usuario (diferencia / $N; vale sólo si el volumen no estaba cargado antes): $(( (DESPUES - ANTES) / N )) bytes"
 echo "evicted_keys: $($R INFO stats | grep '^evicted_keys:' | cut -d: -f2 | tr -d '\r')   <- 0: la carga entró sin desalojar nada"
