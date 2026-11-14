@@ -1,0 +1,56 @@
+{
+  "corridas": [
+    "20261114-194204_paralelo",
+    "20261114-194926_secuencial"
+  ],
+  "filas": {
+    "Reloj hasta la última carga (s)": [
+      382.6,
+      324.5
+    ],
+    "Reloj total con verificación y apagado (s)": [
+      402.7,
+      340.7
+    ],
+    "Suma de las cargas (s)": [
+      247.0,
+      188.3
+    ],
+    "Suma arranque + preparación + carga (s)": [
+      379.7,
+      284.7
+    ],
+    "Última carga en terminar": [
+      "cassandra",
+      "redis"
+    ],
+    "Presupuesto de memoria (MiB)": [
+      2571,
+      null
+    ],
+    "Máx. bases simultáneas": [
+      2,
+      1
+    ],
+    "Pico RAM de la prueba (MiB)": [
+      2359,
+      2365
+    ],
+    "Pico RAM de toda la VM (MiB)": [
+      5910,
+      5944
+    ],
+    "Pico CPU de la prueba (%)": [
+      518.7,
+      584.8
+    ],
+    "RAM libre mínima del host (MiB)": [
+      null,
+      null
+    ],
+    "Chequeos de integridad OK": [
+      "25/26",
+      "25/26"
+    ]
+  }
+}

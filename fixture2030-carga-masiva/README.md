@@ -6,7 +6,25 @@ Carga del **volumen completo** en las cinco bases de la arquitectura vigente, ca
 
 > Numeración: este es el **Hito 11 de la guía del TPO** ("Carga Masiva de Datos"). En el repo, `fixture2030-hito11-conectividad/` y `fixture2030-hito12-carga/` son otras cosas: conectividad de la API y prueba de carga de la API con k6. IRIS quedó fuera de la arquitectura con aprobación del profesor y no se carga.
 
-<!-- RESULTADOS -->
+## Resultados medidos
+
+Corridas del 2026-11-14 (commit `62d5a41`), desde volúmenes vacíos, en una Mac con 24 GB de RAM y una VM de Docker de 7,75 GiB y 10 CPUs. Con 33 contenedores ajenos corriendo (~4,5 GiB), el presupuesto de memoria de la prueba fue de ~2,5 GiB. Entorno y observaciones: [`evidencia/entorno_20261114.md`](evidencia/entorno_20261114.md).
+
+| | Paralelo | Secuencial |
+|---|---:|---:|
+| **Reloj hasta la última carga** | **382,6 s** | **324,5 s** |
+| Reloj total (con verificación y apagado) | 402,7 s | 340,7 s |
+| Suma de las cargas | 247,0 s | 188,3 s |
+| Carga de Cassandra | 188,1 s | 133,7 s |
+| Carga de InfluxDB (10.094.400 puntos) | 46,3 s | 46,4 s |
+| Máx. bases simultáneas | 2 | 1 |
+| Chequeos de integridad | 25/26 OK | 25/26 OK |
+
+**El paralelo no fue más rápido que el secuencial** (58 s más lento). Con la memoria que quedó libre en la VM solo MongoDB y Redis entraron juntos; el resto fue de a una, como en secuencial, y la carga de Cassandra salió más lenta en la corrida paralela (188,1 contra 133,7 s), con más memoria ocupada por los contenedores ajenos. En el barrido de optimización, la misma configuración de Cassandra midió entre 153 y 169 s: esa dispersión explica buena parte de la diferencia. Comparación completa: [`evidencia/comparacion_paralelo_vs_secuencial_20261114.md`](evidencia/comparacion_paralelo_vs_secuencial_20261114.md).
+
+**Integridad con el volumen completo** (las dos corridas): MongoDB 64 equipos y 1.664 jugadores; Neo4j 127 partidos y 1.572 eventos; Cassandra 1.050.000 comentarios en cada vista; Redis 100.000 usuarios; InfluxDB 10.094.400 puntos. Todo `partido_id` de Cassandra, Redis e InfluxDB existe en Neo4j (0 faltantes). **H1** sin corregir: 12 de los 64 equipos no coinciden entre MongoDB y Neo4j (52 con el mismo código).
+
+**Optimización** (concurrencia del cargador de Cassandra, 3 repeticiones por valor): mediana de la carga 158,3 s con 128, **120,7 s con 256** (−23,8 %) y 157,9 s con 512 (sin mejora). Con 256, una de las tres corridas (153,1 s) quedó igual que las de 128, así que la mejora es probable pero no demostrada. No se cambió el valor por defecto. Detalle en [`docs/optimizacion.md`](docs/optimizacion.md).
 
 ## Qué pide el PDF y dónde está
 

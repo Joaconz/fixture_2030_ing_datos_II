@@ -1,0 +1,147 @@
+{
+  "corridas": [
+    "20261114-195607_secuencial_c128-r1",
+    "20261114-200712_secuencial_c128-r2",
+    "20261114-201841_secuencial_c128-r3",
+    "20261114-200008_secuencial_c256-r1",
+    "20261114-201122_secuencial_c256-r2",
+    "20261114-202237_secuencial_c256-r3",
+    "20261114-200328_secuencial_c512-r1",
+    "20261114-201439_secuencial_c512-r2",
+    "20261114-202633_secuencial_c512-r3"
+  ],
+  "filas": {
+    "Reloj hasta la última carga (s)": [
+      220.5,
+      230.7,
+      214.8,
+      182.4,
+      179.3,
+      214.5,
+      203.5,
+      219.6,
+      225.1
+    ],
+    "Reloj total con verificación y apagado (s)": [
+      235.9,
+      246.4,
+      231.5,
+      196.5,
+      193.5,
+      231.4,
+      220.2,
+      237.9,
+      241.0
+    ],
+    "Suma de las cargas (s)": [
+      158.3,
+      168.8,
+      153.2,
+      120.7,
+      117.6,
+      153.1,
+      142.0,
+      157.9,
+      163.7
+    ],
+    "Suma arranque + preparación + carga (s)": [
+      220.5,
+      230.7,
+      214.8,
+      182.4,
+      179.2,
+      214.5,
+      203.6,
+      219.5,
+      225.0
+    ],
+    "Última carga en terminar": [
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra",
+      "cassandra"
+    ],
+    "Presupuesto de memoria (MiB)": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "Máx. bases simultáneas": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "Pico RAM de la prueba (MiB)": [
+      2174,
+      2159,
+      2056,
+      2057,
+      2166,
+      2168,
+      2170,
+      2169,
+      2167
+    ],
+    "Pico RAM de toda la VM (MiB)": [
+      5734,
+      5680,
+      5464,
+      5620,
+      5586,
+      5573,
+      5694,
+      5582,
+      5574
+    ],
+    "Pico CPU de la prueba (%)": [
+      503.2,
+      468.3,
+      650.9,
+      577.1,
+      569.3,
+      620.3,
+      650.3,
+      620.0,
+      507.3
+    ],
+    "RAM libre mínima del host (MiB)": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "Chequeos de integridad OK": [
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4",
+      "4/4"
+    ]
+  }
+}
