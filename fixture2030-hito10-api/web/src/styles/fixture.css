@@ -555,13 +555,9 @@ h3 {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  /* Dos tarjetas por fila sólo si cada una tiene lugar para los nombres completos. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: var(--s-4);
-}
-@media (min-width: 768px) {
-  .lista-destacados {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 @media (min-width: 1024px) {
   .inicio {
@@ -626,7 +622,7 @@ a.tarjeta-partido:hover {
   font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .tp-centro {
   text-align: center;
