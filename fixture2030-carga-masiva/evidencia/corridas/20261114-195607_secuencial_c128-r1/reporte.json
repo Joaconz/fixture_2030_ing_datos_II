@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "corrida": "20261114-195607_secuencial_c128-r1",
+    "fecha_inicio": "2026-11-14T19:56:09+00:00",
+    "commit": "88bebf9",
+    "comando": "python fixture2030-carga-masiva/scripts/orquestador.py --modo secuencial --bases cassandra --cassandra-concurrencia 128 --sin-distribucion --etiqueta c128-r1",
+    "modo": "secuencial",
+    "max_paralelo": null,
+    "bases": [
+      "cassandra"
+    ],
+    "vm": {
+      "cpus": 10,
+      "memoria_gib": 7.75
+    },
+    "memoria_inicial": {
+      "vm_mib": 7934,
+      "contenedores_ajenos_mib": 3587,
+      "contenedores_ajenos": 33,
+      "ram_libre_host_mib": null,
+      "presupuesto_mib": null,
+      "margen_mib": 768
+    },
+    "parametros": {
+      "cassandra_concurrencia": 128,
+      "influx_hilos": 8,
+      "influx_lote": 50000
+    },
+    "orden": [
+      "cassandra"
+    ],
+    "inicio_carga": "2026-11-14T19:56:10+00:00",
+    "fin": "2026-11-14T20:00:06+00:00",
+    "vigia": null
+  },
+  "insumos_influxdb": null,
+  "admisiones": [
+    {
+      "base": "cassandra",
+      "t_s": 0.0,
+      "reservado_mib": 2816,
+      "simultaneas": 1,
+      "ram_libre_host_mib": null
+    }
+  ],
+  "bases": {
+    "cassandra": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 58.8,
+          "segundos": 58.8
+        },
+        "preparacion": {
+          "desde_s": 58.8,
+          "hasta_s": 62.2,
+          "segundos": 3.4
+        },
+        "carga": {
+          "desde_s": 62.2,
+          "hasta_s": 220.5,
+          "segundos": 158.3
+        },
+        "verificacion": {
+          "desde_s": 220.5,
+          "hasta_s": 229.2,
+          "segundos": 8.7
+        },
+        "apagado": {
+          "desde_s": 229.2,
+          "hasta_s": 235.9,
+          "segundos": 6.7
+        }
+      },
+      "estado": "ok",
+      "volumen": 1050000,
+      "unidad": "comentarios",
+      "escrituras": 2100000,
+      "errores": 0,
+      "tasa_propia": "14,576 escrituras/s (medida por carga_masiva.py)",
+      "parametros": {
+        "concurrencia": 128,
+        "lote": 10000,
+        "solo_principal": false,
+        "limite": null
+      },
+      "detalle": "1,050,000 comentarios = 2,100,000 filas en 2 tablas (scripts/carga_masiva.py, concurrencia 128)",
+      "por_segundo": 6632.5
+    }
+  },
+  "total": {
+    "reloj_hasta_ultima_carga_s": 220.5,
+    "segundos_reloj_total": 235.9,
+    "suma_segundos_carga": 158.3,
+    "suma_arranque_preparacion_carga_s": 220.5,
+    "registros": 1050000,
+    "registros_por_segundo_reloj": 4761.9,
+    "termina_ultima": "cassandra",
+    "carga_mas_larga": [
+      "cassandra",
+      158.3
+    ]
+  },
+  "recursos": {
+    "muestras": 111,
+    "contenedores_prueba": {
+      "f30cm-cassandra": {
+        "muestras": 109,
+        "cpu_prom_pct": 151.9,
+        "cpu_max_pct": 407.3,
+        "mem_max_mib": 1866
+      },
+      "f30cm-cassandra-cargador": {
+        "muestras": 80,
+        "cpu_prom_pct": 99.9,
+        "cpu_max_pct": 113.0,
+        "mem_max_mib": 331
+      }
+    },
+    "pico_mem_prueba_mib": 2174,
+    "pico_cpu_prueba_pct": 503.2,
+    "pico_mem_total_vm_mib": 5734,
+    "mem_otros_contenedores_mib": 3770,
+    "otros_contenedores": 33,
+    "ram_libre_host_min_mib": null
+  },
+  "validacion": {
+    "chequeos": [
+      {
+        "chequeo": "Cassandra · comentarios (comentarios_por_partido)",
+        "esperado": 1050000,
+        "obtenido": 1050000,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentarios (comentarios_por_usuario)",
+        "esperado": 1050000,
+        "obtenido": 1050000,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentario_id duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cassandra · comentarios en una sola de las dos vistas",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      }
+    ],
+    "cruces": {},
+    "resumen": {
+      "chequeos": 4,
+      "ok": 4,
+      "fallidos": [],
+      "informativos": []
+    },
+    "bases": {
+      "cassandra": {
+        "comentarios_por_partido": {
+          "filas": 1050000,
+          "comentario_id_distintos": 1050000,
+          "particiones": 1725,
+          "filas_por_particion": {
+            "min": 49,
+            "p50": 258,
+            "p90": 1052,
+            "p99": 5883,
+            "max": 16161
+          }
+        },
+        "comentarios_por_usuario": {
+          "filas": 1050000,
+          "comentario_id_distintos": 1050000,
+          "particiones": 360052,
+          "filas_por_particion": {
+            "min": 1,
+            "p50": 2,
+            "p90": 6,
+            "p99": 11,
+            "max": 192
+          }
+        },
+        "solo_en_una_vista": 0,
+        "partidos_con_comentarios": 112,
+        "partidos_en_config": 112
+      }
+    }
+  },
+  "distribucion": {}
+}

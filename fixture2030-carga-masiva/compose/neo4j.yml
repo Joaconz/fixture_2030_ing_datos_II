@@ -1,0 +1,27 @@
+# ============================================================
+#  Fixture 2030 — Carga masiva (Hito 11 del PDF) · override de Neo4j
+#  Se aplica ENCIMA de ../fixture2030-neo4j/docker-compose.yml.
+#  Solo cambia nombres (contenedor, volúmenes, red, puertos) para no chocar con
+#  la instancia compartida `fixture2030-neo4j`. Imagen, plugins, memoria,
+#  healthcheck y los .cypher montados en /queries son los del módulo.
+# ============================================================
+services:
+  neo4j:
+    container_name: f30cm-neo4j
+    mem_limit: 2g     # heap 1G + page cache 512m del módulo + memoria nativa (medido: ~1,4 GiB)
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:37474:7474"
+      - "127.0.0.1:37687:7687"
+
+volumes:
+  neo4j_data:
+    name: f30cm_neo4j_data
+  neo4j_logs:
+    name: f30cm_neo4j_logs
+  neo4j_plugins:
+    name: f30cm_neo4j_plugins
+
+networks:
+  fixture2030-net:
+    name: f30cm-neo4j-net

@@ -1,0 +1,312 @@
+[20:11:24] # Ejecutado: 2026-11-14T20:11:24+00:00 | commit: 88bebf9 | comando: python fixture2030-carga-masiva/scripts/orquestador.py --modo secuencial --bases cassandra --cassandra-concurrencia 256 --sin-distribucion --etiqueta c256-r2
+[20:11:24] # VM de Docker: 10 CPUs, 7934 MiB · contenedores ajenos: 33 (3514 MiB) · RAM libre del host: None MiB · presupuesto: sin control MiB
+[20:11:24] == 0. Limpieza: proyectos f30cm-* abajo, volúmenes y carpetas de datos borrados
+[20:11:24] == 2. Carga en modo secuencial · orden cassandra
+[20:11:24] cassandra ▶ arranque
+[20:12:22]   cassandra | 
+[20:12:22]   cassandra |  Volume f30cm_cassandra_data Creating 
+[20:12:22]   cassandra |  Network f30cm-cassandra-net Creating 
+[20:12:22]   cassandra |  Volume f30cm_cassandra_data Creating 
+[20:12:22]   cassandra |  Network f30cm-cassandra-net Creating 
+[20:12:22]   cassandra |  Volume f30cm_cassandra_data Created 
+[20:12:22]   cassandra |  Volume f30cm_cassandra_data Created 
+[20:12:22]   cassandra |  Network f30cm-cassandra-net Created 
+[20:12:22]   cassandra |  Network f30cm-cassandra-net Created 
+[20:12:22]   cassandra |  Container f30cm-cassandra Creating 
+[20:12:22]   cassandra |  Container f30cm-cassandra Created 
+[20:12:22]   cassandra |  Container f30cm-cassandra Starting 
+[20:12:22]   cassandra |  Container f30cm-cassandra Started 
+[20:12:22]   cassandra |  Container f30cm-cassandra Waiting 
+[20:12:22]   cassandra |  Container f30cm-cassandra Healthy
+[20:12:22] cassandra ✔ arranque en 58.2 s
+[20:12:22] cassandra ▶ preparacion
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE KEYSPACE fixture2030_comentarios WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': '1'}  AND durable_writes = true;
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_partido (
+[20:12:23]   cassandra |     partido_id text,
+[20:12:23]   cassandra |     ventana timestamp,
+[20:12:23]   cassandra |     bucket int,
+[20:12:23]   cassandra |     creado_en timestamp,
+[20:12:23]   cassandra |     comentario_id text,
+[20:12:23]   cassandra |     alias_usuario text,
+[20:12:23]   cassandra |     contenido text,
+[20:12:23]   cassandra |     editado boolean,
+[20:12:23]   cassandra |     estado_moderacion text,
+[20:12:23]   cassandra |     hinchada text,
+[20:12:23]   cassandra |     idioma text,
+[20:12:23]   cassandra |     minuto_partido int,
+[20:12:23]   cassandra |     moderado_en timestamp,
+[20:12:23]   cassandra |     moderado_por text,
+[20:12:23]   cassandra |     motivo_moderacion text,
+[20:12:23]   cassandra |     responde_a text,
+[20:12:23]   cassandra |     usuario_id text,
+[20:12:23]   cassandra |     PRIMARY KEY ((partido_id, ventana, bucket), creado_en, comentario_id)
+[20:12:23]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:12:23]   cassandra |     AND additional_write_policy = '99p'
+[20:12:23]   cassandra |     AND allow_auto_snapshot = true
+[20:12:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:12:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:12:23]   cassandra |     AND cdc = false
+[20:12:23]   cassandra |     AND comment = 'Q1 Q2 Q3 Q4 - comentarios de un partido por ventana de 10 min y bucket, del mas reciente al mas antiguo'
+[20:12:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:12:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:12:23]   cassandra |     AND memtable = 'default'
+[20:12:23]   cassandra |     AND crc_check_chance = 1.0
+[20:12:23]   cassandra |     AND default_time_to_live = 0
+[20:12:23]   cassandra |     AND extensions = {}
+[20:12:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:12:23]   cassandra |     AND incremental_backups = true
+[20:12:23]   cassandra |     AND max_index_interval = 2048
+[20:12:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:12:23]   cassandra |     AND min_index_interval = 128
+[20:12:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:12:23]   cassandra |     AND speculative_retry = '99p';
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE CUSTOM INDEX idx_comentarios_estado ON fixture2030_comentarios.comentarios_por_partido (estado_moderacion) USING 'sai';
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE TABLE fixture2030_comentarios.comentarios_por_usuario (
+[20:12:23]   cassandra |     usuario_id text,
+[20:12:23]   cassandra |     mes text,
+[20:12:23]   cassandra |     creado_en timestamp,
+[20:12:23]   cassandra |     comentario_id text,
+[20:12:23]   cassandra |     bucket int,
+[20:12:23]   cassandra |     contenido text,
+[20:12:23]   cassandra |     estado_moderacion text,
+[20:12:23]   cassandra |     minuto_partido int,
+[20:12:23]   cassandra |     partido_id text,
+[20:12:23]   cassandra |     ventana timestamp,
+[20:12:23]   cassandra |     PRIMARY KEY ((usuario_id, mes), creado_en, comentario_id)
+[20:12:23]   cassandra | ) WITH CLUSTERING ORDER BY (creado_en DESC, comentario_id ASC)
+[20:12:23]   cassandra |     AND additional_write_policy = '99p'
+[20:12:23]   cassandra |     AND allow_auto_snapshot = true
+[20:12:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:12:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:12:23]   cassandra |     AND cdc = false
+[20:12:23]   cassandra |     AND comment = 'Q5 - historial de comentarios de un usuario por mes (vista duplicada)'
+[20:12:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:12:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:12:23]   cassandra |     AND memtable = 'default'
+[20:12:23]   cassandra |     AND crc_check_chance = 1.0
+[20:12:23]   cassandra |     AND default_time_to_live = 0
+[20:12:23]   cassandra |     AND extensions = {}
+[20:12:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:12:23]   cassandra |     AND incremental_backups = true
+[20:12:23]   cassandra |     AND max_index_interval = 2048
+[20:12:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:12:23]   cassandra |     AND min_index_interval = 128
+[20:12:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:12:23]   cassandra |     AND speculative_retry = '99p';
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE TABLE fixture2030_comentarios.config_particion_partido (
+[20:12:23]   cassandra |     partido_id text PRIMARY KEY,
+[20:12:23]   cassandra |     audiencia text,
+[20:12:23]   cassandra |     buckets int,
+[20:12:23]   cassandra |     fase text,
+[20:12:23]   cassandra |     inicio timestamp,
+[20:12:23]   cassandra |     ventana_minutos int
+[20:12:23]   cassandra | ) WITH additional_write_policy = '99p'
+[20:12:23]   cassandra |     AND allow_auto_snapshot = true
+[20:12:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:12:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:12:23]   cassandra |     AND cdc = false
+[20:12:23]   cassandra |     AND comment = 'Q0 - parametros de particion de cada partido (fijados antes del partido)'
+[20:12:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:12:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:12:23]   cassandra |     AND memtable = 'default'
+[20:12:23]   cassandra |     AND crc_check_chance = 1.0
+[20:12:23]   cassandra |     AND default_time_to_live = 0
+[20:12:23]   cassandra |     AND extensions = {}
+[20:12:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:12:23]   cassandra |     AND incremental_backups = true
+[20:12:23]   cassandra |     AND max_index_interval = 2048
+[20:12:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:12:23]   cassandra |     AND min_index_interval = 128
+[20:12:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:12:23]   cassandra |     AND speculative_retry = '99p';
+[20:12:23]   cassandra | 
+[20:12:23]   cassandra | CREATE TABLE fixture2030_comentarios.interacciones_por_comentario (
+[20:12:23]   cassandra |     comentario_id text PRIMARY KEY,
+[20:12:23]   cassandra |     me_gusta counter,
+[20:12:23]   cassandra |     reportes counter,
+[20:12:23]   cassandra |     respuestas counter
+[20:12:23]   cassandra | ) WITH additional_write_policy = '99p'
+[20:12:23]   cassandra |     AND allow_auto_snapshot = true
+[20:12:23]   cassandra |     AND bloom_filter_fp_chance = 0.01
+[20:12:23]   cassandra |     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+[20:12:23]   cassandra |     AND cdc = false
+[20:12:23]   cassandra |     AND comment = 'Q6 - contadores de interaccion por comentario'
+[20:12:23]   cassandra |     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+[20:12:23]   cassandra |     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+[20:12:23]   cassandra |     AND memtable = 'default'
+[20:12:23]   cassandra |     AND crc_check_chance = 1.0
+[20:12:23]   cassandra |     AND default_time_to_live = 0
+[20:12:23]   cassandra |     AND extensions = {}
+[20:12:23]   cassandra |     AND gc_grace_seconds = 864000
+[20:12:23]   cassandra |     AND incremental_backups = true
+[20:12:23]   cassandra |     AND max_index_interval = 2048
+[20:12:23]   cassandra |     AND memtable_flush_period_in_ms = 0
+[20:12:23]   cassandra |     AND min_index_interval = 128
+[20:12:23]   cassandra |     AND read_repair = 'BLOCKING'
+[20:12:23]   cassandra |     AND speculative_retry = '99p';
+[20:12:24]   cassandra | 
+[20:12:24]   cassandra |  Container f30cm-cassandra Running 
+[20:12:24]   cassandra |  Container f30cm-cassandra-cargador Creating 
+[20:12:24]   cassandra |  Container f30cm-cassandra-cargador Created 
+[20:12:24]   cassandra |  Container f30cm-cassandra Waiting 
+[20:12:24]   cassandra |  Container f30cm-cassandra Healthy 
+[20:12:24]   cassandra |  Container f30cm-cassandra-cargador Starting 
+[20:12:24]   cassandra |  Container f30cm-cassandra-cargador Started
+[20:12:26]   cassandra | 
+[20:12:26]   cassandra | WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[20:12:26] cassandra ✔ preparacion en 3.4 s
+[20:12:26] cassandra ▶ carga
+[20:14:24]   cassandra | Cassandra 5.0.9 · objetivo 1,050,000 comentarios · concurrencia 256
+[20:14:24]   cassandra |      10,000 comentarios · lote    18,026 escr/s · acumulado    18,026 escr/s · errores 0
+[20:14:24]   cassandra |      20,000 comentarios · lote    22,861 escr/s · acumulado    20,157 escr/s · errores 0
+[20:14:24]   cassandra |      30,000 comentarios · lote    22,035 escr/s · acumulado    20,747 escr/s · errores 0
+[20:14:24]   cassandra |      40,000 comentarios · lote    22,277 escr/s · acumulado    21,109 escr/s · errores 0
+[20:14:24]   cassandra |      50,000 comentarios · lote    23,687 escr/s · acumulado    21,579 escr/s · errores 0
+[20:14:24]   cassandra |      60,000 comentarios · lote    21,211 escr/s · acumulado    21,517 escr/s · errores 0
+[20:14:24]   cassandra |      70,000 comentarios · lote    23,373 escr/s · acumulado    21,764 escr/s · errores 0
+[20:14:24]   cassandra |      80,000 comentarios · lote    23,481 escr/s · acumulado    21,964 escr/s · errores 0
+[20:14:24]   cassandra |      90,000 comentarios · lote    24,442 escr/s · acumulado    22,215 escr/s · errores 0
+[20:14:24]   cassandra |     100,000 comentarios · lote    23,355 escr/s · acumulado    22,323 escr/s · errores 0
+[20:14:24]   cassandra |     110,000 comentarios · lote    24,245 escr/s · acumulado    22,486 escr/s · errores 0
+[20:14:24]   cassandra |     120,000 comentarios · lote    22,288 escr/s · acumulado    22,469 escr/s · errores 0
+[20:14:24]   cassandra |     130,000 comentarios · lote    21,906 escr/s · acumulado    22,425 escr/s · errores 0
+[20:14:24]   cassandra |     140,000 comentarios · lote    23,015 escr/s · acumulado    22,466 escr/s · errores 0
+[20:14:24]   cassandra |     150,000 comentarios · lote    21,981 escr/s · acumulado    22,433 escr/s · errores 0
+[20:14:24]   cassandra |     160,000 comentarios · lote    22,688 escr/s · acumulado    22,449 escr/s · errores 0
+[20:14:24]   cassandra |     170,000 comentarios · lote    22,854 escr/s · acumulado    22,472 escr/s · errores 0
+[20:14:24]   cassandra |     180,000 comentarios · lote    19,214 escr/s · acumulado    22,262 escr/s · errores 0
+[20:14:24]   cassandra |     190,000 comentarios · lote    22,009 escr/s · acumulado    22,249 escr/s · errores 0
+[20:14:24]   cassandra |     200,000 comentarios · lote    17,978 escr/s · acumulado    21,988 escr/s · errores 0
+[20:14:24]   cassandra |     210,000 comentarios · lote    21,291 escr/s · acumulado    21,953 escr/s · errores 0
+[20:14:24]   cassandra |     220,000 comentarios · lote    21,591 escr/s · acumulado    21,937 escr/s · errores 0
+[20:14:24]   cassandra |     230,000 comentarios · lote    22,440 escr/s · acumulado    21,958 escr/s · errores 0
+[20:14:24]   cassandra |     240,000 comentarios · lote    20,774 escr/s · acumulado    21,906 escr/s · errores 0
+[20:14:24]   cassandra |     250,000 comentarios · lote    22,435 escr/s · acumulado    21,927 escr/s · errores 0
+[20:14:24]   cassandra |     260,000 comentarios · lote    22,676 escr/s · acumulado    21,955 escr/s · errores 0
+[20:14:24]   cassandra |     270,000 comentarios · lote    19,545 escr/s · acumulado    21,855 escr/s · errores 0
+[20:14:24]   cassandra |     280,000 comentarios · lote    21,550 escr/s · acumulado    21,844 escr/s · errores 0
+[20:14:24]   cassandra |     290,000 comentarios · lote    22,050 escr/s · acumulado    21,851 escr/s · errores 0
+[20:14:24]   cassandra |     300,000 comentarios · lote    22,951 escr/s · acumulado    21,886 escr/s · errores 0
+[20:14:24]   cassandra |     310,000 comentarios · lote    19,376 escr/s · acumulado    21,795 escr/s · errores 0
+[20:14:24]   cassandra |     320,000 comentarios · lote    20,098 escr/s · acumulado    21,737 escr/s · errores 0
+[20:14:24]   cassandra |     330,000 comentarios · lote    21,624 escr/s · acumulado    21,734 escr/s · errores 0
+[20:14:24]   cassandra |     340,000 comentarios · lote    17,621 escr/s · acumulado    21,586 escr/s · errores 0
+[20:14:24]   cassandra |     350,000 comentarios · lote    21,704 escr/s · acumulado    21,589 escr/s · errores 0
+[20:14:24]   cassandra |     360,000 comentarios · lote    19,565 escr/s · acumulado    21,527 escr/s · errores 0
+[20:14:24]   cassandra |     370,000 comentarios · lote    22,601 escr/s · acumulado    21,555 escr/s · errores 0
+[20:14:24]   cassandra |     380,000 comentarios · lote    20,561 escr/s · acumulado    21,528 escr/s · errores 0
+[20:14:24]   cassandra |     390,000 comentarios · lote    23,523 escr/s · acumulado    21,574 escr/s · errores 0
+[20:14:24]   cassandra |     400,000 comentarios · lote    21,349 escr/s · acumulado    21,569 escr/s · errores 0
+[20:14:24]   cassandra |     410,000 comentarios · lote    19,581 escr/s · acumulado    21,515 escr/s · errores 0
+[20:14:24]   cassandra |     420,000 comentarios · lote    21,093 escr/s · acumulado    21,505 escr/s · errores 0
+[20:14:24]   cassandra |     430,000 comentarios · lote    20,145 escr/s · acumulado    21,471 escr/s · errores 0
+[20:14:24]   cassandra |     440,000 comentarios · lote    19,101 escr/s · acumulado    21,411 escr/s · errores 0
+[20:14:24]   cassandra |     450,000 comentarios · lote    20,330 escr/s · acumulado    21,386 escr/s · errores 0
+[20:14:24]   cassandra |     460,000 comentarios · lote    19,153 escr/s · acumulado    21,332 escr/s · errores 0
+[20:14:24]   cassandra |     470,000 comentarios · lote    22,015 escr/s · acumulado    21,346 escr/s · errores 0
+[20:14:24]   cassandra |     480,000 comentarios · lote    16,550 escr/s · acumulado    21,218 escr/s · errores 0
+[20:14:24]   cassandra |     490,000 comentarios · lote    20,233 escr/s · acumulado    21,197 escr/s · errores 0
+[20:14:24]   cassandra |     500,000 comentarios · lote    20,385 escr/s · acumulado    21,180 escr/s · errores 0
+[20:14:24]   cassandra |     510,000 comentarios · lote    19,949 escr/s · acumulado    21,154 escr/s · errores 0
+[20:14:24]   cassandra |     520,000 comentarios · lote    18,972 escr/s · acumulado    21,108 escr/s · errores 0
+[20:14:24]   cassandra |     530,000 comentarios · lote    20,265 escr/s · acumulado    21,091 escr/s · errores 0
+[20:14:24]   cassandra |     540,000 comentarios · lote    21,246 escr/s · acumulado    21,094 escr/s · errores 0
+[20:14:24]   cassandra |     550,000 comentarios · lote    17,931 escr/s · acumulado    21,026 escr/s · errores 0
+[20:14:24]   cassandra |     560,000 comentarios · lote    20,888 escr/s · acumulado    21,024 escr/s · errores 0
+[20:14:24]   cassandra |     570,000 comentarios · lote    20,154 escr/s · acumulado    21,008 escr/s · errores 0
+[20:14:24]   cassandra |     580,000 comentarios · lote    20,407 escr/s · acumulado    20,997 escr/s · errores 0
+[20:14:24]   cassandra |     590,000 comentarios · lote    19,041 escr/s · acumulado    20,961 escr/s · errores 0
+[20:14:24]   cassandra |     600,000 comentarios · lote    17,490 escr/s · acumulado    20,892 escr/s · errores 0
+[20:14:24]   cassandra |     610,000 comentarios · lote    20,195 escr/s · acumulado    20,880 escr/s · errores 0
+[20:14:24]   cassandra |     620,000 comentarios · lote    17,192 escr/s · acumulado    20,808 escr/s · errores 0
+[20:14:24]   cassandra |     630,000 comentarios · lote    19,333 escr/s · acumulado    20,783 escr/s · errores 0
+[20:14:24]   cassandra |     640,000 comentarios · lote    19,995 escr/s · acumulado    20,770 escr/s · errores 0
+[20:14:24]   cassandra |     650,000 comentarios · lote    20,062 escr/s · acumulado    20,759 escr/s · errores 0
+[20:14:24]   cassandra |     660,000 comentarios · lote    20,781 escr/s · acumulado    20,759 escr/s · errores 0
+[20:14:24]   cassandra |     670,000 comentarios · lote    20,263 escr/s · acumulado    20,751 escr/s · errores 0
+[20:14:24]   cassandra |     680,000 comentarios · lote    16,790 escr/s · acumulado    20,680 escr/s · errores 0
+[20:14:24]   cassandra |     690,000 comentarios · lote    18,430 escr/s · acumulado    20,643 escr/s · errores 0
+[20:14:24]   cassandra |     700,000 comentarios · lote    19,668 escr/s · acumulado    20,629 escr/s · errores 0
+[20:14:24]   cassandra |     710,000 comentarios · lote    17,909 escr/s · acumulado    20,585 escr/s · errores 0
+[20:14:24]   cassandra |     720,000 comentarios · lote    18,668 escr/s · acumulado    20,555 escr/s · errores 0
+[20:14:24]   cassandra |     730,000 comentarios · lote    18,314 escr/s · acumulado    20,521 escr/s · errores 0
+[20:14:24]   cassandra |     740,000 comentarios · lote    19,433 escr/s · acumulado    20,505 escr/s · errores 0
+[20:14:24]   cassandra |     750,000 comentarios · lote    17,135 escr/s · acumulado    20,452 escr/s · errores 0
+[20:14:24]   cassandra |     760,000 comentarios · lote    19,391 escr/s · acumulado    20,437 escr/s · errores 0
+[20:14:24]   cassandra |     770,000 comentarios · lote    17,375 escr/s · acumulado    20,390 escr/s · errores 0
+[20:14:24]   cassandra |     780,000 comentarios · lote    18,715 escr/s · acumulado    20,367 escr/s · errores 0
+[20:14:24]   cassandra |     790,000 comentarios · lote    18,306 escr/s · acumulado    20,338 escr/s · errores 0
+[20:14:24]   cassandra |     800,000 comentarios · lote    20,720 escr/s · acumulado    20,343 escr/s · errores 0
+[20:14:24]   cassandra |     810,000 comentarios · lote    18,000 escr/s · acumulado    20,310 escr/s · errores 0
+[20:14:24]   cassandra |     820,000 comentarios · lote    21,330 escr/s · acumulado    20,322 escr/s · errores 0
+[20:14:24]   cassandra |     830,000 comentarios · lote    20,247 escr/s · acumulado    20,321 escr/s · errores 0
+[20:14:24]   cassandra |     840,000 comentarios · lote    20,589 escr/s · acumulado    20,324 escr/s · errores 0
+[20:14:24]   cassandra |     850,000 comentarios · lote    18,728 escr/s · acumulado    20,304 escr/s · errores 0
+[20:14:24]   cassandra |     860,000 comentarios · lote    19,476 escr/s · acumulado    20,294 escr/s · errores 0
+[20:14:24]   cassandra |     870,000 comentarios · lote    18,826 escr/s · acumulado    20,276 escr/s · errores 0
+[20:14:24]   cassandra |     880,000 comentarios · lote    18,774 escr/s · acumulado    20,257 escr/s · errores 0
+[20:14:24]   cassandra |     890,000 comentarios · lote    18,909 escr/s · acumulado    20,241 escr/s · errores 0
+[20:14:24]   cassandra |     900,000 comentarios · lote    15,537 escr/s · acumulado    20,173 escr/s · errores 0
+[20:14:24]   cassandra |     910,000 comentarios · lote    16,820 escr/s · acumulado    20,129 escr/s · errores 0
+[20:14:24]   cassandra |     920,000 comentarios · lote    19,993 escr/s · acumulado    20,127 escr/s · errores 0
+[20:14:24]   cassandra |     930,000 comentarios · lote    17,498 escr/s · acumulado    20,095 escr/s · errores 0
+[20:14:24]   cassandra |     940,000 comentarios · lote    17,066 escr/s · acumulado    20,057 escr/s · errores 0
+[20:14:24]   cassandra |     950,000 comentarios · lote    20,281 escr/s · acumulado    20,059 escr/s · errores 0
+[20:14:24]   cassandra |     960,000 comentarios · lote    19,903 escr/s · acumulado    20,058 escr/s · errores 0
+[20:14:24]   cassandra |     970,000 comentarios · lote    19,523 escr/s · acumulado    20,052 escr/s · errores 0
+[20:14:24]   cassandra |     980,000 comentarios · lote    20,391 escr/s · acumulado    20,056 escr/s · errores 0
+[20:14:24]   cassandra |     990,000 comentarios · lote    21,862 escr/s · acumulado    20,072 escr/s · errores 0
+[20:14:24]   cassandra |   1,000,000 comentarios · lote    20,804 escr/s · acumulado    20,079 escr/s · errores 0
+[20:14:24]   cassandra |   1,010,000 comentarios · lote    16,170 escr/s · acumulado    20,031 escr/s · errores 0
+[20:14:24]   cassandra |   1,020,000 comentarios · lote    17,706 escr/s · acumulado    20,006 escr/s · errores 0
+[20:14:24]   cassandra |   1,030,000 comentarios · lote    16,626 escr/s · acumulado    19,966 escr/s · errores 0
+[20:14:24]   cassandra |   1,040,000 comentarios · lote    15,219 escr/s · acumulado    19,907 escr/s · errores 0
+[20:14:24]   cassandra |   1,050,000 comentarios · lote    16,380 escr/s · acumulado    19,866 escr/s · errores 0
+[20:14:24]   cassandra | # Carga masiva — 2026-11-14T20:14:23+00:00
+[20:14:24]   cassandra | 
+[20:14:24]   cassandra | | Dato | Valor |
+[20:14:24]   cassandra | |---|---|
+[20:14:24]   cassandra | | Versión de Cassandra | 5.0.9 |
+[20:14:24]   cassandra | | CPUs visibles / RAM | 10 / 7.7 GB |
+[20:14:24]   cassandra | | Concurrencia | 256 |
+[20:14:24]   cassandra | | Comentarios cargados | 1,050,000 |
+[20:14:24]   cassandra | | Escrituras OK / errores | 2,100,000 / 0 |
+[20:14:24]   cassandra | | Tiempo de escritura | 105.71 s |
+[20:14:24]   cassandra | | **Tasa de escritura** | **19,865.8 escrituras/s** |
+[20:14:24]   cassandra | | Tasa por lote (mín / mediana / máx) | 15219.2 / 20154.2 / 24442.3 |
+[20:14:24]   cassandra | | ¿Alcanza 10.000 escr/s? | Sí |
+[20:14:24]   cassandra | 
+[20:14:24]   cassandra | ## Distribución (filas por partición de comentarios_por_partido)
+[20:14:24]   cassandra | 
+[20:14:24]   cassandra | particiones 1725 · mín 49 · p50 258 · p90 1051 · p99 5883 · máx 16161
+[20:14:24]   cassandra | 
+[20:14:24]   cassandra | Top 5: ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 0) = 16,161; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 1) = 16,160; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 2) = 16,160; ('PAR-D16-01', '2030-06-29T17:30:00+00:00', 3) = 16,159; ('PAR-D16-01', '2030-06-29T17:20:00+00:00', 0) = 9,993
+[20:14:24]   cassandra | 
+[20:14:24]   cassandra | Evidencia guardada en /app/evidencia/20261114-201122_secuencial_c256-r2/carga_masiva_20261114-201423.(md|json)
+[20:14:24] cassandra ✔ carga en 117.6 s · 1,050,000 comentarios · 8,926.4 /s
+[20:14:24] cassandra ▶ verificacion
+[20:14:24] validación · Cassandra (recorrido completo de las dos tablas)
+[20:14:31] cassandra ✔ verificacion en 7.6 s
+[20:14:31] cassandra ▶ apagado
+[20:14:38]   cassandra | 
+[20:14:38]   cassandra |  Container f30cm-cassandra-cargador Stopping 
+[20:14:38]   cassandra |  Container f30cm-cassandra-cargador Stopped 
+[20:14:38]   cassandra |  Container f30cm-cassandra-cargador Removing 
+[20:14:38]   cassandra |  Container f30cm-cassandra-cargador Removed 
+[20:14:38]   cassandra |  Container f30cm-cassandra Stopping 
+[20:14:38]   cassandra |  Container f30cm-cassandra Stopped 
+[20:14:38]   cassandra |  Container f30cm-cassandra Removing 
+[20:14:38]   cassandra |  Container f30cm-cassandra Removed 
+[20:14:38]   cassandra |  Network f30cm-cassandra-net Removing 
+[20:14:38]   cassandra |  Volume f30cm_cassandra_data Removing 
+[20:14:38]   cassandra |  Volume f30cm_cassandra_data Removed 
+[20:14:38]   cassandra |  Network f30cm-cassandra-net Removed
+[20:14:38] cassandra ✔ apagado en 6.6 s
+[20:14:39] == 3. Referencias cruzadas
+[20:14:39] == 4. Reporte: fixture2030-carga-masiva/evidencia/corridas/20261114-201122_secuencial_c256-r2/reporte.md
+[20:14:39] FIN · carga 179.3 s · total 193.5 s · bases con error: ninguna · chequeos fallidos: ninguno

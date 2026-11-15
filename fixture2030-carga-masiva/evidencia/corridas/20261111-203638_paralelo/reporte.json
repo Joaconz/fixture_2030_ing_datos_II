@@ -1,0 +1,962 @@
+{
+  "meta": {
+    "corrida": "20261111-203638_paralelo",
+    "fecha_inicio": "2026-11-11T20:36:43+00:00",
+    "commit": "fc08ebb",
+    "comando": "python fixture2030-carga-masiva/scripts/orquestador.py --modo paralelo",
+    "modo": "paralelo",
+    "max_paralelo": null,
+    "bases": [
+      "mongodb",
+      "neo4j",
+      "cassandra",
+      "influxdb",
+      "redis"
+    ],
+    "vm": {
+      "cpus": 12,
+      "memoria_gib": 7.68
+    },
+    "memoria_inicial": {
+      "vm_mib": 7869,
+      "contenedores_ajenos_mib": 3966,
+      "contenedores_ajenos": 17,
+      "ram_libre_host_mib": 1383,
+      "presupuesto_mib": 3135,
+      "margen_mib": 768
+    },
+    "parametros": {
+      "cassandra_concurrencia": 128,
+      "influx_hilos": 8,
+      "influx_lote": 50000
+    },
+    "orden": [
+      "mongodb",
+      "neo4j",
+      "cassandra",
+      "influxdb",
+      "redis"
+    ],
+    "inicio_carga": "2026-11-11T20:36:48+00:00",
+    "fin": "2026-11-11T20:49:50+00:00",
+    "vigia": "RAM disponible del host 45 MiB (< 250)"
+  },
+  "insumos_influxdb": {
+    "generados_en_esta_corrida": false,
+    "segundos": null
+  },
+  "admisiones": [
+    {
+      "base": "mongodb",
+      "t_s": 0.0,
+      "reservado_mib": 1152,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 1593
+    },
+    {
+      "base": "redis",
+      "t_s": 0.0,
+      "reservado_mib": 1664,
+      "simultaneas": 2,
+      "ram_libre_host_mib": 1593
+    },
+    {
+      "base": "neo4j",
+      "t_s": 38.1,
+      "reservado_mib": 2560,
+      "simultaneas": 2,
+      "ram_libre_host_mib": 1091
+    },
+    {
+      "base": "cassandra",
+      "t_s": 171.1,
+      "reservado_mib": 2816,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 857
+    }
+  ],
+  "bases": {
+    "mongodb": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 12.8,
+          "segundos": 12.8
+        },
+        "preparacion": {
+          "desde_s": 12.8,
+          "hasta_s": 19.3,
+          "segundos": 6.5
+        },
+        "carga": {
+          "desde_s": 19.3,
+          "hasta_s": 22.5,
+          "segundos": 3.2
+        },
+        "verificacion": {
+          "desde_s": 22.5,
+          "hasta_s": 25.3,
+          "segundos": 2.8
+        },
+        "apagado": {
+          "desde_s": 25.3,
+          "hasta_s": 38.1,
+          "segundos": 12.8
+        }
+      },
+      "estado": "ok",
+      "volumen": 1728,
+      "unidad": "documentos",
+      "detalle": "64 equipos + 1664 jugadores (load/seed.js, bulkWrite con upsert)",
+      "por_segundo": 542.6
+    },
+    "redis": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 8.9,
+          "segundos": 8.9
+        },
+        "preparacion": {
+          "desde_s": 8.9,
+          "hasta_s": 8.9,
+          "segundos": 0.0
+        },
+        "carga": {
+          "desde_s": 8.9,
+          "hasta_s": 24.9,
+          "segundos": 15.9
+        },
+        "verificacion": {
+          "desde_s": 24.9,
+          "hasta_s": 90.2,
+          "segundos": 65.3
+        },
+        "apagado": {
+          "desde_s": 90.2,
+          "hasta_s": 106.4,
+          "segundos": 16.3
+        }
+      },
+      "estado": "ok",
+      "volumen": 100000,
+      "unidad": "usuarios",
+      "comandos": 1100000,
+      "detalle": "carga_muestra.sh + carga_volumen.sh 100000: conteo usuarios=100000 sesiones=100000 perfiles=100000 (11 comandos por usuario, redis-cli --pipe)",
+      "por_segundo": 6270.5
+    },
+    "neo4j": {
+      "fases": {
+        "arranque": {
+          "desde_s": 38.1,
+          "hasta_s": 121.3,
+          "segundos": 83.2
+        },
+        "preparacion": {
+          "desde_s": 121.3,
+          "hasta_s": 129.8,
+          "segundos": 8.5
+        },
+        "carga": {
+          "desde_s": 129.8,
+          "hasta_s": 155.2,
+          "segundos": 25.4
+        },
+        "verificacion": {
+          "desde_s": 155.2,
+          "hasta_s": 157.8,
+          "segundos": 2.6
+        },
+        "apagado": {
+          "desde_s": 157.8,
+          "hasta_s": 171.1,
+          "segundos": 13.3
+        }
+      },
+      "estado": "ok",
+      "volumen": 13736,
+      "unidad": "nodos+relaciones",
+      "detalle": "3,089 nodos + 10,647 relaciones (queries/carga.cypher, MERGE)",
+      "por_segundo": 540.1
+    },
+    "cassandra": {
+      "fases": {
+        "arranque": {
+          "desde_s": 171.1,
+          "hasta_s": 265.6,
+          "segundos": 94.5
+        },
+        "preparacion": {
+          "desde_s": 265.6,
+          "hasta_s": 286.2,
+          "segundos": 20.6
+        },
+        "carga": {
+          "desde_s": 286.2,
+          "hasta_s": 778.0,
+          "segundos": 491.7
+        }
+      },
+      "estado": "falló en carga",
+      "fallas": [
+        "carga: ErrorPaso: docker exec f30cm-cassandra-cargador python scripts/carga_masiva.py --salida /app/evidencia/20261111-203638_paralelo… salió con 137 (491.7 s):\n"
+      ]
+    },
+    "influxdb": {
+      "fases": {},
+      "estado": "no arrancó (vigía)"
+    }
+  },
+  "total": {
+    "reloj_hasta_ultima_carga_s": 778.0,
+    "segundos_reloj_total": 782.0,
+    "suma_segundos_carga": 536.2,
+    "suma_arranque_preparacion_carga_s": 771.2,
+    "registros": 115464,
+    "registros_por_segundo_reloj": 148.4,
+    "termina_ultima": "cassandra",
+    "carga_mas_larga": [
+      "cassandra",
+      491.7
+    ]
+  },
+  "recursos": {
+    "muestras": 243,
+    "contenedores_prueba": {
+      "f30cm-cassandra": {
+        "muestras": 193,
+        "cpu_prom_pct": 149.5,
+        "cpu_max_pct": 359.1,
+        "mem_max_mib": 1765
+      },
+      "f30cm-cassandra-cargador": {
+        "muestras": 157,
+        "cpu_prom_pct": 101.0,
+        "cpu_max_pct": 122.0,
+        "mem_max_mib": 137
+      },
+      "f30cm-mongodb": {
+        "muestras": 7,
+        "cpu_prom_pct": 55.2,
+        "cpu_max_pct": 140.6,
+        "mem_max_mib": 469
+      },
+      "f30cm-mongodb-cargador": {
+        "muestras": 6,
+        "cpu_prom_pct": 50.9,
+        "cpu_max_pct": 143.6,
+        "mem_max_mib": 50
+      },
+      "f30cm-neo4j": {
+        "muestras": 37,
+        "cpu_prom_pct": 194.9,
+        "cpu_max_pct": 400.4,
+        "mem_max_mib": 1493
+      },
+      "f30cm-redis": {
+        "muestras": 29,
+        "cpu_prom_pct": 55.9,
+        "cpu_max_pct": 134.1,
+        "mem_max_mib": 89
+      }
+    },
+    "pico_mem_prueba_mib": 1886,
+    "pico_cpu_prueba_pct": 466.3,
+    "pico_mem_total_vm_mib": 6011,
+    "mem_otros_contenedores_mib": 4401,
+    "otros_contenedores": 18,
+    "ram_libre_host_min_mib": 45
+  },
+  "validacion": {
+    "chequeos": [
+      {
+        "chequeo": "MongoDB · equipos",
+        "esperado": 64,
+        "obtenido": 64,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · jugadores",
+        "esperado": 1664,
+        "obtenido": 1664,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · dni duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · (equipo, dorsal) duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "MongoDB · jugadores sin equipo",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · partidos",
+        "esperado": 127,
+        "obtenido": 127,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventos",
+        "esperado": 1572,
+        "obtenido": 1572,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · partidoId duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventoId duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · equipoId / dni duplicados",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · eventos sin partido",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Neo4j · relaciones del enunciado presentes",
+        "esperado": "las 5",
+        "obtenido": "las 5",
+        "ok": true
+      },
+      {
+        "chequeo": "Redis · usuarios del volumen (índice de sesiones, TTL 12 h)",
+        "esperado": 100000,
+        "obtenido": 100000,
+        "ok": true
+      },
+      {
+        "chequeo": "Redis · usuarios con != 1 sesión (duplicados)",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cruce · partido_id de redis que no existen en Neo4j",
+        "esperado": 0,
+        "obtenido": 0,
+        "ok": true
+      },
+      {
+        "chequeo": "Cruce · equipos MongoDB sin equipoId igual en Neo4j (H1, se mide)",
+        "esperado": "medido",
+        "obtenido": 12,
+        "ok": "H1"
+      }
+    ],
+    "cruces": {
+      "partidos_redis": {
+        "partido_ids": 112,
+        "inexistentes_en_neo4j": [],
+        "partidos_de_neo4j_sin_datos_en_esta_base": 15
+      },
+      "equipos_mongodb_neo4j": {
+        "mongodb": 64,
+        "neo4j": 64,
+        "codigo_coincide": 52,
+        "solo_mongodb": [
+          "CHL Chile",
+          "CHN China",
+          "HAI Haití",
+          "IND India",
+          "NCL Nueva Caledonia",
+          "PNG Papúa Nueva Guinea",
+          "PRY Paraguay",
+          "SAU Arabia Saudita",
+          "SLV El Salvador",
+          "TRI Trinidad y Tobago",
+          "URY Uruguay",
+          "ZAF Sudáfrica"
+        ],
+        "solo_neo4j": [
+          "CHI Chile",
+          "COD RD Congo",
+          "GRE Grecia",
+          "KSA Arabia Saudita",
+          "MLI Malí",
+          "NOR Noruega",
+          "PAR Paraguay",
+          "ROU Rumania",
+          "RSA Sudáfrica",
+          "UAE Emiratos Árabes Unidos",
+          "URU Uruguay",
+          "WAL Gales"
+        ],
+        "mismo_nombre_distinto_codigo": [
+          {
+            "mongodb": "CHL",
+            "neo4j": "CHI",
+            "nombre": "Chile"
+          },
+          {
+            "mongodb": "PRY",
+            "neo4j": "PAR",
+            "nombre": "Paraguay"
+          },
+          {
+            "mongodb": "SAU",
+            "neo4j": "KSA",
+            "nombre": "Arabia Saudita"
+          },
+          {
+            "mongodb": "URY",
+            "neo4j": "URU",
+            "nombre": "Uruguay"
+          },
+          {
+            "mongodb": "ZAF",
+            "neo4j": "RSA",
+            "nombre": "Sudáfrica"
+          }
+        ],
+        "sin_par_por_nombre": {
+          "mongodb": [
+            "CHN China",
+            "HAI Haití",
+            "IND India",
+            "NCL Nueva Caledonia",
+            "PNG Papúa Nueva Guinea",
+            "SLV El Salvador",
+            "TRI Trinidad y Tobago"
+          ],
+          "neo4j": [
+            "COD RD Congo",
+            "GRE Grecia",
+            "MLI Malí",
+            "NOR Noruega",
+            "ROU Rumania",
+            "UAE Emiratos Árabes Unidos",
+            "WAL Gales"
+          ]
+        }
+      }
+    },
+    "resumen": {
+      "chequeos": 16,
+      "ok": 15,
+      "fallidos": [],
+      "informativos": [
+        "Cruce · equipos MongoDB sin equipoId igual en Neo4j (H1, se mide)"
+      ]
+    },
+    "bases": {
+      "mongodb": {
+        "equipos": 64,
+        "jugadores": 1664,
+        "dni_duplicados": 0,
+        "dorsal_duplicados": 0,
+        "huerfanos": 0
+      },
+      "redis": {
+        "usuarios_volumen": 100000,
+        "usuarios_con_sesiones_distinta_de_1": 0,
+        "sesiones_volumen": 100000,
+        "perfiles_volumen": 100000,
+        "dbsize": 304203,
+        "rankings_tendencia": [
+          "f30:rank:tendencia:2030062916"
+        ],
+        "partido_ids": [
+          "PAR-A-1",
+          "PAR-A-2",
+          "PAR-A-3",
+          "PAR-A-4",
+          "PAR-A-5",
+          "PAR-A-6",
+          "PAR-B-1",
+          "PAR-B-2",
+          "PAR-B-3",
+          "PAR-B-4",
+          "PAR-B-5",
+          "PAR-B-6",
+          "PAR-C-1",
+          "PAR-C-2",
+          "PAR-C-3",
+          "PAR-C-4",
+          "PAR-C-5",
+          "PAR-C-6",
+          "PAR-D-1",
+          "PAR-D-2",
+          "PAR-D-3",
+          "PAR-D-4",
+          "PAR-D-5",
+          "PAR-D-6",
+          "PAR-D16-01",
+          "PAR-D16-02",
+          "PAR-D16-03",
+          "PAR-D16-04",
+          "PAR-D16-05",
+          "PAR-D16-06",
+          "PAR-D16-07",
+          "PAR-D16-08",
+          "PAR-D16-09",
+          "PAR-D16-10",
+          "PAR-D16-11",
+          "PAR-D16-12",
+          "PAR-D16-13",
+          "PAR-D16-14",
+          "PAR-D16-15",
+          "PAR-D16-16",
+          "PAR-E-1",
+          "PAR-E-2",
+          "PAR-E-3",
+          "PAR-E-4",
+          "PAR-E-5",
+          "PAR-E-6",
+          "PAR-F-1",
+          "PAR-F-2",
+          "PAR-F-3",
+          "PAR-F-4",
+          "PAR-F-5",
+          "PAR-F-6",
+          "PAR-G-1",
+          "PAR-G-2",
+          "PAR-G-3",
+          "PAR-G-4",
+          "PAR-G-5",
+          "PAR-G-6",
+          "PAR-H-1",
+          "PAR-H-2",
+          "PAR-H-3",
+          "PAR-H-4",
+          "PAR-H-5",
+          "PAR-H-6",
+          "PAR-I-1",
+          "PAR-I-2",
+          "PAR-I-3",
+          "PAR-I-4",
+          "PAR-I-5",
+          "PAR-I-6",
+          "PAR-J-1",
+          "PAR-J-2",
+          "PAR-J-3",
+          "PAR-J-4",
+          "PAR-J-5",
+          "PAR-J-6",
+          "PAR-K-1",
+          "PAR-K-2",
+          "PAR-K-3",
+          "PAR-K-4",
+          "PAR-K-5",
+          "PAR-K-6",
+          "PAR-L-1",
+          "PAR-L-2",
+          "PAR-L-3",
+          "PAR-L-4",
+          "PAR-L-5",
+          "PAR-L-6",
+          "PAR-M-1",
+          "PAR-M-2",
+          "PAR-M-3",
+          "PAR-M-4",
+          "PAR-M-5",
+          "PAR-M-6",
+          "PAR-N-1",
+          "PAR-N-2",
+          "PAR-N-3",
+          "PAR-N-4",
+          "PAR-N-5",
+          "PAR-N-6",
+          "PAR-O-1",
+          "PAR-O-2",
+          "PAR-O-3",
+          "PAR-O-4",
+          "PAR-O-5",
+          "PAR-O-6",
+          "PAR-P-1",
+          "PAR-P-2",
+          "PAR-P-3",
+          "PAR-P-4",
+          "PAR-P-5",
+          "PAR-P-6"
+        ]
+      },
+      "neo4j": {
+        "equipos": 64,
+        "equipos_distintos": 64,
+        "eventos": 1572,
+        "eventos_distintos": 1572,
+        "eventos_sin_partido": 0,
+        "jugadores": 1282,
+        "jugadores_distintos": 1282,
+        "partidos": 127,
+        "partidos_distintos": 127,
+        "relaciones_enunciado": {
+          "PARTICIPA": 1248,
+          "ANOTA": 220,
+          "ASISTE": 220,
+          "RECIBE_TARJETA": 136,
+          "REEMPLAZA": 136
+        }
+      },
+      "cassandra": null,
+      "influxdb": null
+    }
+  },
+  "distribucion": {
+    "mongodb": {
+      "por_equipo": {
+        "_id": null,
+        "equipos": 64,
+        "min": 26,
+        "max": 26,
+        "prom": 26
+      },
+      "por_confederacion": [
+        {
+          "_id": "UEFA",
+          "jugadores": 520,
+          "equipos": 20
+        },
+        {
+          "_id": "AFC",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CAF",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CONCACAF",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "CONMEBOL",
+          "jugadores": 260,
+          "equipos": 10
+        },
+        {
+          "_id": "OFC",
+          "jugadores": 104,
+          "equipos": 4
+        }
+      ],
+      "por_posicion": [
+        {
+          "_id": "Mediocampista",
+          "n": 437
+        },
+        {
+          "_id": "Delantero",
+          "n": 419
+        },
+        {
+          "_id": "Arquero",
+          "n": 418
+        },
+        {
+          "_id": "Defensor",
+          "n": 390
+        }
+      ],
+      "tamanos": [
+        {
+          "coleccion": "equipos",
+          "documentos": 64,
+          "bytes_datos": 14467,
+          "bytes_promedio_doc": 226,
+          "bytes_almacenados": 4096,
+          "indices": 2,
+          "bytes_indices": 8192
+        },
+        {
+          "coleccion": "jugadores",
+          "documentos": 1664,
+          "bytes_datos": 368241,
+          "bytes_promedio_doc": 221,
+          "bytes_almacenados": 4096,
+          "indices": 4,
+          "bytes_indices": 16384
+        }
+      ]
+    },
+    "redis": {
+      "por_tipo": {
+        "list": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "hash": {
+          "claves": 202129,
+          "bytes": 38680818
+        },
+        "stream": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "string": {
+          "claves": 0,
+          "bytes": 0
+        },
+        "set": {
+          "claves": 102001,
+          "bytes": 8586705
+        },
+        "zset": {
+          "claves": 2,
+          "bytes": 1606
+        }
+      },
+      "por_prefijo": {
+        "f30:ses": 102119,
+        "f30:usr:…:sesiones": 102000,
+        "f30:cache:usuario:…:perfil": 100000,
+        "f30:voto": 2,
+        "f30:rank": 1
+      },
+      "info": {
+        "used_memory": "63935048",
+        "used_memory_human": "60.97M",
+        "used_memory_peak_human": "66.45M",
+        "used_memory_dataset": "39498056",
+        "maxmemory_human": "256.00M",
+        "maxmemory_policy": "volatile-lru",
+        "mem_fragmentation_ratio": "1.47",
+        "db0": "keys=304122,expires=304120,avg_ttl=14591419,subexpiry=0",
+        "expired_keys": "81",
+        "evicted_keys": "0"
+      },
+      "bytes_por_clave_muestra": {
+        "sesion (HASH)": 262,
+        "indice de sesiones (SET)": 84,
+        "perfil en cache (HASH)": 121
+      }
+    },
+    "neo4j": {
+      "nodos_por_etiqueta": [
+        {
+          "etiqueta": "Evento",
+          "n": 1572
+        },
+        {
+          "etiqueta": "Jugador",
+          "n": 1282
+        },
+        {
+          "etiqueta": "Partido",
+          "n": 127
+        },
+        {
+          "etiqueta": "Equipo",
+          "n": 64
+        },
+        {
+          "etiqueta": "Grupo",
+          "n": 16
+        },
+        {
+          "etiqueta": "Sede",
+          "n": 16
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "n": 12
+        }
+      ],
+      "relaciones_por_tipo": [
+        {
+          "tipo": "OCURRE_EN",
+          "n": 1572
+        },
+        {
+          "tipo": "ES_DE_TIPO",
+          "n": 1572
+        },
+        {
+          "tipo": "PROTAGONIZADO_POR",
+          "n": 1572
+        },
+        {
+          "tipo": "SIGUIENTE_EVENTO",
+          "n": 1446
+        },
+        {
+          "tipo": "JUEGA_EN",
+          "n": 1282
+        },
+        {
+          "tipo": "PARTICIPA",
+          "n": 1248
+        },
+        {
+          "tipo": "CAUSA_DE",
+          "n": 702
+        },
+        {
+          "tipo": "PARTICIPA_EN",
+          "n": 254
+        },
+        {
+          "tipo": "ANOTA",
+          "n": 220
+        },
+        {
+          "tipo": "ASISTE",
+          "n": 220
+        },
+        {
+          "tipo": "RECIBE_TARJETA",
+          "n": 136
+        },
+        {
+          "tipo": "REEMPLAZA",
+          "n": 136
+        },
+        {
+          "tipo": "SE_JUEGA_EN",
+          "n": 127
+        },
+        {
+          "tipo": "CORRESPONDE_A",
+          "n": 96
+        },
+        {
+          "tipo": "PERTENECE_A",
+          "n": 64
+        }
+      ],
+      "grados": [
+        {
+          "etiqueta": "Evento",
+          "min": 4,
+          "p50": 6,
+          "p99": 7,
+          "max": 7,
+          "prom": 5.7
+        },
+        {
+          "etiqueta": "Jugador",
+          "min": 1,
+          "p50": 1,
+          "p99": 21,
+          "max": 29,
+          "prom": 4.0
+        },
+        {
+          "etiqueta": "Partido",
+          "min": 3,
+          "p50": 30,
+          "p99": 37,
+          "max": 37,
+          "prom": 28.8
+        },
+        {
+          "etiqueta": "Equipo",
+          "min": 22,
+          "p50": 25,
+          "p99": 31,
+          "max": 31,
+          "prom": 25.0
+        },
+        {
+          "etiqueta": "Grupo",
+          "min": 10,
+          "p50": 10,
+          "p99": 10,
+          "max": 10,
+          "prom": 10.0
+        },
+        {
+          "etiqueta": "Sede",
+          "min": 7,
+          "p50": 7,
+          "p99": 11,
+          "max": 11,
+          "prom": 7.9
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "min": 0,
+          "p50": 126,
+          "p99": 294,
+          "max": 294,
+          "prom": 131.0
+        }
+      ],
+      "mas_conectados": [
+        {
+          "etiqueta": "TipoEvento",
+          "id": "PASE",
+          "grado": 294
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "GOL",
+          "grado": 220
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "ASISTENCIA",
+          "grado": 220
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "FALTA",
+          "grado": 136
+        },
+        {
+          "etiqueta": "TipoEvento",
+          "id": "SUSTITUCION",
+          "grado": 136
+        }
+      ],
+      "eventos_por_fase": [
+        {
+          "fase": "GRUPOS",
+          "partidos": 96,
+          "eventos": 1152
+        },
+        {
+          "fase": "DIECISEISAVOS",
+          "partidos": 16,
+          "eventos": 220
+        },
+        {
+          "fase": "OCTAVOS",
+          "partidos": 8,
+          "eventos": 116
+        },
+        {
+          "fase": "CUARTOS",
+          "partidos": 4,
+          "eventos": 52
+        },
+        {
+          "fase": "SEMIFINAL",
+          "partidos": 2,
+          "eventos": 32
+        },
+        {
+          "fase": "FINAL",
+          "partidos": 1,
+          "eventos": 0
+        }
+      ]
+    }
+  }
+}

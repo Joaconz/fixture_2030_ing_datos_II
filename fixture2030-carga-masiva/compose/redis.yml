@@ -1,0 +1,17 @@
+# ============================================================
+#  Fixture 2030 — Carga masiva (Hito 11 del PDF) · override de Redis
+#  Se aplica ENCIMA de ../fixture2030-redis/docker-compose.yml.
+#  Cambia el contenedor y el volumen para no chocar con la instancia compartida
+#  `fixture2030-redis`. Puerto (REDIS_PORT) y carpeta de datos (REDIS_DATA_DIR)
+#  los fija el orquestador con las variables que ya tiene el módulo.
+#  redis.conf (maxmemory 256 MB, volatile-lru, AOF) es el del módulo.
+# ============================================================
+services:
+  redis:
+    container_name: f30cm-redis
+    mem_limit: 512m   # maxmemory 256mb de redis.conf + fork del AOF
+    restart: "no"
+
+volumes:
+  redis_data:
+    name: f30cm_redis_data

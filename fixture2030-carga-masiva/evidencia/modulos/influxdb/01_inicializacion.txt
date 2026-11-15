@@ -1,0 +1,34 @@
+# Inicialización — 2026-11-14T19:53:54Z
+
+## Versión observada de influxdb:3-core (RNF1)
+influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
+Imagen: influxdb@sha256:f349b303abfc33e5be9ab67f475d544c4ef53ed5b3b68267842aedb112756b82  creada 2026-11-11T23:32:27.814117218Z
+
+## Disponibilidad del servicio (RF1)
+OK
+NAME             IMAGE             COMMAND                  SERVICE    CREATED          STATUS                   PORTS
+f30cm-influxdb   influxdb:3-core   "/usr/bin/entrypoint…"   influxdb   10 seconds ago   Up 9 seconds (healthy)   127.0.0.1:18182->8181/tcp
+
+## Bases de datos y período de retención (RF10)
++------------------------------+
+| iox::database                |
++------------------------------+
+| _internal                    |
+| fixture2030_historico        |
+| fixture2030_prueba_retencion |
+| fixture2030_vivo             |
++------------------------------+
++------------------------------+------------------+
+| database_name                | retention_period |
++------------------------------+------------------+
+| _internal                    | 7.0000d          |
+| fixture2030_historico        | infinite         |
+| fixture2030_prueba_retencion | 1.0000h          |
+| fixture2030_vivo             | 45.0000d         |
++------------------------------+------------------+
+
+## Persistencia (RNF2): volumen nombrado y carpeta que lo respalda
+f30cm_influxdb_data -> /Users/joaquin/docker/data/f30cm/influxdb
+
+## Recursos de Docker
+CPUs: 10  Memoria: 8319504384 bytes  SO: Docker Desktop

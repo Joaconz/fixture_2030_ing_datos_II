@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "corrida": "20261111-203251_secuencial_diag-influx",
+    "fecha_inicio": "2026-11-11T20:32:55+00:00",
+    "commit": "67e7db3 + cambios sin commitear",
+    "comando": "python fixture2030-carga-masiva/scripts/orquestador.py --modo secuencial --bases influxdb --sin-distribucion --conservar --etiqueta diag-influx",
+    "modo": "secuencial",
+    "max_paralelo": null,
+    "bases": [
+      "influxdb"
+    ],
+    "vm": {
+      "cpus": 12,
+      "memoria_gib": 7.68
+    },
+    "memoria_inicial": {
+      "vm_mib": 7869,
+      "contenedores_ajenos_mib": 4182,
+      "contenedores_ajenos": 17,
+      "ram_libre_host_mib": 1055,
+      "presupuesto_mib": null,
+      "margen_mib": 768
+    },
+    "parametros": {
+      "cassandra_concurrencia": 128,
+      "influx_hilos": 8,
+      "influx_lote": 50000
+    },
+    "orden": [
+      "influxdb"
+    ],
+    "inicio_carga": "2026-11-11T20:32:57+00:00",
+    "fin": "2026-11-11T20:34:48+00:00",
+    "vigia": null
+  },
+  "insumos_influxdb": {
+    "generados_en_esta_corrida": false,
+    "segundos": null
+  },
+  "admisiones": [
+    {
+      "base": "influxdb",
+      "t_s": 0.0,
+      "reservado_mib": 2560,
+      "simultaneas": 1,
+      "ram_libre_host_mib": 1098
+    }
+  ],
+  "bases": {
+    "influxdb": {
+      "fases": {
+        "arranque": {
+          "desde_s": 0.0,
+          "hasta_s": 14.3,
+          "segundos": 14.3
+        },
+        "preparacion": {
+          "desde_s": 14.3,
+          "hasta_s": 46.0,
+          "segundos": 31.7
+        },
+        "carga": {
+          "desde_s": 46.0,
+          "hasta_s": 109.4,
+          "segundos": 63.4
+        },
+        "verificacion": {
+          "desde_s": 109.4,
+          "hasta_s": 111.4,
+          "segundos": 2.0
+        }
+      },
+      "estado": "ok",
+      "volumen": 10094400,
+      "unidad": "puntos",
+      "tasa_propia": "169,422.2 puntos/s (medida por carga_lotes.py)",
+      "detalle": "10,094,400 puntos en fixture2030_vivo (scripts/carga_lotes.py --perfil completo, lote 50000, hilos 8)",
+      "por_segundo": 159186.4,
+      "fallas": [
+        "verificacion: ErrorPaso: InfluxDB HTTP 500 en «SELECT count(*) AS n FROM audiencia_partido»: External error: Query would scan 432 Parquet files, exceeding the file limit. InfluxDB 3 Core caps file access to prevent performance degradation and memory issues. Use a narrower time range, or increase the limit with --query-file-limit (this may cause slower queries or instability).\n\nTo remove this limitation, upgrade to InfluxDB 3 Enterprise, which automatically compacts files for efficient que"
+      ]
+    }
+  },
+  "total": {
+    "reloj_hasta_ultima_carga_s": 109.4,
+    "segundos_reloj_total": 111.4,
+    "suma_segundos_carga": 63.4,
+    "suma_arranque_preparacion_carga_s": 109.4,
+    "registros": 10094400,
+    "registros_por_segundo_reloj": 92270.6,
+    "termina_ultima": "influxdb",
+    "carga_mas_larga": [
+      "influxdb",
+      63.4
+    ]
+  },
+  "recursos": {
+    "muestras": 36,
+    "contenedores_prueba": {
+      "f30cm-influxdb": {
+        "muestras": 35,
+        "cpu_prom_pct": 94.2,
+        "cpu_max_pct": 327.9,
+        "mem_max_mib": 1960
+      },
+      "f30cm-influxdb-cargador": {
+        "muestras": 18,
+        "cpu_prom_pct": 29.1,
+        "cpu_max_pct": 55.1,
+        "mem_max_mib": 115
+      }
+    },
+    "pico_mem_prueba_mib": 1960,
+    "pico_cpu_prueba_pct": 338.8,
+    "pico_mem_total_vm_mib": 5996,
+    "mem_otros_contenedores_mib": 4326,
+    "otros_contenedores": 18,
+    "ram_libre_host_min_mib": 337
+  },
+  "validacion": {
+    "chequeos": [
+      {
+        "chequeo": "influxdb · verificación completa",
+        "esperado": "sin error",
+        "obtenido": "ErrorPaso: InfluxDB HTTP 500 en «SELECT count(*) AS n FROM audiencia_partido»: External error: Query would scan 432 Parquet files, exceeding the file limit. InfluxDB 3 Cor",
+        "ok": false
+      }
+    ],
+    "cruces": {},
+    "resumen": {
+      "chequeos": 1,
+      "ok": 0,
+      "fallidos": [
+        "influxdb · verificación completa"
+      ],
+      "informativos": []
+    },
+    "bases": {
+      "influxdb": {}
+    }
+  },
+  "distribucion": {}
+}

@@ -13,15 +13,21 @@
 #
 #  USO (desde la carpeta fixture2030-influxdb):   sh scripts/inicializacion.sh
 #  IDEMPOTENTE: correrlo de nuevo reutiliza la autorización y las bases.
+#  VARIABLES OPCIONALES (las usa la carga masiva integrada, fixture2030-carga-masiva,
+#  para inicializar SU instancia sin tocar la compartida): INFLUX_DATA_DIR,
+#  SECRETS_DIR (por defecto secrets), EVIDENCIA_DIR (por defecto docs/evidencia) e
+#  INFLUX_VOLUME (por defecto fixture2030_influxdb_data). Con COMPOSE_PROJECT_NAME y
+#  COMPOSE_FILE, `docker compose` apunta a otro proyecto.
 # ============================================================================
 set -eu
 
 cd "$(dirname "$0")/.."
 BASE_DIR="${INFLUX_DATA_DIR:-$HOME/docker/data/influxdb}"
-EVID="docs/evidencia/01_inicializacion.txt"
+SECRETS_DIR="${SECRETS_DIR:-secrets}"
+EVID="${EVIDENCIA_DIR:-docs/evidencia}/01_inicializacion.txt"
 
 echo "== 1. Carpeta de datos (RNF2)"
-mkdir -p "$BASE_DIR" secrets data docs/evidencia
+mkdir -p "$BASE_DIR" "$SECRETS_DIR" data "$(dirname "$EVID")"
 # El proceso del contenedor corre con el usuario influxdb3 (uid 1500): necesita
 # poder escribir en la carpeta montada (Clase 9, error PermissionDenied).
 chmod 777 "$BASE_DIR" 2>/dev/null || true
@@ -31,7 +37,7 @@ echo "== 2. Servidor: docker compose up -d"
 docker compose up -d influxdb
 printf "   esperando a que esté healthy"
 i=0
-until [ "$(docker inspect -f '{{.State.Health.Status}}' fixture2030-influxdb 2>/dev/null)" = "healthy" ]; do
+until [ "$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q influxdb)" 2>/dev/null)" = "healthy" ]; do
   i=$((i + 1)); [ $i -gt 60 ] && { echo " ✖ no arrancó. Ver: docker compose logs influxdb"; exit 1; }
   printf "."; sleep 2
 done
@@ -43,7 +49,7 @@ docker compose exec -T influxdb curl -fsS http://127.0.0.1:8181/health; echo
 
 echo "== 4. Autorización local"
 sh scripts/autorizacion_local.sh
-TOKEN=$(sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' secrets/admin-token.json)
+TOKEN=$(sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SECRETS_DIR/admin-token.json")
 cli() { docker compose exec -T -e INFLUXDB3_AUTH_TOKEN="$TOKEN" influxdb influxdb3 "$@"; }
 
 echo "== 5. Bases de datos y retención (RF10)"
@@ -80,12 +86,12 @@ echo "== 6. Evidencia del ambiente -> $EVID"
   cli show retention
   echo
   echo "## Persistencia (RNF2): volumen nombrado y carpeta que lo respalda"
-  docker volume inspect fixture2030_influxdb_data -f '{{.Name}} -> {{.Options.device}}' | sed -E 's%-> .*(/docker/data/influxdb)%-> ~\1%'
+  docker volume inspect "${INFLUX_VOLUME:-fixture2030_influxdb_data}" -f '{{.Name}} -> {{.Options.device}}' | sed -E 's%-> .*(/docker/data/influxdb)%-> ~\1%'
   echo
   echo "## Recursos de Docker"
   docker info --format 'CPUs: {{.NCPU}}  Memoria: {{.MemTotal}} bytes  SO: {{.OperatingSystem}}'
 } > "$EVID" 2>&1
 cat "$EVID"
 echo
-echo "API: http://localhost:8181 (token en secrets/admin-token.json)"
+echo "API: http://localhost:8181 (token en $SECRETS_DIR/admin-token.json)"
 echo "Siguiente paso: docker compose run --rm herramientas scripts/generacion_puntos.py --perfil muestra"

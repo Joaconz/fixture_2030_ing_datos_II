@@ -1,0 +1,369 @@
+[20:32:56] # Ejecutado: 2026-11-11T20:32:55+00:00 | commit: 67e7db3 + cambios sin commitear | comando: python fixture2030-carga-masiva/scripts/orquestador.py --modo secuencial --bases influxdb --sin-distribucion --conservar --etiqueta diag-influx
+[20:32:56] # VM de Docker: 12 CPUs, 7869 MiB · contenedores ajenos: 17 (4182 MiB) · RAM libre del host: 1055 MiB · presupuesto: sin control MiB
+[20:32:56] == 0. Limpieza: proyectos f30cm-* abajo, volúmenes y carpetas de datos borrados
+[20:32:57] == 1. Insumos de InfluxDB (data/lp/completo, deterministas)
+[20:32:57]    ya existían: se reutilizan (no cuentan como carga)
+[20:32:57] == 2. Carga en modo secuencial · orden influxdb
+[20:32:57] influxdb  ▶ arranque
+[20:33:11]   influxdb | 
+[20:33:11]   influxdb |  influxdb Pulling 
+[20:33:11]   influxdb |  influxdb Pulled 
+[20:33:11]   influxdb |  Network f30cm-influxdb-net  Creating
+[20:33:11]   influxdb |  Network f30cm-influxdb-net  Created
+[20:33:11]   influxdb |  Volume "f30cm_influxdb_data"  Creating
+[20:33:11]   influxdb |  Volume "f30cm_influxdb_data"  Created
+[20:33:11]   influxdb |  Container f30cm-influxdb  Creating
+[20:33:11]   influxdb |  Container f30cm-influxdb  Created
+[20:33:11]   influxdb |  Container f30cm-influxdb  Starting
+[20:33:11]   influxdb |  Container f30cm-influxdb  Started
+[20:33:11]   influxdb |  Container f30cm-influxdb  Waiting
+[20:33:11]   influxdb |  Container f30cm-influxdb  Healthy
+[20:33:11] influxdb  ✔ arranque en 14.3 s
+[20:33:11] influxdb  ▶ preparacion
+[20:33:43]   influxdb | == 1. Carpeta de datos (RNF2)
+[20:33:43]   influxdb |    C:/Users/santi/docker/data/f30cm/influxdb
+[20:33:43]   influxdb | == 2. Servidor: docker compose up -d
+[20:33:43]   influxdb |    esperando a que esté healthy ok
+[20:33:43]   influxdb | == 3. Disponibilidad con la CLI del contenedor (RF1)
+[20:33:43]   influxdb | influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
+[20:33:43]   influxdb | OK
+[20:33:43]   influxdb | == 4. Autorización local
+[20:33:43]   influxdb |    influxdb3 create token --admin: token de administración -> ../fixture2030-carga-masiva/.secrets/influxdb/admin-token.json (no se muestra)
+[20:33:43]   influxdb | == 5. Bases de datos y retención (RF10)
+[20:33:43]   influxdb |    fixture2030_vivo creada, retención 45d
+[20:33:43]   influxdb |    fixture2030_historico creada, sin vencimiento
+[20:33:43]   influxdb |    fixture2030_prueba_retencion creada, retención 1h
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | | database_name                | retention_period |
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | | _internal                    | 7.0000d          |
+[20:33:43]   influxdb | | fixture2030_historico        | infinite         |
+[20:33:43]   influxdb | | fixture2030_prueba_retencion | 1.0000h          |
+[20:33:43]   influxdb | | fixture2030_vivo             | 45.0000d         |
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | == 6. Evidencia del ambiente -> ../fixture2030-carga-masiva/evidencia/modulos/influxdb/01_inicializacion.txt
+[20:33:43]   influxdb | # Inicialización — 2026-11-11T20:33:33Z
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | ## Versión observada de influxdb:3-core (RNF1)
+[20:33:43]   influxdb | influxdb3 InfluxDB 3 Core, 3.12.2, revision cc9769917ab399ed5b48567a92b5d34ed4d918ea
+[20:33:43]   influxdb | Imagen: influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990  creada 2026-10-29T23:33:04.031684419Z
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | ## Disponibilidad del servicio (RF1)
+[20:33:43]   influxdb | OK
+[20:33:43]   influxdb | NAME             IMAGE             COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+[20:33:43]   influxdb | f30cm-influxdb   influxdb:3-core   "/usr/bin/entrypoint…"   influxdb   38 seconds ago   Up 37 seconds (healthy)   127.0.0.1:18182->8181/tcp
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | ## Bases de datos y período de retención (RF10)
+[20:33:43]   influxdb | +------------------------------+
+[20:33:43]   influxdb | | iox::database                |
+[20:33:43]   influxdb | +------------------------------+
+[20:33:43]   influxdb | | _internal                    |
+[20:33:43]   influxdb | | fixture2030_historico        |
+[20:33:43]   influxdb | | fixture2030_prueba_retencion |
+[20:33:43]   influxdb | | fixture2030_vivo             |
+[20:33:43]   influxdb | +------------------------------+
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | | database_name                | retention_period |
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | | _internal                    | 7.0000d          |
+[20:33:43]   influxdb | | fixture2030_historico        | infinite         |
+[20:33:43]   influxdb | | fixture2030_prueba_retencion | 1.0000h          |
+[20:33:43]   influxdb | | fixture2030_vivo             | 45.0000d         |
+[20:33:43]   influxdb | +------------------------------+------------------+
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | ## Persistencia (RNF2): volumen nombrado y carpeta que lo respalda
+[20:33:43]   influxdb | f30cm_influxdb_data -> C:/Users/santi/docker/data/f30cm/influxdb
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | ## Recursos de Docker
+[20:33:43]   influxdb | CPUs: 12  Memoria: 8251424768 bytes  SO: Docker Desktop
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb | API: http://localhost:8181 (token en ../fixture2030-carga-masiva/.secrets/influxdb/admin-token.json)
+[20:33:43]   influxdb | Siguiente paso: docker compose run --rm herramientas scripts/generacion_puntos.py --perfil muestra
+[20:33:43]   influxdb | 
+[20:33:43]   influxdb |  influxdb Pulling 
+[20:33:43]   influxdb |  influxdb Pulled 
+[20:33:43]   influxdb |  Container f30cm-influxdb  Running
+[20:33:43] influxdb  ✔ preparacion en 31.7 s
+[20:33:43] influxdb  ▶ carga
+[20:34:46]   influxdb | InfluxDB 3 Core 3.12.2 (revisión cc9769917a) · perfil completo · 10,094,400 puntos · lote 50000 · hilos 8
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-1.lp.gz                 11,400 · acumulado      11,400 ·   162,918 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-1.lp.gz                 69,600 · acumulado      81,000 ·   245,309 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-2.lp.gz                 11,400 · acumulado      92,400 ·   252,670 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-2.lp.gz                 69,600 · acumulado     162,000 ·   280,195 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-1.lp.gz                 11,400 · acumulado     173,400 ·   280,047 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-1.lp.gz                 69,600 · acumulado     243,000 ·   269,671 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-2.lp.gz                 11,400 · acumulado     254,400 ·   270,061 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-2.lp.gz                 69,600 · acumulado     324,000 ·   298,141 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-1.lp.gz                 11,400 · acumulado     335,400 ·   300,807 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-1.lp.gz                 69,600 · acumulado     405,000 ·   324,876 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-2.lp.gz                 11,400 · acumulado     416,400 ·   325,534 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-2.lp.gz                 69,600 · acumulado     486,000 ·   248,875 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-1.lp.gz                 11,400 · acumulado     497,400 ·   244,448 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-1.lp.gz                 69,600 · acumulado     567,000 ·   251,956 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-2.lp.gz                 11,400 · acumulado     578,400 ·   249,671 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-2.lp.gz                 69,600 · acumulado     648,000 ·   264,965 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-1.lp.gz                 11,400 · acumulado     659,400 ·   266,923 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-1.lp.gz                 69,600 · acumulado     729,000 ·   242,292 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-2.lp.gz                 11,400 · acumulado     740,400 ·   241,639 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-2.lp.gz                 69,600 · acumulado     810,000 ·   251,877 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-1.lp.gz                 11,400 · acumulado     821,400 ·   253,446 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-1.lp.gz                 69,600 · acumulado     891,000 ·   263,925 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-2.lp.gz                 11,400 · acumulado     902,400 ·   238,287 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-2.lp.gz                 69,600 · acumulado     972,000 ·   243,477 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-1.lp.gz                 11,400 · acumulado     983,400 ·   243,593 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-1.lp.gz                 69,600 · acumulado   1,053,000 ·   246,241 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-2.lp.gz                 11,400 · acumulado   1,064,400 ·   247,538 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-2.lp.gz                 69,600 · acumulado   1,134,000 ·   217,931 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-1.lp.gz                 11,400 · acumulado   1,145,400 ·   217,842 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-1.lp.gz                 69,600 · acumulado   1,215,000 ·   223,536 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-2.lp.gz                 11,400 · acumulado   1,226,400 ·   223,433 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-2.lp.gz                 69,600 · acumulado   1,296,000 ·   227,053 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-1.lp.gz                 11,400 · acumulado   1,307,400 ·   226,875 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-1.lp.gz                 69,600 · acumulado   1,377,000 ·   224,943 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-2.lp.gz                 11,400 · acumulado   1,388,400 ·   224,056 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-2.lp.gz                 69,600 · acumulado   1,458,000 ·   216,948 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-1.lp.gz                 11,400 · acumulado   1,469,400 ·   195,330 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-1.lp.gz                 69,600 · acumulado   1,539,000 ·   190,666 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-2.lp.gz                 11,400 · acumulado   1,550,400 ·   190,113 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-2.lp.gz                 69,600 · acumulado   1,620,000 ·   187,627 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-1.lp.gz                 11,400 · acumulado   1,631,400 ·   187,446 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-1.lp.gz                 69,600 · acumulado   1,701,000 ·   181,341 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-2.lp.gz                 11,400 · acumulado   1,712,400 ·   181,482 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-2.lp.gz                 69,600 · acumulado   1,782,000 ·   183,508 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-1.lp.gz                 11,400 · acumulado   1,793,400 ·   184,176 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-1.lp.gz                 69,600 · acumulado   1,863,000 ·   187,193 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-2.lp.gz                 11,400 · acumulado   1,874,400 ·   187,621 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-2.lp.gz                 69,600 · acumulado   1,944,000 ·   169,455 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-1.lp.gz                 11,400 · acumulado   1,955,400 ·   169,119 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-1.lp.gz                 69,600 · acumulado   2,025,000 ·   172,640 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-2.lp.gz                 11,400 · acumulado   2,036,400 ·   173,305 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-2.lp.gz                 69,600 · acumulado   2,106,000 ·   177,548 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-1.lp.gz                 11,400 · acumulado   2,117,400 ·   165,334 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-1.lp.gz                 69,600 · acumulado   2,187,000 ·   167,936 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-2.lp.gz                 11,400 · acumulado   2,198,400 ·   168,253 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-2.lp.gz                 69,600 · acumulado   2,268,000 ·   171,759 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-1.lp.gz                 11,400 · acumulado   2,279,400 ·   172,281 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-1.lp.gz                 69,600 · acumulado   2,349,000 ·   168,484 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-2.lp.gz                 11,400 · acumulado   2,360,400 ·   168,504 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-2.lp.gz                 69,600 · acumulado   2,430,000 ·   169,801 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-1.lp.gz                 11,400 · acumulado   2,441,400 ·   170,360 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-1.lp.gz                 69,600 · acumulado   2,511,000 ·   174,153 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-2.lp.gz                 11,400 · acumulado   2,522,400 ·   174,683 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-2.lp.gz                 69,600 · acumulado   2,592,000 ·   172,067 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-3.lp.gz                 11,400 · acumulado   2,603,400 ·   171,822 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-3.lp.gz                 69,600 · acumulado   2,673,000 ·   174,623 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-4.lp.gz                 11,400 · acumulado   2,684,400 ·   174,988 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-4.lp.gz                 69,600 · acumulado   2,754,000 ·   178,116 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-3.lp.gz                 11,400 · acumulado   2,765,400 ·   174,246 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-3.lp.gz                 69,600 · acumulado   2,835,000 ·   175,771 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-4.lp.gz                 11,400 · acumulado   2,846,400 ·   176,240 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-4.lp.gz                 69,600 · acumulado   2,916,000 ·   178,930 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-3.lp.gz                 11,400 · acumulado   2,927,400 ·   179,287 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-3.lp.gz                 69,600 · acumulado   2,997,000 ·   176,275 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-4.lp.gz                 11,400 · acumulado   3,008,400 ·   176,283 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-4.lp.gz                 69,600 · acumulado   3,078,000 ·   178,940 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-3.lp.gz                 11,400 · acumulado   3,089,400 ·   179,352 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-3.lp.gz                 69,600 · acumulado   3,159,000 ·   182,311 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-4.lp.gz                 11,400 · acumulado   3,170,400 ·   182,771 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-4.lp.gz                 69,600 · acumulado   3,240,000 ·   179,131 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-3.lp.gz                 11,400 · acumulado   3,251,400 ·   179,298 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-3.lp.gz                 69,600 · acumulado   3,321,000 ·   181,583 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-4.lp.gz                 11,400 · acumulado   3,332,400 ·   181,948 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-4.lp.gz                 69,600 · acumulado   3,402,000 ·   184,175 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-3.lp.gz                 11,400 · acumulado   3,413,400 ·   180,215 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-3.lp.gz                 69,600 · acumulado   3,483,000 ·   180,557 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-4.lp.gz                 11,400 · acumulado   3,494,400 ·   180,435 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-4.lp.gz                 69,600 · acumulado   3,564,000 ·   182,850 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-3.lp.gz                 11,400 · acumulado   3,575,400 ·   181,287 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-3.lp.gz                 69,600 · acumulado   3,645,000 ·   178,293 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-4.lp.gz                 11,400 · acumulado   3,656,400 ·   177,944 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-4.lp.gz                 69,600 · acumulado   3,726,000 ·   179,785 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-3.lp.gz                 11,400 · acumulado   3,737,400 ·   180,019 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-3.lp.gz                 69,600 · acumulado   3,807,000 ·   182,233 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-4.lp.gz                 11,400 · acumulado   3,818,400 ·   182,485 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-4.lp.gz                 69,600 · acumulado   3,888,000 ·   176,633 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-3.lp.gz                 11,400 · acumulado   3,899,400 ·   176,618 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-3.lp.gz                 69,600 · acumulado   3,969,000 ·   178,721 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-4.lp.gz                 11,400 · acumulado   3,980,400 ·   179,011 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-4.lp.gz                 69,600 · acumulado   4,050,000 ·   181,338 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-3.lp.gz                 11,400 · acumulado   4,061,400 ·   177,828 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-3.lp.gz                 69,600 · acumulado   4,131,000 ·   178,905 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-4.lp.gz                 11,400 · acumulado   4,142,400 ·   179,202 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-4.lp.gz                 69,600 · acumulado   4,212,000 ·   181,137 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-3.lp.gz                 11,400 · acumulado   4,223,400 ·   181,400 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-3.lp.gz                 69,600 · acumulado   4,293,000 ·   176,858 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-4.lp.gz                 11,400 · acumulado   4,304,400 ·   176,800 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-4.lp.gz                 69,600 · acumulado   4,374,000 ·   176,741 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-3.lp.gz                 11,400 · acumulado   4,385,400 ·   176,998 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-3.lp.gz                 69,600 · acumulado   4,455,000 ·   179,125 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-4.lp.gz                 11,400 · acumulado   4,466,400 ·   179,439 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-4.lp.gz                 69,600 · acumulado   4,536,000 ·   181,656 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-3.lp.gz                 11,400 · acumulado   4,547,400 ·   181,984 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-3.lp.gz                 69,600 · acumulado   4,617,000 ·   184,171 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-4.lp.gz                 11,400 · acumulado   4,628,400 ·   176,174 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-4.lp.gz                 69,600 · acumulado   4,698,000 ·   176,713 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-3.lp.gz                 11,400 · acumulado   4,709,400 ·   176,958 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-3.lp.gz                 69,600 · acumulado   4,779,000 ·   178,221 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-4.lp.gz                 11,400 · acumulado   4,790,400 ·   178,322 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-4.lp.gz                 69,600 · acumulado   4,860,000 ·   179,796 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-3.lp.gz                 11,400 · acumulado   4,871,400 ·   174,518 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-3.lp.gz                 69,600 · acumulado   4,941,000 ·   175,346 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-4.lp.gz                 11,400 · acumulado   4,952,400 ·   175,317 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-4.lp.gz                 69,600 · acumulado   5,022,000 ·   175,415 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-3.lp.gz                 11,400 · acumulado   5,033,400 ·   175,422 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-3.lp.gz                 69,600 · acumulado   5,103,000 ·   174,332 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-4.lp.gz                 11,400 · acumulado   5,114,400 ·   174,014 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-4.lp.gz                 69,600 · acumulado   5,184,000 ·   175,330 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-5.lp.gz                 11,400 · acumulado   5,195,400 ·   175,376 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-5.lp.gz                 69,600 · acumulado   5,265,000 ·   176,495 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-A-6.lp.gz                 11,400 · acumulado   5,276,400 ·   176,671 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-A-6.lp.gz                 69,600 · acumulado   5,346,000 ·   178,174 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-5.lp.gz                 11,400 · acumulado   5,357,400 ·   178,356 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-5.lp.gz                 69,600 · acumulado   5,427,000 ·   175,109 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-E-6.lp.gz                 11,400 · acumulado   5,438,400 ·   175,305 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-E-6.lp.gz                 69,600 · acumulado   5,508,000 ·   176,669 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-5.lp.gz                 11,400 · acumulado   5,519,400 ·   176,796 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-5.lp.gz                 69,600 · acumulado   5,589,000 ·   178,260 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-I-6.lp.gz                 11,400 · acumulado   5,600,400 ·   178,514 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-I-6.lp.gz                 69,600 · acumulado   5,670,000 ·   177,366 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-5.lp.gz                 11,400 · acumulado   5,681,400 ·   177,547 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-5.lp.gz                 69,600 · acumulado   5,751,000 ·   179,087 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-M-6.lp.gz                 11,400 · acumulado   5,762,400 ·   179,344 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-M-6.lp.gz                 69,600 · acumulado   5,832,000 ·   181,021 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-5.lp.gz                 11,400 · acumulado   5,843,400 ·   177,546 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-5.lp.gz                 69,600 · acumulado   5,913,000 ·   178,713 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-B-6.lp.gz                 11,400 · acumulado   5,924,400 ·   178,834 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-B-6.lp.gz                 69,600 · acumulado   5,994,000 ·   180,198 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-5.lp.gz                 11,400 · acumulado   6,005,400 ·   180,368 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-5.lp.gz                 69,600 · acumulado   6,075,000 ·   178,780 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-F-6.lp.gz                 11,400 · acumulado   6,086,400 ·   178,836 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-F-6.lp.gz                 69,600 · acumulado   6,156,000 ·   179,510 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-5.lp.gz                 11,400 · acumulado   6,167,400 ·   179,711 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-5.lp.gz                 69,600 · acumulado   6,237,000 ·   181,298 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-J-6.lp.gz                 11,400 · acumulado   6,248,400 ·   181,535 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-J-6.lp.gz                 69,600 · acumulado   6,318,000 ·   180,420 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-5.lp.gz                 11,400 · acumulado   6,329,400 ·   180,562 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-5.lp.gz                 69,600 · acumulado   6,399,000 ·   181,953 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-N-6.lp.gz                 11,400 · acumulado   6,410,400 ·   182,167 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-N-6.lp.gz                 69,600 · acumulado   6,480,000 ·   183,726 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-5.lp.gz                 11,400 · acumulado   6,491,400 ·   179,925 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-5.lp.gz                 69,600 · acumulado   6,561,000 ·   180,679 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-C-6.lp.gz                 11,400 · acumulado   6,572,400 ·   180,784 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-C-6.lp.gz                 69,600 · acumulado   6,642,000 ·   181,287 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-5.lp.gz                 11,400 · acumulado   6,653,400 ·   181,333 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-5.lp.gz                 69,600 · acumulado   6,723,000 ·   180,248 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-G-6.lp.gz                 11,400 · acumulado   6,734,400 ·   179,917 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-G-6.lp.gz                 69,600 · acumulado   6,804,000 ·   180,541 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-5.lp.gz                 11,400 · acumulado   6,815,400 ·   180,564 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-5.lp.gz                 69,600 · acumulado   6,885,000 ·   181,150 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-K-6.lp.gz                 11,400 · acumulado   6,896,400 ·   181,058 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-K-6.lp.gz                 69,600 · acumulado   6,966,000 ·   177,536 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-5.lp.gz                 11,400 · acumulado   6,977,400 ·   177,202 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-5.lp.gz                 69,600 · acumulado   7,047,000 ·   177,550 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-O-6.lp.gz                 11,400 · acumulado   7,058,400 ·   177,305 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-O-6.lp.gz                 69,600 · acumulado   7,128,000 ·   178,171 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-5.lp.gz                 11,400 · acumulado   7,139,400 ·   178,101 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-5.lp.gz                 69,600 · acumulado   7,209,000 ·   178,787 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D-6.lp.gz                 11,400 · acumulado   7,220,400 ·   178,918 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D-6.lp.gz                 69,600 · acumulado   7,290,000 ·   179,974 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-5.lp.gz                 11,400 · acumulado   7,301,400 ·   174,421 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-5.lp.gz                 69,600 · acumulado   7,371,000 ·   174,532 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-H-6.lp.gz                 11,400 · acumulado   7,382,400 ·   174,543 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-H-6.lp.gz                 69,600 · acumulado   7,452,000 ·   175,227 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-5.lp.gz                 11,400 · acumulado   7,463,400 ·   174,971 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-5.lp.gz                 69,600 · acumulado   7,533,000 ·   173,443 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-L-6.lp.gz                 11,400 · acumulado   7,544,400 ·   173,502 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-L-6.lp.gz                 69,600 · acumulado   7,614,000 ·   174,204 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-5.lp.gz                 11,400 · acumulado   7,625,400 ·   174,120 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-5.lp.gz                 69,600 · acumulado   7,695,000 ·   174,569 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-P-6.lp.gz                 11,400 · acumulado   7,706,400 ·   174,623 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-P-6.lp.gz                 69,600 · acumulado   7,776,000 ·   171,145 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-01.lp.gz              11,400 · acumulado   7,787,400 ·   171,083 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-01.lp.gz              69,600 · acumulado   7,857,000 ·   171,750 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-02.lp.gz              11,400 · acumulado   7,868,400 ·   171,858 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-02.lp.gz              69,600 · acumulado   7,938,000 ·   172,437 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-03.lp.gz              11,400 · acumulado   7,949,400 ·   168,072 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-03.lp.gz              69,600 · acumulado   8,019,000 ·   168,394 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-04.lp.gz              11,400 · acumulado   8,030,400 ·   168,473 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-04.lp.gz              69,600 · acumulado   8,100,000 ·   169,220 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-05.lp.gz              11,400 · acumulado   8,111,400 ·   169,284 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-05.lp.gz              69,600 · acumulado   8,181,000 ·   165,385 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-06.lp.gz              11,400 · acumulado   8,192,400 ·   165,033 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-06.lp.gz              69,600 · acumulado   8,262,000 ·   165,225 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-07.lp.gz              11,400 · acumulado   8,273,400 ·   165,259 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-07.lp.gz              69,600 · acumulado   8,343,000 ·   165,874 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-08.lp.gz              11,400 · acumulado   8,354,400 ·   165,973 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-08.lp.gz              69,600 · acumulado   8,424,000 ·   164,704 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-09.lp.gz              11,400 · acumulado   8,435,400 ·   164,783 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-09.lp.gz              69,600 · acumulado   8,505,000 ·   165,122 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-10.lp.gz              11,400 · acumulado   8,516,400 ·   165,237 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-10.lp.gz              69,600 · acumulado   8,586,000 ·   165,877 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-11.lp.gz              11,400 · acumulado   8,597,400 ·   165,249 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-11.lp.gz              69,600 · acumulado   8,667,000 ·   165,973 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-12.lp.gz              11,400 · acumulado   8,678,400 ·   166,098 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-12.lp.gz              69,600 · acumulado   8,748,000 ·   167,019 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-13.lp.gz              11,400 · acumulado   8,759,400 ·   167,171 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-13.lp.gz              69,600 · acumulado   8,829,000 ·   166,755 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-14.lp.gz              11,400 · acumulado   8,840,400 ·   166,824 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-14.lp.gz              69,600 · acumulado   8,910,000 ·   167,612 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-15.lp.gz              11,400 · acumulado   8,921,400 ·   167,685 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-15.lp.gz              69,600 · acumulado   8,991,000 ·   168,351 puntos/s
+[20:34:46]   influxdb |   estadisticas_equipo    PAR-D16-16.lp.gz              11,400 · acumulado   9,002,400 ·   168,486 puntos/s
+[20:34:46]   influxdb |   audiencia_partido      PAR-D16-16.lp.gz              69,600 · acumulado   9,072,000 ·   167,751 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-09T1200.lp.gz         21,600 · acumulado   9,093,600 ·   168,020 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-10T0000.lp.gz         43,200 · acumulado   9,136,800 ·   168,606 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-11T0000.lp.gz         43,200 · acumulado   9,180,000 ·   169,008 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-12T0000.lp.gz         43,200 · acumulado   9,223,200 ·   169,634 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-13T0000.lp.gz         43,200 · acumulado   9,266,400 ·   170,216 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-14T0000.lp.gz         43,200 · acumulado   9,309,600 ·   170,808 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-15T0000.lp.gz         43,200 · acumulado   9,352,800 ·   170,195 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-16T0000.lp.gz         43,200 · acumulado   9,396,000 ·   170,646 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-17T0000.lp.gz         43,200 · acumulado   9,439,200 ·   171,134 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-18T0000.lp.gz         43,200 · acumulado   9,482,400 ·   171,589 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-19T0000.lp.gz         43,200 · acumulado   9,525,600 ·   172,128 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-20T0000.lp.gz         43,200 · acumulado   9,568,800 ·   172,703 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-21T0000.lp.gz         43,200 · acumulado   9,612,000 ·   173,295 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-22T0000.lp.gz         43,200 · acumulado   9,655,200 ·   173,870 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-23T0000.lp.gz         43,200 · acumulado   9,698,400 ·   173,255 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-24T0000.lp.gz         43,200 · acumulado   9,741,600 ·   173,708 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-25T0000.lp.gz         43,200 · acumulado   9,784,800 ·   174,184 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-26T0000.lp.gz         43,200 · acumulado   9,828,000 ·   174,731 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-27T0000.lp.gz         43,200 · acumulado   9,871,200 ·   175,302 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-28T0000.lp.gz         43,200 · acumulado   9,914,400 ·   175,859 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-29T0000.lp.gz         43,200 · acumulado   9,957,600 ·   176,355 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-06-30T0000.lp.gz         43,200 · acumulado  10,000,800 ·   176,861 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-07-01T0000.lp.gz         43,200 · acumulado  10,044,000 ·   176,013 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-07-02T0000.lp.gz         43,200 · acumulado  10,087,200 ·   176,258 puntos/s
+[20:34:46]   influxdb |   operacion_plataforma   2030-07-03T0000.lp.gz          7,200 · acumulado  10,094,400 ·   176,333 puntos/s
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | | Dato | Valor |
+[20:34:46]   influxdb | |---|---|
+[20:34:46]   influxdb | | Puntos esperados (manifiesto) | 10,094,400 |
+[20:34:46]   influxdb | | Puntos confirmados por el servidor | 10,094,400 |
+[20:34:46]   influxdb | | Lotes enviados / con reintento | 361 / 0 |
+[20:34:46]   influxdb | | Tamaño de lote / hilos / gzip | 50000 / 8 / False |
+[20:34:46]   influxdb | | Tiempo total | 59.58 s |
+[20:34:46]   influxdb | | **Tasa de carga** | **169,422.2 puntos/s** |
+[20:34:46]   influxdb | | Datos enviados | 1429.7 MB |
+[20:34:46]   influxdb | | Latencia por POST p50 / p95 / máx | 1.135 / 2.009 / 2.554 s |
+[20:34:46]   influxdb | | Error | ninguno |
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | Por tabla (puntos / segundos de lectura y envío):
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | - `estadisticas_equipo`: 1,276,800 puntos · 15.1 s
+[20:34:46]   influxdb | - `audiencia_partido`: 7,795,200 puntos · 38.9 s
+[20:34:46]   influxdb | - `operacion_plataforma`: 1,022,400 puntos · 3.2 s
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | La verificación de que lo cargado coincide con el manifiesto está en `validacion.py`.
+[20:34:46]   influxdb | 
+[20:34:46]   influxdb | Evidencia: /app/docs/evidencia/carga_completo_20261111-203445.md
+[20:34:46] influxdb  ✔ carga en 63.4 s · 10,094,400 puntos · 159,186.4 /s
+[20:34:46] influxdb  ▶ verificacion
+[20:34:46] validación · InfluxDB
+[20:34:48] influxdb  ✖ verificacion: ErrorPaso: InfluxDB HTTP 500 en «SELECT count(*) AS n FROM audiencia_partido»: External error: Query would scan 432 Parquet files, exceeding the file limit. InfluxDB 3 Core caps file access to prevent performance degradation and memory issues. Use a narrower time range, or increase the limit with --query-file-limit (this may cause slower queries or instability).
+
+To remove this limitation, upgrade to InfluxDB 3 Enterprise, which automatically compacts files for efficient que
+[20:34:51] == 3. Referencias cruzadas
+[20:34:51] == 4. Reporte: fixture2030-carga-masiva\evidencia\corridas\20261111-203251_secuencial_diag-influx/reporte.md
+[20:34:51] FIN · carga 109.4 s · total 111.4 s · bases con error: ninguna · chequeos fallidos: ['influxdb · verificación completa']
