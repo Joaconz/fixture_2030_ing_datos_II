@@ -179,16 +179,19 @@ def _goles_grupos(orden_global: int) -> list:
     return goles
 
 
-def _goles_d16(partido_id: str) -> list:
-    """El Hito 5 deja los dieciseisavos PROGRAMADOS (sin eventos). El Hito 6 ya los trató
-    como jugados (comentarios). Acá se simulan con una regla determinista propia."""
-    import random
-    rng = random.Random(f"goles-{partido_id}")
-    goles = []
-    for _ in range(rng.randint(1, 4)):
-        minuto = rng.choice([m for m in range(2, 92) if m != 45])
-        goles.append((segundo_de_minuto(minuto), rng.choice(["LOCAL", "VISITANTE"])))
-    return sorted(goles)
+def _goles_eliminatoria(orden_global: int) -> list:
+    """Plantilla de eventos de eliminatoria de Neo4j (carga.cypher, PASO 15), para que el
+    golesAcum de InfluxDB coincida con el marcador que la API deriva de los eventos GOL:
+      orden % 3 = 0 -> 1-0: gol LOCAL al 13'
+      orden % 3 = 1 -> 1-2: gol LOCAL al 13', goles VISITANTE al 75' y al 89'
+      orden % 3 = 2 -> 2-0: goles LOCAL al 13' y al 82'
+    (Antes los dieciseisavos se simulaban al azar y no coincidían con el grafo.)"""
+    goles = [(segundo_de_minuto(13), "LOCAL")]
+    if orden_global % 3 == 1:
+        goles += [(segundo_de_minuto(75), "VISITANTE"), (segundo_de_minuto(89), "VISITANTE")]
+    elif orden_global % 3 == 2:
+        goles.append((segundo_de_minuto(82), "LOCAL"))
+    return goles
 
 
 def calendario() -> list[Partido]:
@@ -224,7 +227,7 @@ def calendario() -> list[Partido]:
         vis = tablas[((i + 1) % 16) + 1][1]    # 2° del grupo N+1, en anillo
         inicio = base_d16 + timedelta(days=i // 4, hours=(i % 4) * 3)
         partidos.append(Partido(pid, "DIECISEISAVOS", None, loc, vis, SEDES[i], inicio, 96 + i,
-                                goles=_goles_d16(pid)))
+                                goles=_goles_eliminatoria(96 + i)))
 
     # Audiencia esperada (misma clasificación que el Hito 6: PAR-D16-01 = MAXIMA)
     for p in partidos:
