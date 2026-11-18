@@ -3,7 +3,7 @@
 Equipo: Pazos · Núñez · Frisoli. Duración objetivo **18 minutos**, con 2 de margen para llegar a 20. La demo de la UI va en el medio: primero se explica qué decidimos y después se ve funcionando, base por base.
 
 - **Diapositivas:** deck "Fixture 2030 — Defensa final" (17 diapositivas + la de demo). Cada diapositiva tiene notas de orador.
-- **Quién:** A = inicio y arquitectura · B = decisiones y **maneja la demo** · C = evidencia y cierre. Completar los nombres: A = `[__]`, B = `[__]`, C = `[__]`. Mientras B maneja el teclado, A narra qué base responde cada pantalla. Así hablan los tres durante la demo.
+- **Quién:** A = inicio y arquitectura · B = decisiones y **maneja la demo** · C = evidencia y cierre. Completar los nombres: A = `[VALENTINA]`, B = `[__]`, C = `[__]`. Mientras B maneja el teclado, A narra qué base responde cada pantalla. Así hablan los tres durante la demo.
 - **Regla:** cada pantalla de la demo se muestra para probar una decisión. Si no prueba nada, se saltea.
 - Guion anterior del Hito 13 (sin UI, con Swagger): [`guion_de_20_minutos.md`](guion_de_20_minutos.md). Preparación y plan B: [`demo.md`](demo.md).
 
