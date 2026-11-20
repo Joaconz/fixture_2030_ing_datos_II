@@ -27,7 +27,7 @@ Equipo: Pazos · Núñez · Frisoli. Duración objetivo **18 minutos**, con 2 de
 
 ## Demo en vivo (7:00–13:00)
 
-Ensayado de punta a punta el 14/11/2026 contra el stack local: los siete pasos funcionan con las acciones exactas de esta tabla. Vuelto a ensayar el 18/11/2026 desde volúmenes vacíos, con las cargas de muestra de cada módulo: D1 a D7 y la sesión opcional dan lo que dice la tabla (salvo los minutos de los comentarios de D4, corregidos abajo). Grafana no se probó en ese segundo ensayo.
+Ensayado de punta a punta el 14/11/2026 contra el stack local: los siete pasos funcionan con las acciones exactas de abajo. Vuelto a ensayar el 18/11/2026 desde volúmenes vacíos, con las cargas de muestra de cada módulo: D1 a D7 y la sesión opcional dan lo que dicen los pasos (salvo los minutos de los comentarios de D4, corregidos abajo). Grafana no se probó en ese segundo ensayo.
 
 Pestañas abiertas **antes de empezar**, en este orden:
 
@@ -38,17 +38,79 @@ Pestañas abiertas **antes de empezar**, en este orden:
 
 Zoom del navegador al 125 % para que se lea desde el fondo.
 
-| Paso | Tiempo | Qué hace B (pantalla) | Qué dice A | Base y decisión que prueba |
-|---|---|---|---|---|
-| **D1** Inicio y búsqueda | 0:30 | En `/`, mostrar "Partidos destacados". Escribir `a1` en el campo **Código FIFA del equipo** → Enter: aparece "El código tiene que ser de 3 letras". Borrar, escribir `ARG` → Enter | "El hincha busca a su selección por código FIFA. El código se valida antes de llamar a la API, con el mismo patrón que usa la API." | — (validación en el front y en la API) |
-| **D2** Ficha del equipo | 1:00 | En la ficha de ARG: banda con ranking 1, grupo A, 26 jugadores y sede. En **Plantel** (26 jugadores), tocar el chip **Delanteros** → quedan 9 | "Todo esto es **un documento** de MongoDB, leído por su `_id`, que es el código FIFA. El plantel son los jugadores que referencian al equipo. Es lectura intensiva y escritura rara: el modelo documental." | **MongoDB**: un equipo completo en una lectura por clave |
-| **D3** Partido y eventos | 1:00 | En la columna derecha (**Partidos en el Mundial 2030**), tocar ARG–BEL (29 de junio, dieciseisavos) → `PAR-D16-01`. Pestaña **Eventos y comentarios**: línea de tiempo del 0′ al 90′. Tocar el chip **Goles** → queda un solo evento: Fernández, 13′ | "El partido y sus eventos vienen del grafo. El marcador de arriba, 1–0, **no está guardado**: se calcula contando los eventos de gol, y acá se ve el único gol. Cada evento está encadenado al anterior." | **Neo4j**: recorrido de eventos y marcador derivado |
-| **D4** Comentarios | 1:00 | Columna derecha, **Comentarios** (los 15 más recientes, del final del partido: con la carga de muestra de Cassandra van del 124′ al 91′; con la carga masiva, casi todos son del 124′). Abajo, en **Publicar un comentario**, alias y usuario ya vienen completos (`hincha42`, `USR-0000042`). Escribir "Golazo en vivo desde la defensa", minuto **90** → **Publicar** → "Comentario publicado." | "Es el partido de audiencia máxima: su ventana de 10 minutos está repartida en **4 buckets**. La lista lee primero la ventana más reciente, la del final del partido. Por eso el comentario del minuto 90 **no aparece arriba**: se guardó en la partición de su ventana (17:30), no en la del final. Esa es justamente la clave `(partido, ventana, bucket)`: nunca se escanea el partido entero. La escritura lleva una clave de idempotencia: si se reintenta, no se duplica." | **Cassandra**: partición `(partido, ventana, bucket)`, escritura W=1 |
-| **D5** Estadísticas | 0:45 | En el mismo partido, pestaña **Estadísticas**. En **Comparativa**, Goles 1–0: el mismo marcador que sale de Neo4j. Al pie: "Ver los datos en tabla (**190 filas**)". Cambiar período a **2T** y detalle a **5 min** → "(**20 filas**)" | "Las estadísticas por segundo viven en una base de series de tiempo. Pasar de 1 a 5 minutos es una agregación por tiempo que hace la base, no la pantalla: de 190 filas a 20. Y los goles de la serie coinciden con el marcador del grafo." | **InfluxDB**: ventanas de tiempo y downsampling |
-| **D6** Mesa de control: cierre CP | 1:15 | Pestaña 2 (`/partidos/PAR-DEMO-API/mesa`, ARG–BRA). (a) **Cerrar partido** → **Sí, cerrar partido** → **409 `MISSING_FIN_PARTIDO`**. (b) En **Registrar evento**: Tipo *Fin del partido*, Minuto 90, **Condición del equipo: Sin equipo**, **Dorsal: vacío** → **Registrar evento** → 201. (c) **Cerrar partido** → confirmar → **200 "Partido cerrado: ARG 1 – 0 BRA"** (tarda 2–3 s). (d) **Intentar cerrar otra vez** → confirmar → **409 `INVALID_TRANSITION`** | "Esta es la operación que no admite dos verdades: el cierre es CP. La transacción exige el evento de fin y calcula el marcador desde los goles: el 1–0 sale del gol que ya estaba cargado. Si se intenta de nuevo, se rechaza: no puede haber dos resultados oficiales." | **Neo4j**: cierre CP vs. ingesta AP (decisión 2) |
-| **D7** Salud de las fuentes | 0:30 | Pestaña 3 (`/salud`): las cinco fuentes UP con su latencia, HTTP 200 | "La API ve cada base por separado y con su propio timeout. Si una cae, solo esa queda DOWN, el chequeo responde 503 y sus pantallas muestran 'no pudimos cargar'; el resto sigue funcionando, como en la prueba de falla." | Las cinco: aislamiento de fallas |
+Cada paso: qué toca **B**, en orden, y qué dice **A** mientras tanto.
 
-**Cuidado en D6 (b):** si se deja la condición en *Local (ARG)* o el dorsal en 9, la API responde **400 `EVENT_RULE_VIOLATION`** ("condicionEquipo / dorsalProtagonista no corresponde a FIN_PARTIDO"). Si pasa, no es un problema: decir "la API valida las reglas de cada tipo de evento", corregir los dos campos y registrar de nuevo.
+### D1 — Inicio y búsqueda · 0:30
+*Prueba: validación en el front y en la API.*
+
+**B:**
+1. En `/`, mostrar "Partidos destacados".
+2. Escribir `a1` en el campo **Código FIFA del equipo** → Enter. Aparece "El código tiene que ser de 3 letras".
+3. Borrar, escribir `ARG` → Enter.
+
+**A:** "El hincha busca a su selección por código FIFA. El código se valida antes de llamar a la API, con el mismo patrón que usa la API."
+
+### D2 — Ficha del equipo · 1:00
+*Prueba: **MongoDB**, un equipo completo en una lectura por clave.*
+
+**B:**
+1. En la ficha de ARG, señalar la banda: ranking 1, grupo A, 26 jugadores y sede.
+2. En **Plantel** (26 jugadores), tocar el chip **Delanteros** → quedan 9.
+
+**A:** "Todo esto es **un documento** de MongoDB, leído por su `_id`, que es el código FIFA. El plantel son los jugadores que referencian al equipo. Es lectura intensiva y escritura rara: el modelo documental."
+
+### D3 — Partido y eventos · 1:00
+*Prueba: **Neo4j**, recorrido de eventos y marcador derivado.*
+
+**B:**
+1. En la columna derecha (**Partidos en el Mundial 2030**), tocar ARG–BEL (29 de junio, dieciseisavos) → `PAR-D16-01`.
+2. Pestaña **Eventos y comentarios**: se ve la línea de tiempo del 0′ al 90′.
+3. Tocar el chip **Goles** → queda un solo evento: Fernández, 13′.
+
+**A:** "El partido y sus eventos vienen del grafo. El marcador de arriba, 1–0, **no está guardado**: se calcula contando los eventos de gol, y acá se ve el único gol. Cada evento está encadenado al anterior."
+
+### D4 — Comentarios · 1:00
+*Prueba: **Cassandra**, partición `(partido, ventana, bucket)` y escritura W=1.*
+
+**B:**
+1. Columna derecha, **Comentarios**: son los 15 más recientes, del final del partido (con la carga de muestra van del 124′ al 91′; con la carga masiva, casi todos son del 124′).
+2. Abajo, en **Publicar un comentario**: alias y usuario ya vienen completos (`hincha42`, `USR-0000042`).
+3. Escribir "Golazo en vivo desde la defensa", minuto **90** → **Publicar** → aparece "Comentario publicado."
+
+**A:** "Es el partido de audiencia máxima: su ventana de 10 minutos está repartida en **4 buckets**. La lista lee primero la ventana más reciente, la del final del partido. Por eso el comentario del minuto 90 **no aparece arriba**: se guardó en la partición de su ventana (17:30), no en la del final. Esa es justamente la clave `(partido, ventana, bucket)`: nunca se escanea el partido entero. La escritura lleva una clave de idempotencia: si se reintenta, no se duplica."
+
+### D5 — Estadísticas · 0:45
+*Prueba: **InfluxDB**, ventanas de tiempo y downsampling.*
+
+**B:**
+1. En el mismo partido, pestaña **Estadísticas**.
+2. En **Comparativa**, señalar Goles 1–0: el mismo marcador que sale de Neo4j.
+3. Al pie: "Ver los datos en tabla (**190 filas**)".
+4. Cambiar período a **2T** y detalle a **5 min** → "(**20 filas**)".
+
+**A:** "Las estadísticas por segundo viven en una base de series de tiempo. Pasar de 1 a 5 minutos es una agregación por tiempo que hace la base, no la pantalla: de 190 filas a 20. Y los goles de la serie coinciden con el marcador del grafo."
+
+### D6 — Mesa de control: cierre CP · 1:15
+*Prueba: **Neo4j**, cierre CP vs. ingesta AP (decisión 2).*
+
+**B:**
+1. Pasar a la pestaña 2 (`/partidos/PAR-DEMO-API/mesa`, ARG–BRA).
+2. **Cerrar partido** → **Sí, cerrar partido** → **409 `MISSING_FIN_PARTIDO`**.
+3. En **Registrar evento**: Tipo *Fin del partido*, Minuto 90, **Condición del equipo: Sin equipo**, **Dorsal: vacío** → **Registrar evento** → 201.
+4. **Cerrar partido** → confirmar → **200 "Partido cerrado: ARG 1 – 0 BRA"** (tarda 2–3 s).
+5. **Intentar cerrar otra vez** → confirmar → **409 `INVALID_TRANSITION`**.
+
+**A:** "Esta es la operación que no admite dos verdades: el cierre es CP. La transacción exige el evento de fin y calcula el marcador desde los goles: el 1–0 sale del gol que ya estaba cargado. Si se intenta de nuevo, se rechaza: no puede haber dos resultados oficiales."
+
+**Cuidado en el paso 3:** si se deja la condición en *Local (ARG)* o el dorsal en 9, la API responde **400 `EVENT_RULE_VIOLATION`** ("condicionEquipo / dorsalProtagonista no corresponde a FIN_PARTIDO"). Si pasa, no es un problema: decir "la API valida las reglas de cada tipo de evento", corregir los dos campos y registrar de nuevo.
+
+### D7 — Salud de las fuentes · 0:30
+*Prueba: las cinco bases, aislamiento de fallas.*
+
+**B:**
+1. Pasar a la pestaña 3 (`/salud`): las cinco fuentes UP con su latencia, HTTP 200.
+
+**A:** "La API ve cada base por separado y con su propio timeout. Si una cae, solo esa queda DOWN, el chequeo responde 503 y sus pantallas muestran 'no pudimos cargar'; el resto sigue funcionando, como en la prueba de falla."
 
 **Estadísticas y eventos coinciden en los 112 partidos.** Hasta el 15/11/2026, InfluxDB generaba al azar los goles de dieciseisavos, y ARG–BEL daba BEL 2–0 contra el 1–0 de Neo4j. Ahora el generador usa la misma plantilla de eventos de eliminatoria que `carga.cypher` (paso 15). Si la pestaña Estadísticas de ARG–BEL muestra Goles 0–2, el volumen de InfluxDB tiene la carga vieja: correr el paso 1 de la preparación.
 
@@ -104,7 +166,7 @@ Desde la raíz del repo, con la notebook enchufada.
 | El front no levanta | Mismo flujo en Swagger (`http://localhost:8000/docs`): `GET /equipos/ARG`, `GET /partidos/PAR-D16-01`, comentarios, estadísticas y `PATCH /partidos/PAR-DEMO-API/estado` |
 | Una pantalla dice "No pudimos cargar…" | Decirlo como evidencia: esa base no responde y el resto de la pantalla sigue. Botón **Reintentar**; si no, seguir con el paso siguiente |
 | La mesa de `PAR-DEMO-API` no muestra los botones y dice "La mesa de control sólo está disponible mientras el partido está PROGRAMADO" | El partido quedó cerrado de un ensayo anterior: no se corrió el paso 2 de la preparación. Correrlo, esperar un minuto (caché del detalle en Redis) y recargar la pestaña. Si no hay tiempo, explicar el flujo con la diapositiva 8 |
-| D6 (b) responde 400 `EVENT_RULE_VIOLATION` | Falta poner *Sin equipo* y vaciar el dorsal (ver "Cuidado en D6") |
+| D6 (paso 3) responde 400 `EVENT_RULE_VIOLATION` | Falta poner *Sin equipo* y vaciar el dorsal (ver "Cuidado en el paso 3" de D6) |
 | Estadísticas vacías | Falta el token o la carga de muestra de InfluxDB ([`demo.md`](demo.md) §3). Mostrar la diapositiva de volúmenes |
 | Nada anda | Diapositivas + capturas de [`../evidencia/dashboards/`](../evidencia/dashboards/) y del front en [`../../fixture2030-hito10-api/docs/evidencia/front-stitch/`](../../fixture2030-hito10-api/docs/evidencia/front-stitch/) (inicio, ficha ARG, eventos y comentarios, estadísticas, estados de error). Las decisiones se defienden igual |
 

@@ -84,7 +84,7 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 
 > [B:] Vamos a hacer el recorrido de un hincha, y en cada pantalla les decimos qué base la responde. Yo manejo y Valentina les va contando.
 >
-> [B pasa al navegador. Las acciones exactas de cada paso están en la tabla de `guion_presentacion_final.md`.]
+> [B pasa al navegador. Las acciones exactas de cada paso, clic por clic, están en `guion_presentacion_final.md`.]
 
 ### D1 — Inicio y búsqueda (0:30)
 
