@@ -5,7 +5,7 @@ Material de repaso para los tres integrantes. La consigna exige que **cualquiera
 Complementa (no repite) a:
 - [`../docs/defensa_final.md`](../docs/defensa_final.md): la frase central y las respuestas cortas a las preguntas de la consigna.
 - [`../docs/decisiones_de_arquitectura.md`](../docs/decisiones_de_arquitectura.md): la ficha de cada base (por qué vive ahí cada dato).
-- [`guion_de_20_minutos.md`](guion_de_20_minutos.md) y [`demo.md`](demo.md): qué se dice y qué se muestra.
+- [`guion_presentacion_final.md`](guion_presentacion_final.md): **el guion oficial** (18 min, diapositivas, demo D1–D7 y quién dice qué). [`demo.md`](demo.md): preparación y plan B. El [`guion_de_20_minutos.md`](guion_de_20_minutos.md) queda solo como referencia.
 
 **Cómo estudiarlo.** Primero §1–§3 (el sistema entero, 20 min). Después §4 completo, aunque no hayas hecho esa base. Después §5–§6 (la API por dentro, que es lo que más se pregunta). Al final, §11 (números) y §13 (autoevaluación en voz alta, sin mirar).
 
@@ -376,6 +376,9 @@ Los hitos de implementación se organizaron por modelo, no por necesidad ("el ob
 
 **¿Los equipos de MongoDB y de Neo4j son los mismos? (H1)**
 No del todo: 52 de los 64 códigos coinciden. Neo4j se generó en el Hito 5 con otro roster (`URU`/`URY`, `CHI`/`CHL` y países distintos). Se decidió no parchearlo a medias, y por eso **la API nunca cruza las dos bases por código de equipo**: la ficha sale de MongoDB y los partidos de Neo4j, por separado. La carga masiva lo detecta como el único chequeo de integridad que falla. Unificar el roster es el primer arreglo pendiente.
+
+**"El gol de la demo es del 9, pero en el plantel el 9 es arquero."**
+Lo dispara la demo: el gol de D3 viene de Neo4j y el plantel de D2 viene de MongoDB. Son rosters distintos (H1), así que el mismo dorsal es otra persona en cada base. Dentro de cada base, el dorsal y el DNI son únicos; entre las dos, el DNI todavía no sirve como identidad compartida. Respuesta y detalle en la nota "Preguntas que puede disparar la demo" de [`guion_presentacion_final.md`](guion_presentacion_final.md).
 
 **¿Midieron replicación o es todo diseño?**
 Se midió **por separado**, en `fixture2030-replicacion-cap/`:
