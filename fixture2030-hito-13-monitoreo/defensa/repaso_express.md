@@ -1,6 +1,6 @@
 # Repaso express — lo mínimo para defender
 
-Para leer en 45 minutos. Lo de §1 a §4 es lo indispensable; §5 a §8 es lo que más se pregunta después. Si sobra tiempo, el detalle está en [`estudio_de_la_aplicacion.md`](estudio_de_la_aplicacion.md).
+Para leer en 45 minutos. Lo de §1 a §4 es lo indispensable; §5 a §10 es lo que más se pregunta después. Si sobra tiempo, el detalle está en [`estudio_de_la_aplicacion.md`](estudio_de_la_aplicacion.md).
 
 ## 1. La idea en una frase
 
@@ -115,13 +115,36 @@ Si te traban con una pregunta, volvé a esta frase.
 
 **¿Qué pasa si se cae Neo4j?** Fallan partidos y eventos (503) y el cierre espera: prefiere no cerrar a cerrar mal. Equipos, comentarios, sesiones y estadísticas siguen.
 
-## 10. Lo que NO hay que decir
+## 10. Detalles que pueden salir
+
+**Leer comentarios, paso a paso** (`GET /partidos/PAR-D16-01/comentarios`): por qué son 5 llamadas a Cassandra.
+1. Lee la configuración del partido (1 llamada): cuántos buckets tiene, de cuánto es la ventana y a qué hora empieza.
+2. Calcula las ventanas de 10 minutos del partido y empieza por la más reciente.
+3. Lee los 4 buckets de esa ventana **en paralelo** (4 llamadas), siempre con la clave de partición completa: nunca recorre la tabla entera.
+4. Mezcla los resultados por fecha, de más nuevo a más viejo. Si no llegó al límite, pasa a la ventana anterior.
+5. Devuelve los comentarios y un cursor para pedir la página siguiente.
+
+**Cargar un gol y cerrar el partido, paso a paso:**
+1. `POST /partidos/{id}/eventos` con `Idempotency-Key`. La API valida las reglas del tipo (un gol exige equipo y dorsal); si no cumple, 400 sin tocar Neo4j.
+2. Transacción en Neo4j: bloquea el partido → ¿la clave ya se usó? → ¿el partido está cerrado? → ¿ya hay fin de partido? → ¿el minuto retrocede? → crea el evento con la secuencia siguiente.
+3. Borra la copia del partido en Redis (si Redis no responde, no falla: la copia vence sola en 60 s). Responde 201.
+4. Se carga el evento de fin y `PATCH /partidos/{id}/estado`: cuenta los goles y fija el marcador. Cerrar otra vez da 409.
+
+**N4 Usuarios y N9 Auditoría, si insisten:** Usuarios iría en MongoDB, como otra colección (mismo motor que equipos). Auditoría iría en Cassandra, en otro keyspace con su propia partición y **W=QUORUM**, porque un registro de auditoría no se puede perder. No suman un modelo nuevo: es más de lo mismo. Hoy lo más parecido a usuarios son los 100.000 perfiles con sesión en Redis.
+
+**La carrera aceptada de la caché:** si una lectura del partido va a Neo4j justo antes de un cierre y guarda la copia en Redis justo después de que el cierre la borró, queda un dato viejo **hasta 60 s**. Se acepta: es la ventana de frescura elegida en el Hito 7, y el resultado oficial en Neo4j nunca está mal.
+
+**¿Por qué el `creadoEn` del comentario lo manda el cliente?** El torneo es en 2030 y el reloj es simulado. El comentario tiene que caer dentro del partido (de −15′ a +125′); si no, 400. Además forma parte de la clave primaria, así que un reintento idéntico pisa la misma fila y no duplica.
+
+**Límites de InfluxDB 3 Core:** no replica (la réplica que pedía el Hito 3 no se puede hacer con esta edición) y no compacta: con ~1.000 archivos, una consulta sobre todo el torneo superó el tope. Por eso la API limita cada consulta a 3 horas y los resúmenes van a la base histórica. Además: un 200 con lista vacía significa "no hay datos"; si falla el token o la base, es 503, nunca una lista vacía.
+
+## 11. Lo que NO hay que decir
 
 - Que soporta 100.000 req/s: medimos **~400 req/s** en una notebook.
 - Que la app corre con réplicas: corre con un nodo por base.
 - Que la caché del Hito 12 mejoró la latencia: bajó lecturas (−99,98 %), no latencia.
 
-## 11. La demo en una línea por paso
+## 12. La demo en una línea por paso
 
 1. **D1** Buscar `a1` (error) y `ARG` → validación en el front.
 2. **D2** Ficha de ARG, chip Delanteros (26 → 9) → MongoDB, un documento.
