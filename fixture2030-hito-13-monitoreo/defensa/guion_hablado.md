@@ -4,8 +4,8 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 
 | Letra | Quién | Bloques | Tiempo |
 |---|---|---|---|
-| **A** | Valentina | Inicio, Arquitectura y narración de la demo | 0:00–4:00 y 7:00–13:00 |
-| **B** | Joaquín | Decisiones y maneja la demo | 4:00–13:00 |
+| **A** | Valentina | Inicio y Arquitectura | 0:00–4:00 |
+| **B** | Joaquín | Decisiones y la demo (maneja y narra) | 4:00–13:00 |
 | **C** | Santiago | Evidencia y Cierre | 13:00–18:00 |
 
 **Cómo usarlo.** No hace falta decirlo de memoria palabra por palabra: es para que cada uno sepa qué idea va en cada diapositiva y con qué frase entra y sale. Leído en voz alta a ritmo normal, cada bloque entra en su tiempo. Lo que está entre corchetes es una acción, no se dice.
@@ -78,63 +78,46 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 > Cargamos 100.000 usuarios con sesión en menos de 3 segundos, medimos 136.799 renovaciones por segundo sin errores, y Redis borra solo 100.000 sesiones vencidas en unos 15 segundos.
 > Ahora lo vemos andando.
 
-## Demo en vivo · B maneja, A narra · 7:00–13:00
+## Demo en vivo · B maneja y narra · 7:00–13:00
+
+Joaquín toca y explica a la vez: cuenta lo que hace mientras lo hace, y deja la explicación para cuando la pantalla ya cargó.
 
 ### Diapositiva 10 — Demo (0:10)
 
-> [B:] Vamos a hacer el recorrido de un hincha, y en cada pantalla les decimos qué base la responde. Yo manejo y Valentina les va contando.
+> Vamos a hacer el recorrido de un hincha, y en cada pantalla les voy a decir qué base la responde.
 >
-> [B pasa al navegador. Las acciones exactas de cada paso, clic por clic, están en `guion_presentacion_final.md`.]
+> [Pasa al navegador. Los clics exactos de cada paso están en `guion_presentacion_final.md`.]
 
 ### D1 — Inicio y búsqueda (0:30)
 
-> [B:] Primero busco a Argentina por código FIFA. Si escribo algo inválido, como "a1"…
->
-> [A:] …el front lo rechaza antes de llamar a la API, con el mismo patrón que valida la API. Ningún dato inválido llega a una base.
+> Primero busco a Argentina por código FIFA. Si escribo algo inválido, como "a1", el front lo rechaza antes de llamar a la API, con el mismo patrón que valida la API. Ningún dato inválido llega a una base.
 
 ### D2 — Ficha del equipo (1:00)
 
-> [B:] Escribo ARG y entramos a la ficha. Filtro el plantel por delanteros.
->
-> [A:] Todo lo que ven acá es un documento de MongoDB, leído por su id, que es el código FIFA: ranking, grupo, y los 26 jugadores. Es lectura intensiva y escritura rara, que es justo lo que resuelve un modelo documental.
+> Escribo ARG y entramos a la ficha. Todo lo que ven acá es un documento de MongoDB, leído por su id, que es el código FIFA: ranking, grupo y los 26 jugadores. Filtro el plantel por delanteros. Es lectura intensiva y escritura rara, que es justo lo que resuelve un modelo documental.
 
 ### D3 — Partido y eventos (1:00)
 
-> [B:] Entro al partido Argentina–Bélgica, de dieciseisavos, y filtro los goles.
->
-> [A:] El partido y sus eventos vienen del grafo. El 1 a 0 de arriba no está guardado en ningún lado: se calcula contando los eventos de gol, y acá ven el único gol, de Fernández al minuto 13. Cada evento está encadenado al anterior.
+> Entro al partido Argentina–Bélgica, de dieciseisavos. El partido y sus eventos vienen del grafo. Filtro los goles: el 1 a 0 de arriba no está guardado en ningún lado, se calcula contando los eventos de gol, y acá ven el único, de Fernández al minuto 13. Cada evento está encadenado al anterior.
 
 ### D4 — Comentarios (1:00)
 
-> [B:] Ahora los comentarios. Publico uno: "Golazo en vivo desde la defensa", al minuto 90.
->
-> [A:] Este es el partido de audiencia máxima, así que su ventana de 10 minutos está repartida en 4 buckets. La lista muestra primero la ventana más reciente, la del final del partido. Por eso el comentario que acabamos de publicar, del minuto 90, no aparece arriba: se guardó en la partición de su propia ventana. Esa es la clave de partición que explicó Joaquín: nunca se escanea el partido entero. Y la escritura lleva una clave de idempotencia: si se reintenta, no se duplica.
+> Ahora los comentarios. Este es el partido de audiencia máxima, así que su ventana de 10 minutos está repartida en 4 buckets. La lista muestra primero la ventana más reciente, la del final del partido.
+> Publico uno: "Golazo en vivo desde la defensa", al minuto 90. Fíjense que no aparece arriba: se guardó en la partición de su propia ventana, no en la del final. Es la clave de partición que les mostré recién: nunca se escanea el partido entero. Y la escritura lleva una clave de idempotencia: si se reintenta, no se duplica.
 
 ### D5 — Estadísticas (0:45)
 
-> [B:] Pestaña de estadísticas. Son 190 filas. Cambio a segundo tiempo, de a 5 minutos…
->
-> [A:] …y quedan 20. Esa agregación por tiempo la hace InfluxDB, no la pantalla: es para lo que sirve una base de series de tiempo. Y fíjense que los goles de la serie dan 1 a 0, igual que el marcador que sale del grafo.
+> Pestaña de estadísticas. Son 190 filas. Cambio a segundo tiempo, de a 5 minutos, y quedan 20. Esa agregación por tiempo la hace InfluxDB, no la pantalla: es para lo que sirve una base de series de tiempo. Y los goles de la serie dan 1 a 0, igual que el marcador que sale del grafo.
 
 ### D6 — Mesa de control: cierre del partido (1:15)
 
-> [B:] Vamos a la mesa de control de otro partido, Argentina–Brasil. Intento cerrarlo…
->
-> [A:] …y la API lo rechaza: falta el evento de fin de partido. Esta es la operación que no admite dos verdades.
->
-> [B:] Registro el fin del partido, al minuto 90, y ahora sí cierro.
->
-> [A:] La transacción calcula el marcador desde los goles: 1 a 0, del gol que ya estaba cargado. Si intentamos cerrarlo otra vez…
->
-> [B:] [Intenta cerrar de nuevo.]
->
-> [A:] …se rechaza. No puede haber dos resultados oficiales: eso es el cierre CP del que hablamos.
+> Vamos a la mesa de control de otro partido, Argentina–Brasil. Intento cerrarlo… y la API lo rechaza: falta el evento de fin de partido. Esta es la operación que no admite dos verdades.
+> Registro el fin del partido, al minuto 90, y ahora sí cierro. La transacción calcula el marcador desde los goles: 1 a 0, del gol que ya estaba cargado.
+> Si intento cerrarlo otra vez… se rechaza. No puede haber dos resultados oficiales: eso es el cierre CP del que les hablé.
 
 ### D7 — Salud de las fuentes (0:30)
 
-> [B:] Por último, la salud de las fuentes.
->
-> [A:] La API ve cada base por separado, cada una con su propio timeout. Las cinco están arriba. Si una se cae, solo esa queda en rojo y sus pantallas muestran que no pudieron cargar; el resto sigue funcionando. Santiago les va a mostrar justamente eso, con datos.
+> Por último, la salud de las fuentes. La API ve cada base por separado, cada una con su propio timeout. Las cinco están arriba. Si una se cae, solo esa queda en rojo y sus pantallas muestran que no pudieron cargar; el resto sigue funcionando. Santiago les va a mostrar justamente eso, con datos.
 
 ## Evidencia · C · 13:00–15:30
 
