@@ -1,5 +1,7 @@
 # Guion de la defensa — 20 minutos (RF13, RNF12)
 
+> **Guion de referencia, no el oficial.** El que se usa el día de la defensa es [`guion_presentacion_final.md`](guion_presentacion_final.md): 18 minutos, con diapositivas, la demo D1–D7 ensayada y el reparto definitivo de A, B y C. Este queda como la versión anterior del Hito 13 (sin la UI, con Swagger), útil como plan B si el front no levanta. Si los dos no coinciden en tiempos o en quién dice qué, manda el final.
+
 Equipo: Pazos · Núñez · Frisoli. **Quién presenta cada bloque lo decide el equipo** (A, B y C abajo); todos tienen que poder responder sobre cualquier módulo (restricción "Defensa" de la consigna). Respuestas preparadas: [`../docs/defensa_final.md`](../docs/defensa_final.md).
 
 Regla del guion: cada vez que se muestra algo, se dice **qué decisión de base demuestra**. Si no demuestra una decisión, no se muestra.
