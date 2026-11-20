@@ -5,8 +5,8 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 | Letra | Quién | Bloques | Tiempo |
 |---|---|---|---|
 | **A** | Valentina | Inicio, Arquitectura y narración de la demo | 0:00–4:00 y 7:00–13:00 |
-| **B** | _a definir_ | Decisiones y maneja la demo | 4:00–13:00 |
-| **C** | _a definir_ | Evidencia y Cierre | 13:00–18:00 |
+| **B** | Joaquín | Decisiones y maneja la demo | 4:00–13:00 |
+| **C** | Santiago | Evidencia y Cierre | 13:00–18:00 |
 
 **Cómo usarlo.** No hace falta decirlo de memoria palabra por palabra: es para que cada uno sepa qué idea va en cada diapositiva y con qué frase entra y sale. Leído en voz alta a ritmo normal, cada bloque entra en su tiempo. Lo que está entre corchetes es una acción, no se dice.
 
@@ -53,7 +53,7 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 > El problema fue que partidos y tipos de evento vivían a la vez en IRIS y en el grafo, y esa copia ya había dado un calendario distinto: el mismo partido, PAR-A-1, era Argentina–Brasil en una base y Argentina–Países Bajos en la otra. Decidimos dejar todo en Neo4j, una sola fuente, y el profesor lo aprobó el 13 de octubre.
 > Lo que resignamos: las reglas por tipo de evento ahora las valida la API, que es el único camino de escritura.
 >
-> [A, al terminar:] Ahora B les cuenta las tres decisiones de modelado más importantes.
+> [A, al terminar:] Ahora Joaquín les cuenta las tres decisiones de modelado más importantes.
 
 ## Decisiones · B · 4:00–7:00
 
@@ -108,7 +108,7 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 
 > [B:] Ahora los comentarios. Publico uno: "Golazo en vivo desde la defensa", al minuto 90.
 >
-> [A:] Este es el partido de audiencia máxima, así que su ventana de 10 minutos está repartida en 4 buckets. La lista muestra primero la ventana más reciente, la del final del partido. Por eso el comentario que acabamos de publicar, del minuto 90, no aparece arriba: se guardó en la partición de su propia ventana. Esa es la clave de partición que explicó B: nunca se escanea el partido entero. Y la escritura lleva una clave de idempotencia: si se reintenta, no se duplica.
+> [A:] Este es el partido de audiencia máxima, así que su ventana de 10 minutos está repartida en 4 buckets. La lista muestra primero la ventana más reciente, la del final del partido. Por eso el comentario que acabamos de publicar, del minuto 90, no aparece arriba: se guardó en la partición de su propia ventana. Esa es la clave de partición que explicó Joaquín: nunca se escanea el partido entero. Y la escritura lleva una clave de idempotencia: si se reintenta, no se duplica.
 
 ### D5 — Estadísticas (0:45)
 
@@ -134,7 +134,7 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 
 > [B:] Por último, la salud de las fuentes.
 >
-> [A:] La API ve cada base por separado, cada una con su propio timeout. Las cinco están arriba. Si una se cae, solo esa queda en rojo y sus pantallas muestran que no pudieron cargar; el resto sigue funcionando. C les va a mostrar justamente eso, con datos.
+> [A:] La API ve cada base por separado, cada una con su propio timeout. Las cinco están arriba. Si una se cae, solo esa queda en rojo y sus pantallas muestran que no pudieron cargar; el resto sigue funcionando. Santiago les va a mostrar justamente eso, con datos.
 
 ## Evidencia · C · 13:00–15:30
 
@@ -189,7 +189,6 @@ El texto para decir, diapositiva por diapositiva, de A, B y C. Sigue el mismo or
 
 ## Antes del ensayo
 
-- **Completar B y C.** Cambiarlos en la tabla de arriba y en `guion_presentacion_final.md`.
 - **Validar las lecciones de la diapositiva 17.** En el deck figuran como borrador; si algún integrante prefiere contar otra, reemplazarla acá y en la diapositiva.
 - **Ensayar con cronómetro.** El texto está pensado para entrar en 18 minutos leído en voz alta. Si un bloque se pasa, recortar los ejemplos, no las frases de entrada y salida.
 - **Preguntas.** Las respuestas preparadas están en [`../docs/defensa_final.md`](../docs/defensa_final.md) y en [`estudio_de_la_aplicacion.md`](estudio_de_la_aplicacion.md) §12 y §14.
