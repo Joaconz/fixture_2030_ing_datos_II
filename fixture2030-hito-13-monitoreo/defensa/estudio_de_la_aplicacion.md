@@ -2,12 +2,148 @@
 
 Material de repaso para los tres integrantes. La consigna exige que **cualquiera pueda responder sobre cualquier módulo**, así que acá está el sistema completo por dentro: qué hace cada pieza, cómo está construida, qué números hay que saber y qué preguntas difíciles pueden venir.
 
-Complementa (no repite) a:
-- [`../docs/defensa_final.md`](../docs/defensa_final.md): la frase central y las respuestas cortas a las preguntas de la consigna.
-- [`../docs/decisiones_de_arquitectura.md`](../docs/decisiones_de_arquitectura.md): la ficha de cada base (por qué vive ahí cada dato).
-- [`guion_presentacion_final.md`](guion_presentacion_final.md): **el guion oficial** (18 min, diapositivas, demo D1–D7 y quién dice qué). [`demo.md`](demo.md): preparación y plan B. El [`guion_de_20_minutos.md`](guion_de_20_minutos.md) queda solo como referencia.
+**Este archivo alcanza solo.** Junta lo importante de [`../docs/defensa_final.md`](../docs/defensa_final.md) (la frase central y las respuestas a las preguntas de la consigna) y de [`../docs/decisiones_de_arquitectura.md`](../docs/decisiones_de_arquitectura.md) (por qué cada dato vive donde vive): está todo en la §0. Esos dos documentos quedan como fuente, con los links a la evidencia. Para la presentación: [`guion_presentacion_final.md`](guion_presentacion_final.md) (**el guion oficial**: 18 min, diapositivas y demo D1–D7) y [`guion_hablado.md`](guion_hablado.md) (qué dice cada uno).
 
-**Cómo estudiarlo.** Primero §1–§3 (el sistema entero, 20 min). Después §4 completo, aunque no hayas hecho esa base. Después §5–§6 (la API por dentro, que es lo que más se pregunta). Al final, §11 (números) y §13 (autoevaluación en voz alta, sin mirar).
+**Cómo estudiarlo.** Primero la §0 completa (lo que más se pregunta, 30 min). Después §1–§3 (el sistema entero) y §4 completo, aunque no hayas hecho esa base. Después §5–§6 (la API por dentro). Al final, §11 (números), §12 y §14 (preguntas) y §13 (autoevaluación en voz alta, sin mirar).
+
+---
+
+## 0. Lo esencial para la defensa
+
+### 0.1 La frase central
+
+**Pregunta de la FIFA:** ¿por qué esta combinación de modelos, estructuras, distribución y observabilidad es adecuada para el Fixture 2030?
+
+**Respuesta en una frase:** porque cada dato del Fixture tiene un acceso dominante distinto (un catálogo que se lee, un recorrido de eventos con un cierre que no admite dos resultados, escritura masiva en el minuto 90, sesiones que vencen, series por segundo) y cada uno quedó en el modelo que lo resuelve sin resignar ese acceso; la API los integra sin transacciones entre bases, así que una falla queda en su módulo; y el monitoreo permite **mostrarlo con datos**, no solo afirmarlo.
+
+**Diseño vs. laboratorio (decirlo siempre):** N=3, réplicas por región y quórum son **decisiones de diseño** del Hito 3. En el laboratorio cada base corre en **un nodo**. Réplicas y quórum se midieron **aparte**, en `fixture2030-replicacion-cap/` (MongoDB y Cassandra).
+
+### 0.2 Ficha rápida de cada base
+
+**MongoDB · documental · N1 Equipos y jugadores**
+- **Por qué ahí:** se lee el equipo completo por su código desde seis países; casi no cambia (lectura intensiva, escritura rara).
+- **Estructura:** `equipos` y `jugadores` con validación de esquema; `_id` = código FIFA. Seed determinista.
+- **Distribución (diseño):** sin partición (catálogo chico); 3 copias, réplica de lectura por región, escritura en el primario.
+- **Consistencia:** CP en escritura (con `w: "majority"`), AP en lectura (consistencia de sesión).
+- **Si se cae:** 503 en equipos y jugadores; el resto sigue.
+- **Qué se resigna:** unos segundos de dato viejo en otra región tras un cambio. Se acepta porque un equipo casi no cambia durante el torneo.
+
+**Neo4j · grafo · N2 Partidos, N3 Eventos, N8 Tipos de evento**
+- **Por qué ahí:** recorridos (eventos en orden, quién asistió a quién, partido–equipo–sede) y un cierre de partido sin contradicciones.
+- **Estructura:** nodos con unicidad; el **marcador no se guarda**, se calcula contando los `GOL`.
+- **Distribución (diseño):** partición por partido (el partido con sus eventos); 3 copias, el cierre confirma por mayoría.
+- **Consistencia:** **cierre CP** (no puede haber dos resultados oficiales) e **ingesta de eventos AP** con orden causal. Son operaciones distintas en el mismo motor.
+- **Si se cae:** 503 en partidos y eventos; el cierre espera antes que confirmar un resultado dudoso.
+- **Qué se resigna:** las reglas de cada tipo de evento se validan en la API, no en la base. Se acepta porque la API es el único camino de escritura.
+
+**Cassandra · columnar · N6 Comentarios**
+- **Por qué ahí:** escritura masiva concentrada (un gol, el final) y lectura de "los últimos N comentarios del partido".
+- **Estructura:** clave `((partido_id, ventana de 10 min, bucket), creado_en, comentario_id)`, más una tabla por usuario escrita en el mismo `LOGGED BATCH`.
+- **Distribución (diseño):** la partición compuesta reparte el pico de un partido entre nodos; **N=3, R=1, W=1** (en la API, `LOCAL_ONE`).
+- **Consistencia:** AP, eventual: un comentario puede tardar en aparecerle a otro hincha.
+- **Si se cae:** 503 en comentarios; el resto sigue. Con W=1, ante saturación se siguen aceptando escrituras.
+- **Qué se resigna:** búsquedas arbitrarias (solo los accesos modelados), dos tablas con lo mismo (desnormalización), buckets que solo pueden crecer.
+
+**Redis · clave-valor · N5 Sesiones y caché**
+- **Por qué ahí:** lectura por clave en cada request, con vencimiento automático.
+- **Estructura:** sesión HASH con TTL deslizante de 1.800 s y tope de 12 h; caché del partido con `SET … EX 60`.
+- **Distribución (diseño):** local a cada región, **sin réplica entre regiones, a propósito**.
+- **Consistencia:** AP, eventual.
+- **Si se cae:** se pierden las sesiones de esa región (se vuelve a entrar); la caché se reconstruye desde Neo4j. **Medido:** 503 solo en sesiones, MongoDB en 200 todo el tiempo.
+- **Qué se resigna:** durabilidad (perder una sesión es tolerable) y frescura: la caché puede mostrar un dato de hasta 60 s.
+
+**InfluxDB 3 Core · series temporales · N7 Estadísticas en vivo**
+- **Por qué ahí:** ingesta continua por segundo, consultas por rango y agregaciones por tiempo.
+- **Estructura:** `fixture2030_vivo` (por segundo, retención 45 días) y `fixture2030_historico` (resúmenes, sin vencimiento).
+- **Distribución (diseño):** por partido + intervalo; réplica de bajo factor (conceptual: Core no replica).
+- **Consistencia:** AP, eventual con orden monótono por partido.
+- **Si se cae:** 503 en estadísticas; el resto sigue.
+- **Qué se resigna:** la retención se fija al crear la base; los puntos por segundo son prescindibles porque está el resumen por minuto.
+
+**IRIS · objetos · ya no está.** Se implementó en el Hito 9 y salió en la reentrega del Hito 3 (aprobada el 13/10/2026): Partidos y Tipos de evento quedaban duplicados en IRIS y en el grafo, y ya había un calendario inconsistente (`PAR-A-1` con equipos distintos). La ventaja de objetos no se aprovecha con una API REST que valida en su capa. **Qué se perdió:** las reglas por tipo de evento dentro del modelo.
+
+### 0.3 Preguntas transversales
+
+**¿Por qué no una única base?** Porque los accesos son opuestos: el cierre necesita consistencia fuerte; los comentarios del minuto 90, escribir sin esperar a nadie; las sesiones, vencerse solas; las estadísticas, agregarse por tiempo. Una sola estructura obliga a resignar el acceso dominante de alguno.
+
+**¿Cómo se relacionan los módulos?** Por la **API**: cada ruta usa una sola fuente y los identificadores (`partido_id`, `usuario_id`) son compartidos. No hay transacciones entre bases; por eso **una base caída no tumba a las demás** (verificado en la prueba de falla de Redis).
+
+**¿Dónde hay caché y cómo vence?** Redis: detalle del partido por 60 s. API: configuración de partición de Cassandra en memoria (Hito 12, 60 s, apagada por defecto). Las dos vencen por tiempo; no hay invalidación entre procesos.
+
+**¿Cómo se evita que una consulta pesada bloquee todo?** Cada base tiene timeout propio en su adaptador (504 si se pasa) y la API no comparte conexiones entre bases. En Cassandra, la partición `(partido, ventana, bucket)` impide que el pico caiga en una sola partición.
+
+**¿Qué es operacional y qué analítico?** Operacional: todo lo que sirve la API. Proyectable a analítico: el histórico de comentarios (Cassandra), los resúmenes de `fixture2030_historico` (InfluxDB) y el data mart del Hito 12.
+
+**¿Qué cuesta operar cinco productos?** Cinco formas de respaldar, actualizar, asegurar y monitorear. Lo pagamos en el Hito 13: Cassandra necesitó un agente JMX, Neo4j Community no expone métricas (hubo que escribir un exporter) e InfluxDB pide un token. Se acepta porque una base para todo degrada algún acceso y no aísla fallas.
+
+### 0.4 Las preguntas de la consigna (§6.5), con cómo se demuestra
+
+"Medido" = laboratorio; "diseño" = Hito 3, sin medir.
+
+**¿Por qué este modelo para este dato?**
+Por el acceso dominante de cada dato (§0.2). *Se demuestra con:* la matriz del Hito 2.
+
+**¿Qué consulta sería costosa con otra estructura?**
+"Últimos 50 comentarios del partido" en un documental con millones de comentarios: o un documento gigante por partido, o un índice que se vuelve punto caliente en el gol. En Cassandra son 4 particiones acotadas y ordenadas. Al revés, "quién asistió el gol del minuto 80" en un columnar son varias consultas armadas en la API; en el grafo, un recorrido. *Se demuestra con:* `GET /partidos/PAR-D16-01/comentarios` en Swagger y la clave de `esquema.cql`.
+
+**¿Cómo se distribuyen los datos?**
+Comentarios por `(partido, ventana de 10 min, bucket)`; partidos y eventos juntos por partido; sesiones por id, locales a la región; estadísticas por partido + intervalo. *Diseño* (Hito 3); en el laboratorio, un nodo.
+
+**¿Qué pasa si se cae un nodo o una región?**
+Lo AP (comentarios, sesiones, estadísticas, eventos) sigue respondiendo desde lo local y reconcilia después; lo CP (el cierre) **espera**. Con un nodo por base, una caída es 503 en ese módulo y el resto sigue. Con réplicas: MongoDB elige primario nuevo en ~10 s sin perder escrituras; Cassandra sigue con ONE y QUORUM y falla con ALL. *Medido:* prueba de falla de Redis y `fixture2030-replicacion-cap/`.
+
+**¿Qué consistencia necesita cada módulo? ¿Qué puede ser eventual?**
+Fuerte solo en el cierre del partido y el catálogo de tipos; de sesión en equipos; eventual en comentarios, estadísticas, sesiones y eventos (con orden causal). *Se demuestra con:* `PATCH /partidos/{id}/estado`, que es una transacción (D6 de la demo).
+
+**¿Dónde está el cuello de botella?**
+Hoy, **en la API**: un solo proceso de Python al 97–100 % de CPU, mientras Cassandra responde en ~1 ms. *Medido:* carga observada del Hito 13 (confirma la hipótesis H2 del Hito 12).
+
+**¿Cómo distinguen si el problema es la API o la base?**
+Comparando tres latencias: la request en la API, la base vista desde la API y la base por dentro, más la CPU de la API. *Se demuestra con:* dashboards *2. API integrada*, *3. Comparación entre bases* y *4. Bases por dentro*.
+
+**¿Qué métrica miran primero si sube la latencia?**
+p95 por ruta de la API → p95 de cada base desde la API → métrica interna de esa base (en Cassandra, p99 y tareas pendientes). Dashboards 2 → 3 → 4, en ese orden; los links de arriba conservan el rango de tiempo.
+
+**¿Qué evidencia tienen de que la optimización funcionó?**
+La caché de la configuración de partición bajó **−99,98 %** esas lecturas (58.281 → 13) y −6,7 % la CPU de Cassandra. **No** afirmamos mejora de latencia: quedó dentro de la variación entre corridas. *Medido:* Hito 12.
+
+**¿Qué cambiarían si el tráfico se multiplica?**
+Primero varios procesos de la API (es el límite medido), con la caché activa; después más nodos de Cassandra (la partición ya lo permite). Ver §0.5.
+
+**¿Qué se pierde o se retrasa durante una falla?**
+Redis: las sesiones de esa región (se vuelve a entrar). Cassandra con W=1: comentarios que tardan en verse. Neo4j: el cierre espera. InfluxDB: los puntos por segundo durante la caída (el resumen por minuto se recalcula).
+
+**¿Qué no pueden afirmar porque no lo midieron?**
+Multirregión, 2–3 millones de usuarios, Cassandra saturada, el sistema integrado con réplicas, réplicas de Neo4j e InfluxDB, métricas de Neo4j Enterprise. Réplicas y quórum **sí** se midieron por separado en MongoDB (replica set de 3) y Cassandra (anillo de 3, RF=3).
+
+**¿Por qué no usaron SQL?**
+El problema no es el modelo relacional en sí: es escalar escritura en picos y servir latencias bajas desde varios países con datos de forma muy distinta. El Hito 12 lo compara con una alternativa relacional (`comparacion_relacional.md`).
+
+**¿Por qué sacaron IRIS?** Ver la ficha de IRIS en §0.2.
+
+### 0.5 La mejora que salió del monitoreo (RF12)
+
+En la carga observada (399 req/s leyendo comentarios):
+
+| Dónde se mide | Latencia |
+|---|---|
+| Cassandra por dentro (agente JMX), p99 | 1,1 ms |
+| Cassandra vista desde la API, p50 / p95 | 17 / 44 ms |
+| La request completa en la API, p50 / p95 | 42 / 91 ms |
+| CPU del proceso de la API | 97 % promedio, 100 % máximo |
+
+Cassandra responde en un milisegundo; el resto es **espera dentro del proceso de la API**, que está saturado (un proceso de Python, un núcleo).
+
+- **Mejora propuesta (no ejecutada):** varios procesos de la API (`uvicorn --workers N` o varias instancias con balanceador) y activar la caché de la configuración de partición (`COMENTARIOS_CONFIG_CACHE_S=60`). Sin la caché, cada proceso nuevo multiplicaría las lecturas a Cassandra (hoy 5 por GET).
+- **Cómo se verificaría:** repetir la carga observada y esperar más req/s, menos diferencia entre "Cassandra desde la API" y "Cassandra por dentro", y la CPU repartida.
+- **Trade-off:** cada proceso tiene su propia caché, sin invalidación entre ellos, y las métricas necesitan el modo multiproceso de `prometheus-client`.
+
+### 0.6 Lo que no hay que afirmar
+
+- Que el sistema "soporta 100.000 req/s": se midieron ~400 req/s en una notebook.
+- Que Neo4j está monitoreado como en Enterprise: el exporter propio solo da lo que Community deja consultar.
+- Que la caché del Hito 12 mejoró la latencia.
+- Que el sistema integrado corre con réplicas o quórum: corre con un nodo por base; réplicas y quórum se midieron aparte.
 
 ---
 
@@ -366,7 +502,7 @@ El front genera la clave **por intento lógico, no por envío** (`web/src/hooks/
 | Cassandra, consistencia eventual | 0 filas → 1 tras el hinted handoff (13 s) |
 | Escala del problema real | 2–3 M de usuarios, picos de >100.000 req/s. **Medido: ~400 req/s en una notebook** |
 
-## 12. Preguntas difíciles que no están en `defensa_final.md`
+## 12. Preguntas difíciles (más allá de las de la consigna)
 
 **¿Por qué Partidos en Neo4j si la matriz del Hito 2 decía Objetos?**
 La matriz le daba a Objetos un margen de solo **0,10** sobre la segunda opción, o sea, una decisión frágil. Al implementar, Partidos quedó duplicado en IRIS y en el grafo (los eventos ya vivían en el grafo y necesitan al partido) y produjo un calendario inconsistente real. La reentrega del Hito 3 lo movió y el profesor la aprobó. El cierre sigue siendo CP: lo garantiza una transacción de Neo4j.
@@ -519,7 +655,7 @@ Son sintéticos y **deterministas**: cada cargador genera exactamente lo mismo e
 Hoy es un solo proceso: se cae todo el acceso, aunque las bases sigan bien. Es el punto único de falla del laboratorio; la mejora propuesta es varias instancias detrás de un balanceador.
 
 **¿Por qué no usaron una base relacional?**
-Ver `defensa_final.md`: el problema es escalar escrituras en picos y servir baja latencia desde seis países con datos de forma muy distinta. El Hito 12 tiene la comparación con una alternativa relacional (`fixture2030-hito12-carga/docs/comparacion_relacional.md`).
+Ver §0.4: el problema es escalar escrituras en picos y servir baja latencia desde seis países con datos de forma muy distinta. El Hito 12 tiene la comparación con una alternativa relacional (`fixture2030-hito12-carga/docs/comparacion_relacional.md`).
 
 **¿El front habla directo con las bases?**
 No: solo con la API. El front no sabe qué base guarda cada dato, y cada panel maneja su error por separado.

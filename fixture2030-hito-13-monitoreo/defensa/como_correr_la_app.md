@@ -155,7 +155,24 @@ bash fixture2030-hito-13-monitoreo/scripts/verificar_targets.sh
 curl -s localhost:8000/health/dependencias
 ```
 
-En el navegador: la ficha de ARG con **26** jugadores, `/partidos/PAR-D16-01` con eventos, comentarios y estadísticas con Goles **1–0**. Después de resembrar el partido de demo, esperar un minuto antes de abrir la mesa (el detalle queda en la caché de Redis hasta 60 s).
+En el navegador: la ficha de ARG con **26** jugadores, `/partidos/PAR-D16-01` con eventos, comentarios y estadísticas con Goles **1–0**. Después de resembrar el partido de demo, esperar un minuto antes de abrir la mesa (el detalle queda en la caché de Redis hasta 60 s), o borrar la caché como en el bloque de abajo.
+
+### Ensayar la demo otra vez
+
+Lo único que la demo deja cambiado es **D6**: ARG–BRA (`PAR-DEMO-API`) queda FINALIZADO, con un evento de fin, y no acepta otro cierre. Después de cada ensayo, desde la raíz del repo:
+
+```bash
+docker exec -i fixture2030-neo4j cypher-shell -u neo4j -p fixture2030 < fixture2030-hito10-api/scripts/sembrar_demo_neo4j.cypher && docker exec fixture2030-redis redis-cli DEL f30:cache:partido:PAR-DEMO-API
+```
+
+- Deja el partido PROGRAMADO, con sus 3 eventos de carga (inicio, pase, gol de Fernández) y sin fin. La última línea que imprime tiene que decir `"PROGRAMADO", NULL`.
+- El `DEL` borra la caché del detalle en Redis, así no hay que esperar el minuto. Después, recargar la pestaña de la mesa.
+- Probado el 20/11/2026: cerrar (409) → fin (201) → cerrar (200) → cerrar otra vez (409) → reinicio → cerrar da otra vez 409 `MISSING_FIN_PARTIDO`.
+- Si el cierre da **2–0** en lugar de 1–0, en el paso 3 de D6 se registró un gol de más (condición *Local* o dorsal 9). Reiniciar y repetir.
+
+No hace falta reiniciar nada más: D4 suma un comentario por ensayo, pero no aparece en la lista; D1, D2, D3, D5 y D7 solo leen. Las sesiones de Redis (paso opcional) vencen a los 30 minutos: volver a correr el paso 2.
+
+No apagar entre ensayos: Docker Desktop con los contenedores `fixture2030-*` y `fixture2030_mongo`, ni las terminales de la API (8000) y del front (5173).
 
 ## 4. Direcciones
 

@@ -3,7 +3,7 @@
 Equipo: Pazos · Núñez · Frisoli. Duración objetivo **18 minutos**, con 2 de margen para llegar a 20. La demo de la UI va en el medio: primero se explica qué decidimos y después se ve funcionando, base por base.
 
 - **Diapositivas:** deck "Fixture 2030 — Defensa final" (17 diapositivas + la de demo). Cada diapositiva tiene notas de orador.
-- **Quién:** A = inicio y arquitectura · B = decisiones y **maneja la demo** · C = evidencia y cierre. Completar los nombres: A = `[VALENTINA]`, B = `[__]`, C = `[__]`. Mientras B maneja el teclado, A narra qué base responde cada pantalla. Así hablan los tres durante la demo.
+- **Quién:** A = inicio y arquitectura · B = decisiones y **la demo completa** (maneja el teclado y la narra) · C = evidencia y cierre. A = **Valentina**, B = **Joaquín**, C = **Santiago**.
 - **Regla:** cada pantalla de la demo se muestra para probar una decisión. Si no prueba nada, se saltea.
 - Guion anterior del Hito 13 (sin UI, con Swagger): [`guion_de_20_minutos.md`](guion_de_20_minutos.md). Preparación y plan B: [`demo.md`](demo.md).
 
@@ -16,7 +16,7 @@ Equipo: Pazos · Núñez · Frisoli. Duración objetivo **18 minutos**, con 2 de
 | 0:00–1:30 | Inicio | A | 1 Portada · 2 El problema · 3 Un modelo por acceso dominante |
 | 1:30–4:00 | Arquitectura | A | 4 Cinco bases detrás de una API · 5 Qué acceso justifica cada base · 6 IRIS |
 | 4:00–7:00 | Decisiones | B | 7 Cassandra · 8 Neo4j · 9 Redis (un minuto cada una) |
-| **7:00–13:00** | **Demo en vivo de la UI** | **B maneja, A narra** | Diapositiva 10 "Demo" → navegador (pasos D1–D7 de abajo) |
+| **7:00–13:00** | **Demo en vivo de la UI** | **B** (maneja y narra) | Diapositiva 10 "Demo" → navegador (pasos D1–D7 de abajo) |
 | 13:00–15:30 | Evidencia | C | Grafana en vivo (en lugar de la diapositiva 13) · 11 Volúmenes · 12 Replicación · 14 Cuello de botella · 15 Prueba de falla |
 | 15:30–18:00 | Cierre | C | 16 Medido vs. proyección · 17 Lecciones · 18 Cierre y preguntas |
 | 18:00–20:00 | Margen | — | Preguntas |
@@ -25,38 +25,132 @@ Equipo: Pazos · Núñez · Frisoli. Duración objetivo **18 minutos**, con 2 de
 
 ---
 
-## Demo en vivo (7:00–13:00)
+## Demo en vivo (7:00–13:00) · Joaquín
 
-Ensayado de punta a punta el 14/11/2026 contra el stack local: los siete pasos funcionan con las acciones exactas de esta tabla. Vuelto a ensayar el 18/11/2026 desde volúmenes vacíos, con las cargas de muestra de cada módulo: D1 a D7 y la sesión opcional dan lo que dice la tabla (salvo los minutos de los comentarios de D4, corregidos abajo). Grafana no se probó en ese segundo ensayo.
+Joaquín maneja y habla. Acá van los clics y una frase clave por paso; el texto completo para decir está en [`guion_hablado.md`](guion_hablado.md).
 
-Pestañas abiertas **antes de empezar**, en este orden:
+**Recorrido:** D1 Buscar ARG → D2 Ficha → D3 Partido → D4 Comentarios → D5 Estadísticas → D6 Cerrar partido → D7 Salud → Grafana (pasa a Santiago)
 
-1. Front: `http://localhost:5173`
-2. Front, mesa de control: `http://localhost:5173/partidos/PAR-DEMO-API/mesa`
-3. Front, salud: `http://localhost:5173/salud`
-4. Grafana: `http://localhost:3000`, **ya logueado** (usuario y contraseña de desarrollo en [`../grafana/README.md`](../grafana/README.md)), dashboard *Fixture 2030 — 2. API integrada*, "Last 15 minutes"
+### Antes de empezar
 
-Zoom del navegador al 125 % para que se lea desde el fondo.
+- Pestaña 1: front, `http://localhost:5173`
+- Pestaña 2: mesa de control, `http://localhost:5173/partidos/PAR-DEMO-API/mesa`
+- Pestaña 3: salud, `http://localhost:5173/salud`
+- Pestaña 4: Grafana, `http://localhost:3000`, **ya logueado**, dashboard *2. API integrada*, "Last 15 minutes" (usuario en [`../grafana/README.md`](../grafana/README.md))
+- Zoom del navegador al **125 %**
 
-| Paso | Tiempo | Qué hace B (pantalla) | Qué dice A | Base y decisión que prueba |
-|---|---|---|---|---|
-| **D1** Inicio y búsqueda | 0:30 | En `/`, mostrar "Partidos destacados". Escribir `a1` en el campo **Código FIFA del equipo** → Enter: aparece "El código tiene que ser de 3 letras". Borrar, escribir `ARG` → Enter | "El hincha busca a su selección por código FIFA. El código se valida antes de llamar a la API, con el mismo patrón que usa la API." | — (validación en el front y en la API) |
-| **D2** Ficha del equipo | 1:00 | En la ficha de ARG: banda con ranking 1, grupo A, 26 jugadores y sede. En **Plantel** (26 jugadores), tocar el chip **Delanteros** → quedan 9 | "Todo esto es **un documento** de MongoDB, leído por su `_id`, que es el código FIFA. El plantel son los jugadores que referencian al equipo. Es lectura intensiva y escritura rara: el modelo documental." | **MongoDB**: un equipo completo en una lectura por clave |
-| **D3** Partido y eventos | 1:00 | En la columna derecha (**Partidos en el Mundial 2030**), tocar ARG–BEL (29 de junio, dieciseisavos) → `PAR-D16-01`. Pestaña **Eventos y comentarios**: línea de tiempo del 0′ al 90′. Tocar el chip **Goles** → queda un solo evento: Fernández, 13′ | "El partido y sus eventos vienen del grafo. El marcador de arriba, 1–0, **no está guardado**: se calcula contando los eventos de gol, y acá se ve el único gol. Cada evento está encadenado al anterior." | **Neo4j**: recorrido de eventos y marcador derivado |
-| **D4** Comentarios | 1:00 | Columna derecha, **Comentarios** (los 15 más recientes, del final del partido: con la carga de muestra de Cassandra van del 124′ al 91′; con la carga masiva, casi todos son del 124′). Abajo, en **Publicar un comentario**, alias y usuario ya vienen completos (`hincha42`, `USR-0000042`). Escribir "Golazo en vivo desde la defensa", minuto **90** → **Publicar** → "Comentario publicado." | "Es el partido de audiencia máxima: su ventana de 10 minutos está repartida en **4 buckets**. La lista lee primero la ventana más reciente, la del final del partido. Por eso el comentario del minuto 90 **no aparece arriba**: se guardó en la partición de su ventana (17:30), no en la del final. Esa es justamente la clave `(partido, ventana, bucket)`: nunca se escanea el partido entero. La escritura lleva una clave de idempotencia: si se reintenta, no se duplica." | **Cassandra**: partición `(partido, ventana, bucket)`, escritura W=1 |
-| **D5** Estadísticas | 0:45 | En el mismo partido, pestaña **Estadísticas**. En **Comparativa**, Goles 1–0: el mismo marcador que sale de Neo4j. Al pie: "Ver los datos en tabla (**190 filas**)". Cambiar período a **2T** y detalle a **5 min** → "(**20 filas**)" | "Las estadísticas por segundo viven en una base de series de tiempo. Pasar de 1 a 5 minutos es una agregación por tiempo que hace la base, no la pantalla: de 190 filas a 20. Y los goles de la serie coinciden con el marcador del grafo." | **InfluxDB**: ventanas de tiempo y downsampling |
-| **D6** Mesa de control: cierre CP | 1:15 | Pestaña 2 (`/partidos/PAR-DEMO-API/mesa`, ARG–BRA). (a) **Cerrar partido** → **Sí, cerrar partido** → **409 `MISSING_FIN_PARTIDO`**. (b) En **Registrar evento**: Tipo *Fin del partido*, Minuto 90, **Condición del equipo: Sin equipo**, **Dorsal: vacío** → **Registrar evento** → 201. (c) **Cerrar partido** → confirmar → **200 "Partido cerrado: ARG 1 – 0 BRA"** (tarda 2–3 s). (d) **Intentar cerrar otra vez** → confirmar → **409 `INVALID_TRANSITION`** | "Esta es la operación que no admite dos verdades: el cierre es CP. La transacción exige el evento de fin y calcula el marcador desde los goles: el 1–0 sale del gol que ya estaba cargado. Si se intenta de nuevo, se rechaza: no puede haber dos resultados oficiales." | **Neo4j**: cierre CP vs. ingesta AP (decisión 2) |
-| **D7** Salud de las fuentes | 0:30 | Pestaña 3 (`/salud`): las cinco fuentes UP con su latencia, HTTP 200 | "La API ve cada base por separado y con su propio timeout. Si una cae, solo esa queda DOWN, el chequeo responde 503 y sus pantallas muestran 'no pudimos cargar'; el resto sigue funcionando, como en la prueba de falla." | Las cinco: aislamiento de fallas |
+---
 
-**Cuidado en D6 (b):** si se deja la condición en *Local (ARG)* o el dorsal en 9, la API responde **400 `EVENT_RULE_VIOLATION`** ("condicionEquipo / dorsalProtagonista no corresponde a FIN_PARTIDO"). Si pasa, no es un problema: decir "la API valida las reglas de cada tipo de evento", corregir los dos campos y registrar de nuevo.
+### D1 · Buscar un equipo — 0:30
 
-**Estadísticas y eventos coinciden en los 112 partidos.** Hasta el 15/11/2026, InfluxDB generaba al azar los goles de dieciseisavos, y ARG–BEL daba BEL 2–0 contra el 1–0 de Neo4j. Ahora el generador usa la misma plantilla de eventos de eliminatoria que `carga.cypher` (paso 15). Si la pestaña Estadísticas de ARG–BEL muestra Goles 0–2, el volumen de InfluxDB tiene la carga vieja: correr el paso 1 de la preparación.
+**Hacé**
+1. En el inicio, señalá *Partidos destacados*.
+2. Escribí `a1` en **Código FIFA del equipo** y Enter.
+3. Borrá, escribí `ARG` y Enter.
 
-**Preguntas que puede disparar la demo (H1).** El gol de D3 es de "A. Fernández #9", pero en el plantel de D2 el 9 de Argentina es "E. Mosciski", arquero. No es un error de la demo: la ficha y el plantel salen de MongoDB y el partido de Neo4j, y los planteles de las dos bases no están unificados (otros nombres, otro tamaño, posiciones al azar en MongoDB y por dorsal en Neo4j). Además, 6 DNI coinciden entre las dos bases para jugadores distintos (ver H1 en [`../../docs/ESTADO-CANONICO-NECESIDADES.md`](../../docs/ESTADO-CANONICO-NECESIDADES.md)). Respuesta: "Dentro de cada base el dorsal y el DNI son únicos. Entre MongoDB y Neo4j el roster no está unificado, es el hallazgo H1, y por eso la API nunca cruza esas dos bases por equipo ni por jugador."
+**Vas a ver:** con `a1`, el aviso *"El código tiene que ser de 3 letras"*. Con `ARG`, la ficha.
 
-**Opcional (si sobra un minuto):** `http://localhost:5173/sesiones/demo-ses-0000001-1` muestra la sesión de Redis con su **TTL restante**, el vencimiento absoluto (12 h) y el botón *Invalidar sesión*. Qué decir: "La sesión vence sola. Esta pantalla es de soporte y consultarla no renueva el TTL; lo renueva cada request del propio usuario, hasta el tope de 12 h."
+**Decí:** "El código se valida en el front con el mismo patrón que la API: nada inválido llega a una base."
 
-**Transición a Evidencia (C):** pasar a la pestaña 4 (Grafana). "Las requests que acaban de ver ya están acá": en *2. API integrada*, *Requests por segundo* muestra los 200, el 201 del evento y los **409 del cierre**; *Latencia p95 por ruta*, cada pantalla; *Porcentaje de respuestas 5xx* en "No data" quiere decir que no hubo ningún error del servidor. En *3. Comparación entre bases*, la latencia de cada base vista desde la API. Después volver a las diapositivas 11, 12, 14 y 15.
+---
+
+### D2 · Ficha del equipo — 1:00 · MongoDB
+
+**Hacé**
+1. Señalá la banda de arriba: ranking 1, grupo A, 26 jugadores, sede.
+2. En **Plantel**, tocá el chip **Delanteros**.
+
+**Vas a ver:** el plantel pasa de 26 a 9 jugadores.
+
+**Decí:** "Todo esto es un solo documento de MongoDB, leído por su id, que es el código FIFA."
+
+---
+
+### D3 · Partido y eventos — 1:00 · Neo4j
+
+**Hacé**
+1. En la columna derecha, tocá **ARG–BEL** (29 de junio, dieciseisavos).
+2. Pestaña **Eventos y comentarios**.
+3. Tocá el chip **Goles**.
+
+**Vas a ver:** la línea de tiempo del 0′ al 90′; con el filtro, un solo gol: Fernández, 13′. Arriba, 1–0.
+
+**Decí:** "El 1–0 no está guardado: se calcula contando los eventos de gol."
+
+---
+
+### D4 · Comentarios — 1:00 · Cassandra
+
+**Hacé**
+1. Mostrá la lista de **Comentarios** (columna derecha).
+2. Abajo, en **Publicar un comentario**, escribí *"Golazo en vivo desde la defensa"*, minuto **90**. Alias y usuario ya vienen completos.
+3. **Publicar**.
+
+**Vas a ver:** *"Comentario publicado."*, pero el comentario **no aparece arriba**. La lista muestra los 15 más recientes, del final del partido.
+
+**Decí:** "No aparece arriba porque se guardó en la partición de su ventana de 10 minutos: es la clave (partido, ventana, bucket)."
+
+---
+
+### D5 · Estadísticas — 0:45 · InfluxDB
+
+**Hacé**
+1. Pestaña **Estadísticas**.
+2. Señalá *Comparativa*: Goles 1–0.
+3. Cambiá período a **2T** y detalle a **5 min**.
+
+**Vas a ver:** al pie, *Ver los datos en tabla* pasa de **190 filas** a **20 filas**.
+
+**Decí:** "Esa agregación por tiempo la hace InfluxDB, no la pantalla. Y los goles coinciden con el grafo."
+
+---
+
+### D6 · Cerrar un partido — 1:15 · Neo4j, CP
+
+**Hacé**
+1. Pasá a la **pestaña 2** (ARG–BRA).
+2. **Cerrar partido** → **Sí, cerrar partido**.
+3. En **Registrar evento**: tipo *Fin del partido*, minuto **90**, condición **Sin equipo**, dorsal **vacío** → **Registrar evento**.
+4. **Cerrar partido** → confirmar. Tarda 2–3 segundos.
+5. **Intentar cerrar otra vez** → confirmar.
+
+**Vas a ver:**
+- en el paso 2, **409 `MISSING_FIN_PARTIDO`**;
+- en el paso 3, **201**;
+- en el paso 4, **200 "Partido cerrado: ARG 1 – 0 BRA"**;
+- en el paso 5, **409 `INVALID_TRANSITION`**.
+
+**Decí:** "El cierre es CP: exige el evento de fin, calcula el marcador desde los goles y no acepta un segundo resultado."
+
+> **Ojo en el paso 3:** si queda la condición en *Local (ARG)* o el dorsal en 9, sale **400 `EVENT_RULE_VIOLATION`**. No pasa nada: decí "la API valida las reglas de cada tipo de evento", corregí los dos campos y registrá de nuevo.
+
+---
+
+### D7 · Salud de las fuentes — 0:30
+
+**Hacé**
+1. Pasá a la **pestaña 3**.
+
+**Vas a ver:** las cinco fuentes en UP, con su latencia.
+
+**Decí:** "Cada base tiene su propio timeout: si una cae, solo esa queda en rojo y el resto sigue. Santiago les muestra eso con datos."
+
+---
+
+### Al terminar: pase a Santiago
+
+Santiago toma la **pestaña 4** (Grafana): en *2. API integrada* se ven las requests de la demo (los 200, el 201 del evento y los 409 del cierre) y *Porcentaje de respuestas 5xx* en "No data", o sea sin errores. En *3. Comparación entre bases*, la latencia de cada base vista desde la API. Después vuelve a las diapositivas 11, 12, 14 y 15.
+
+### Si sobra un minuto (opcional)
+
+Abrir `http://localhost:5173/sesiones/demo-ses-0000001-1`: la sesión de Redis con su TTL restante y el tope de 12 h. **Decí:** "La sesión vence sola; consultarla desde acá no la renueva."
+
+### Notas de la demo
+
+- **Ensayos.** De punta a punta el 14/11/2026, y de nuevo el 18/11/2026 desde volúmenes vacíos con las cargas de muestra: D1 a D7 y el paso opcional dan lo que dicen las tarjetas. Grafana no se probó en el segundo ensayo.
+- **Comentarios de D4.** Con la carga de muestra de Cassandra, los 15 más recientes van del 124′ al 91′; con la carga masiva, casi todos son del 124′.
+- **Goles de D5.** Desde el 15/11/2026, InfluxDB usa la misma plantilla de goles que `carga.cypher` (paso 15). Si ARG–BEL muestra Goles 0–2, el volumen tiene la carga vieja: correr el paso 1 de la preparación.
+- **Pregunta probable (H1).** "El gol es del 9, pero en el plantel el 9 es arquero." La ficha sale de MongoDB y el partido de Neo4j, y los planteles de las dos bases no están unificados; además, 6 DNI coinciden entre las dos bases para jugadores distintos (H1 en [`../../docs/ESTADO-CANONICO-NECESIDADES.md`](../../docs/ESTADO-CANONICO-NECESIDADES.md)). Respuesta: "Dentro de cada base el dorsal y el DNI son únicos. Entre MongoDB y Neo4j el roster no está unificado, es el hallazgo H1, y por eso la API nunca cruza esas dos bases."
 
 ---
 
@@ -104,7 +198,7 @@ Desde la raíz del repo, con la notebook enchufada.
 | El front no levanta | Mismo flujo en Swagger (`http://localhost:8000/docs`): `GET /equipos/ARG`, `GET /partidos/PAR-D16-01`, comentarios, estadísticas y `PATCH /partidos/PAR-DEMO-API/estado` |
 | Una pantalla dice "No pudimos cargar…" | Decirlo como evidencia: esa base no responde y el resto de la pantalla sigue. Botón **Reintentar**; si no, seguir con el paso siguiente |
 | La mesa de `PAR-DEMO-API` no muestra los botones y dice "La mesa de control sólo está disponible mientras el partido está PROGRAMADO" | El partido quedó cerrado de un ensayo anterior: no se corrió el paso 2 de la preparación. Correrlo, esperar un minuto (caché del detalle en Redis) y recargar la pestaña. Si no hay tiempo, explicar el flujo con la diapositiva 8 |
-| D6 (b) responde 400 `EVENT_RULE_VIOLATION` | Falta poner *Sin equipo* y vaciar el dorsal (ver "Cuidado en D6") |
+| D6 (paso 3) responde 400 `EVENT_RULE_VIOLATION` | Falta poner *Sin equipo* y vaciar el dorsal (ver "Ojo en el paso 3" de D6) |
 | Estadísticas vacías | Falta el token o la carga de muestra de InfluxDB ([`demo.md`](demo.md) §3). Mostrar la diapositiva de volúmenes |
 | Nada anda | Diapositivas + capturas de [`../evidencia/dashboards/`](../evidencia/dashboards/) y del front en [`../../fixture2030-hito10-api/docs/evidencia/front-stitch/`](../../fixture2030-hito10-api/docs/evidencia/front-stitch/) (inicio, ficha ARG, eventos y comentarios, estadísticas, estados de error). Las decisiones se defienden igual |
 
